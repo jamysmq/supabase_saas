@@ -1,13 +1,21 @@
-import { requireTenantUser } from '../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseAppointments } from '../../../src/lib/tenant-admin'
 
 function errorResponse(message: string, status = 400, details?: string) {
-  return Response.json({ error: message, message, details }, { status })
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message, message }, { status })
 }
 
 export async function GET(request: Request) {
   const result = await requireTenantUser(request)
 
   if (result.error) return result.error
+
+  if (!tenantCanUseAppointments(result.tenant)) {
+    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+  }
 
   const { data, error } = await result.supabase
     .from('tenant_services')
@@ -28,22 +36,15 @@ export async function POST(request: Request) {
 
   if (result.error) return result.error
 
+  if (!tenantCanUseAppointments(result.tenant)) {
+    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+  }
+
   const body = await request.json().catch(() => null)
   const name = String(body?.name ?? '').trim()
-  const description = String(body?.description ?? '').trim() || null
-  const durationMinutes = Number(body?.duration_minutes ?? 60)
-  const priceCents = body?.price ? Math.round(Number(String(body.price).replace(',', '.')) * 100) : null
 
   if (!name) {
     return errorResponse('Informe o nome do servico.')
-  }
-
-  if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
-    return errorResponse('Duracao invalida.')
-  }
-
-  if (priceCents !== null && (!Number.isFinite(priceCents) || priceCents < 0)) {
-    return errorResponse('Valor invalido.')
   }
 
   const { data, error } = await result.supabase
@@ -51,9 +52,7 @@ export async function POST(request: Request) {
     .insert({
       tenant_id: result.tenantUser.tenant_id,
       name,
-      description,
-      duration_minutes: durationMinutes,
-      price_cents: priceCents,
+      duration_minutes: 60,
       is_active: true,
     })
     .select('id, name, description, duration_minutes, price_cents, is_active, created_at, updated_at')

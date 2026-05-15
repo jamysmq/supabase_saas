@@ -193,12 +193,20 @@ export default function PlatformPaymentsPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
-          <button
-            onClick={() => router.push('/platform/tenants')}
-            className="text-sm text-gray-500 mb-3"
-          >
-            Voltar
-          </button>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => router.push('/platform/tenants')}
+              className="text-sm text-gray-500"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={() => router.push('/platform/payment-history')}
+              className="text-sm font-medium text-gray-950 underline"
+            >
+              Historico
+            </button>
+          </div>
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>

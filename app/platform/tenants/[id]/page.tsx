@@ -59,6 +59,8 @@ type Plan = {
   code: string
   name: string
   is_active: boolean
+  monthly_amount_cents: number
+  max_customer_groups: number
 }
 
 type FormState = {
@@ -70,6 +72,8 @@ type FormState = {
   business_type: string
   plan: string
   status: string
+  monthly_amount: string
+  due_day: string
 }
 
 function formatMoney(amountCents: number | null | undefined) {
@@ -100,6 +104,8 @@ export default function PlatformTenantDetailPage() {
     business_type: 'teacher',
     plan: '',
     status: '',
+    monthly_amount: '',
+    due_day: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -154,12 +160,13 @@ export default function PlatformTenantDetailPage() {
 
     const data = await response.json()
     const loadedTenant = data.tenant as Tenant
+    const loadedBillingProfile = data.billingProfile as BillingProfile
 
     setTenant(loadedTenant)
     setUsers(data.users ?? [])
     setSubscription(data.subscription ?? null)
     setSettings(data.settings ?? null)
-    setBillingProfile(data.billingProfile ?? null)
+    setBillingProfile(loadedBillingProfile ?? null)
 
     if (plansResponse.ok) {
       const plansData = await plansResponse.json()
@@ -175,9 +182,25 @@ export default function PlatformTenantDetailPage() {
       business_type: loadedTenant.business_type ?? 'teacher',
       plan: loadedTenant.plan,
       status: loadedTenant.status,
+      monthly_amount: loadedBillingProfile?.amount_cents
+        ? String(loadedBillingProfile.amount_cents / 100).replace('.', ',')
+        : '',
+      due_day: loadedBillingProfile?.due_day ? String(loadedBillingProfile.due_day) : '',
     })
     setLoading(false)
   }, [params.id, router])
+
+  function selectPlan(planCode: string) {
+    const selectedPlan = plans.find((plan) => plan.code === planCode)
+
+    setForm({
+      ...form,
+      plan: planCode,
+      monthly_amount: selectedPlan
+        ? String(selectedPlan.monthly_amount_cents / 100).replace('.', ',')
+        : form.monthly_amount,
+    })
+  }
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -432,7 +455,7 @@ export default function PlatformTenantDetailPage() {
                 Plano
                 <select
                   value={form.plan}
-                  onChange={(event) => setForm({ ...form, plan: event.target.value })}
+                  onChange={(event) => selectPlan(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                   required
                 >
@@ -472,6 +495,33 @@ export default function PlatformTenantDetailPage() {
                   <option value="suspended">Suspended</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+              </label>
+
+              <label className="block text-sm font-medium">
+                Mensalidade individual
+                <input
+                  value={form.monthly_amount}
+                  onChange={(event) => setForm({ ...form, monthly_amount: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  inputMode="decimal"
+                  placeholder="197,00"
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block text-sm font-medium">
+                Dia de cobranca
+                <input
+                  value={form.due_day}
+                  onChange={(event) => setForm({ ...form, due_day: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  type="number"
+                  min="1"
+                  max="31"
+                  required
+                />
               </label>
             </div>
 

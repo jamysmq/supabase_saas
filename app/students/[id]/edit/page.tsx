@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../src/lib/supabase'
 import { getBusinessLabels } from '../../../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../../../src/services/auth'
+import { tenantCanUseBilling } from '../../../../src/lib/plan-features'
 
 type Group = {
   id: string
@@ -89,6 +90,11 @@ export default function EditStudentPage() {
 
     if (result.tenantUser.must_change_password) {
       router.push('/change-password')
+      return
+    }
+
+    if (!tenantCanUseBilling(result.tenant?.plan)) {
+      router.push('/dashboard')
       return
     }
 
@@ -212,6 +218,20 @@ export default function EditStudentPage() {
 
       if (billingError) {
         setError(`${labels.customerSingular} salvo, mas a cobranca nao pode ser criada.`)
+        setSaving(false)
+        return
+      }
+
+      const { error: cycleError } = await supabase.rpc(
+        'admin_create_initial_customer_billing_cycle',
+        {
+          p_tenant_id: tenantId,
+          p_customer_id: student.id,
+        }
+      )
+
+      if (cycleError) {
+        setError(`${labels.customerSingular} salvo, mas o pagamento pendente inicial nao pode ser criado.`)
         setSaving(false)
         return
       }

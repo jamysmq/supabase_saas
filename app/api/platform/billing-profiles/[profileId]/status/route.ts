@@ -2,6 +2,14 @@ import { requirePlatformAdmin } from '../../../../../../src/lib/platform-admin'
 
 const allowedStatuses = new Set(['active', 'paused'])
 
+function errorResponse(message: string, status = 400, details?: string) {
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message, message }, { status })
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ profileId: string }> }
@@ -15,20 +23,21 @@ export async function PATCH(
   const status = typeof body?.status === 'string' ? body.status : ''
 
   if (!allowedStatuses.has(status)) {
-    return Response.json({ error: 'Invalid status.' }, { status: 400 })
+    return errorResponse('Status invalido.')
   }
 
   const { data: profile, error: profileError } = await result.supabase
     .from('platform_tenant_billing_profiles')
-    .select('id')
+    .select('id, tenant_id, status')
     .eq('id', profileId)
     .single()
 
   if (profileError || !profile) {
-    return Response.json(
-      { error: 'Billing profile not found.' },
-      { status: 404 }
-    )
+    return errorResponse('Perfil de cobranca nao encontrado.', 404, profileError?.message)
+  }
+
+  if (profile.status === status) {
+    return Response.json({ ok: true })
   }
 
   const { error: updateError } = await result.supabase
@@ -40,10 +49,26 @@ export async function PATCH(
     .eq('id', profileId)
 
   if (updateError) {
-    return Response.json(
-      { error: 'Could not update billing profile status.' },
-      { status: 500 }
-    )
+    return errorResponse('Nao foi possivel atualizar o status da cobranca.', 500, updateError.message)
+  }
+
+  const { error: eventError } = await result.supabase
+    .from('platform_payment_events')
+    .insert({
+      billing_profile_id: profile.id,
+      tenant_id: profile.tenant_id,
+      platform_admin_auth_user_id: result.user.id,
+      event_type: 'billing_profile_status',
+      old_status: profile.status,
+      new_status: status,
+      source: 'manual',
+      note: status === 'active'
+        ? 'Cobranca da plataforma ativada manualmente.'
+        : 'Cobranca da plataforma pausada manualmente.',
+    })
+
+  if (eventError) {
+    console.error('Could not register platform billing profile status event.', eventError.message)
   }
 
   return Response.json({ ok: true })

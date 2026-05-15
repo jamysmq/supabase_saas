@@ -3,11 +3,14 @@ import { requirePlatformAdmin } from '../../../../src/lib/platform-admin'
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon'])
 
 function errorResponse(message: string, status = 400, details?: string) {
+  if (details) {
+    console.error(message, details)
+  }
+
   return Response.json(
     {
       error: message,
       message,
-      details,
     },
     { status }
   )
@@ -192,7 +195,7 @@ export async function POST(request: Request) {
 
   const { data: selectedPlan, error: selectedPlanError } = await result.supabase
     .from('platform_plans')
-    .select('code, is_active')
+    .select('code, is_active, max_customer_groups')
     .eq('code', plan)
     .maybeSingle()
 
@@ -242,7 +245,7 @@ export async function POST(request: Request) {
     await supabase.from('tenants').delete().eq('id', tenantId)
   }
 
-  const { error: subscriptionError } = await result.supabase
+  const { data: subscription, error: subscriptionError } = await result.supabase
     .from('subscriptions')
     .insert({
       tenant_id: tenant.id,
@@ -250,8 +253,10 @@ export async function POST(request: Request) {
       status: 'active',
       activated_at: new Date().toISOString(),
     })
+    .select('id')
+    .single()
 
-  if (subscriptionError) {
+  if (subscriptionError || !subscription) {
     await cleanupTenant()
     return errorResponse('Tenant criado, mas não foi possível criar a assinatura.', 500, subscriptionError.message)
   }
@@ -263,7 +268,7 @@ export async function POST(request: Request) {
       default_due_template_key: 'billing_reminder_due_today',
       default_overdue_template_key: 'billing_reminder_overdue',
       timezone: 'America/Fortaleza',
-      max_customer_groups: 20,
+      max_customer_groups: selectedPlan.max_customer_groups,
     })
 
   if (settingsError) {
@@ -288,18 +293,44 @@ export async function POST(request: Request) {
     return errorResponse('Tenant criado, mas não foi possível criar o usuário do tenant.', 500, tenantUserError?.message)
   }
 
-  const { error: platformBillingError } = await result.supabase
+  const { data: platformBillingProfile, error: platformBillingError } = await result.supabase
     .from('platform_tenant_billing_profiles')
     .insert({
       tenant_id: tenant.id,
+      subscription_id: subscription.id,
       amount_cents: amountCents,
       due_day: dueDay,
       status: 'active',
     })
+    .select('id')
+    .single()
 
-  if (platformBillingError) {
+  if (platformBillingError || !platformBillingProfile) {
     await cleanupTenant()
     return errorResponse('Tenant criado, mas não foi possível criar a cobrança mensal da plataforma.', 500, platformBillingError.message)
+  }
+
+  const now = new Date()
+  const initialDueDate = new Date(now.getFullYear(), now.getMonth(), dueDay)
+  const { error: initialPaymentError } = await result.supabase
+    .from('payments')
+    .insert({
+      tenant_id: tenant.id,
+      subscription_id: subscription.id,
+      provider: 'manual',
+      amount_cents: amountCents,
+      billing_type: 'platform_subscription',
+      status: 'pending',
+      payload: {
+        due_date: initialDueDate.toISOString().slice(0, 10),
+        source: 'tenant_creation',
+        billing_profile_id: platformBillingProfile.id,
+      },
+    })
+
+  if (initialPaymentError) {
+    await cleanupTenant()
+    return errorResponse('Tenant criado, mas nao foi possivel criar o pagamento pendente inicial.', 500, initialPaymentError.message)
   }
 
   const { data: existingUsers } = await result.supabase.auth.admin.listUsers()

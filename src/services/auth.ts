@@ -29,7 +29,7 @@ export async function getCurrentTenantUser() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('business_type')
+    .select('business_type, plan')
     .eq('id', tenantUser.tenant_id)
     .maybeSingle()
 

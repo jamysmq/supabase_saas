@@ -1,0 +1,206 @@
+{
+  "name": "DAILY_APPOINTMENT_CONFIRMATION_REMINDERS",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "2c92a63e-f116-4a6f-85f5-ac1fa3150754",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_list_confirmation_reminders'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_run_date",
+              "value": "={{ new Date().toLocaleDateString('en-CA', { timeZone: 'America/Fortaleza' }) }}"
+            },
+            {
+              "name": "p_timezone",
+              "value": "America/Fortaleza"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "869e1e96-03e3-438b-b1e3-a8a236b10f0a",
+      "name": "RPC_list_confirmation_reminders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = {\n  tenant_name: $json.tenant_name ?? '',\n  customer_name: $json.customer_name ?? '',\n  appointment_date: $json.appointment_date ?? '',\n  appointment_time: $json.appointment_time ?? '',\n  service_name: $json.service_name ?? '',\n  staff_member_name: $json.staff_member_name ?? ''\n};\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) {\n  rendered = rendered.replaceAll(`{{${key}}}`, String(value || '-'));\n}\nrendered += '\\n\\n1) Confirmar\\n2) Remarcar\\n3) Cancelar';\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered\n};"
+      },
+      "id": "56db307d-733f-4b2c-af31-fddbf3d18299",
+      "name": "FN_render_confirmation_message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$json, sent_ok: true } }];"
+      },
+      "id": "c79c15c2-61f7-45db-8db9-e5626c91242d",
+      "name": "FN_mock_whatsapp_send",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_mark_confirmation_reminder_sent'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_appointment_id",
+              "value": "={{$json.appointment_id}}"
+            },
+            {
+              "name": "p_rendered_message",
+              "value": "={{$json.rendered_message}}"
+            },
+            {
+              "name": "p_payload",
+              "value": "={{ { wa_to: $json.wa_to, sent_ok: $json.sent_ok } }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1b1aca28-7d36-4635-8f2c-a4af85a37c85",
+      "name": "RPC_mark_confirmation_sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        260,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RPC_list_confirmation_reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_list_confirmation_reminders": {
+      "main": [
+        [
+          {
+            "node": "FN_render_confirmation_message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_render_confirmation_message": {
+      "main": [
+        [
+          {
+            "node": "FN_mock_whatsapp_send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_mock_whatsapp_send": {
+      "main": [
+        [
+          {
+            "node": "RPC_mark_confirmation_sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

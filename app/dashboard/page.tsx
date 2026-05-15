@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
+import {
+  tenantCanUseAppointments,
+  tenantCanUseBilling,
+  tenantCanUseRestaurant,
+} from '../../src/lib/plan-features'
 
 type TenantUser = {
   tenant_id: string
@@ -18,37 +23,62 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true)
   const [businessType, setBusinessType] = useState<string | null>(null)
+  const [tenantPlan, setTenantPlan] = useState<string | null>(null)
   const [tenantUser, setTenantUser] =
     useState<TenantUser | null>(null)
 
   const labels = getBusinessLabels(businessType)
+  const canUseBilling = tenantCanUseBilling(tenantPlan)
+  const canUseAppointments = tenantCanUseAppointments(tenantPlan)
+  const canUseRestaurant = tenantCanUseRestaurant(tenantPlan)
 
   const navigationItems = [
-    {
-      href: '/pending-payments',
-      title: 'Pagamentos pendentes',
-      description: 'Confirme mensalidades recebidas e acompanhe cobrancas.',
-    },
-    {
-      href: '/appointments',
-      title: 'Agenda',
-      description: 'Gerencie atendimentos, consultas e horarios.',
-    },
-    {
-      href: '/students',
-      title: labels.customerPlural,
-      description: labels.dashboardCustomersDescription,
-    },
-    {
-      href: '/inactive-students',
-      title: labels.inactiveCustomers,
-      description: labels.dashboardInactiveDescription,
-    },
-    {
-      href: '/billing-settings',
-      title: labels.billingTitle,
-      description: labels.billingDescription,
-    },
+    ...(canUseBilling
+      ? [{
+          href: '/pending-payments',
+          title: 'Pagamentos pendentes',
+          description: 'Confirme mensalidades recebidas e acompanhe cobrancas.',
+        },
+        {
+          href: '/payment-history?from=dashboard',
+          title: 'Historico de pagamentos',
+          description: 'Consulte pagamentos confirmados e alteracoes de cobranca.',
+        },
+        {
+          href: '/students',
+          title: labels.customerPlural,
+          description: labels.dashboardCustomersDescription,
+        },
+        {
+          href: '/inactive-students',
+          title: labels.inactiveCustomers,
+          description: labels.dashboardInactiveDescription,
+        },
+        {
+          href: '/billing-settings',
+          title: labels.billingTitle,
+          description: labels.billingDescription,
+        }]
+      : []),
+    ...(canUseAppointments
+      ? [{
+          href: '/appointments',
+          title: 'Agenda',
+          description: 'Gerencie atendimentos, consultas e horarios.',
+        },
+        {
+          href: '/appointment-history?from=dashboard',
+          title: 'Historico de agendamentos',
+          description: 'Consulte atendimentos realizados, cancelados e excluidos.',
+        }]
+      : []),
+    ...(canUseRestaurant
+      ? [{
+          href: '/settings',
+          title: 'Restaurante',
+          description: 'Cardapio e WhatsApp serao implementados no proximo modulo.',
+        }]
+      : []),
     {
       href: '/settings',
       title: 'Configuracoes da conta',
@@ -72,6 +102,7 @@ export default function DashboardPage() {
 
       setTenantUser(result.tenantUser)
       setBusinessType(result.tenant?.business_type ?? null)
+      setTenantPlan(result.tenant?.plan ?? null)
       setLoading(false)
     }
 

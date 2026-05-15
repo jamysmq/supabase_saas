@@ -1,6 +1,14 @@
-import { requireTenantUser } from '../../../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseBilling } from '../../../../../src/lib/tenant-admin'
 
 const allowedStatuses = new Set(['active', 'paused'])
+
+function errorResponse(message: string, status = 400, details?: string) {
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message, message }, { status })
+}
 
 export async function PATCH(
   request: Request,
@@ -10,12 +18,16 @@ export async function PATCH(
 
   if (result.error) return result.error
 
+  if (!tenantCanUseBilling(result.tenant)) {
+    return errorResponse('Cobrancas disponiveis apenas em planos com cobranca mensal.', 403)
+  }
+
   const { profileId } = await context.params
   const body = await request.json().catch(() => null)
   const status = typeof body?.status === 'string' ? body.status : ''
 
   if (!allowedStatuses.has(status)) {
-    return Response.json({ error: 'Invalid status.' }, { status: 400 })
+    return errorResponse('Status invalido.')
   }
 
   const { data: profile, error: profileError } = await result.supabase
@@ -23,6 +35,8 @@ export async function PATCH(
     .select(`
       id,
       customer_id,
+      tenant_id,
+      status,
       tenant_customers!inner (
         tenant_id
       )
@@ -32,10 +46,11 @@ export async function PATCH(
     .single()
 
   if (profileError || !profile) {
-    return Response.json(
-      { error: 'Billing profile not found.' },
-      { status: 404 }
-    )
+    return errorResponse('Perfil de cobranca nao encontrado.', 404, profileError?.message)
+  }
+
+  if (profile.status === status) {
+    return Response.json({ ok: true })
   }
 
   const { error: updateError } = await result.supabase
@@ -47,10 +62,27 @@ export async function PATCH(
     .eq('id', profileId)
 
   if (updateError) {
-    return Response.json(
-      { error: 'Could not update billing profile status.' },
-      { status: 500 }
-    )
+    return errorResponse('Nao foi possivel atualizar a cobranca.', 500, updateError.message)
+  }
+
+  const { error: eventError } = await result.supabase
+    .from('tenant_payment_events')
+    .insert({
+      tenant_id: result.tenantUser.tenant_id,
+      billing_profile_id: profile.id,
+      customer_id: profile.customer_id,
+      tenant_user_id: result.tenantUser.id,
+      event_type: 'billing_profile_status',
+      old_status: profile.status,
+      new_status: status,
+      source: 'manual',
+      note: status === 'active'
+        ? 'Cobranca do cliente ativada manualmente.'
+        : 'Cobranca do cliente pausada manualmente.',
+    })
+
+  if (eventError) {
+    console.error('Nao foi possivel registrar evento de cobranca do cliente.', eventError.message)
   }
 
   return Response.json({ ok: true })

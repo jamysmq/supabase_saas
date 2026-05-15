@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
+import { tenantCanUseBilling } from '../../src/lib/plan-features'
 
 type Group = {
   id: string
@@ -131,6 +132,11 @@ export default function StudentsPage() {
 
     if (result.tenantUser.must_change_password) {
       router.push('/change-password')
+      return
+    }
+
+    if (!tenantCanUseBilling(result.tenant?.plan)) {
+      router.push('/dashboard')
       return
     }
 
@@ -270,6 +276,20 @@ export default function StudentsPage() {
     }
   }
 
+  async function createInitialBillingCycle(customerId: string) {
+    const { error } = await supabase.rpc(
+      'admin_create_initial_customer_billing_cycle',
+      {
+        p_tenant_id: tenantId,
+        p_customer_id: customerId,
+      }
+    )
+
+    return {
+      error: error ? 'Nao foi possivel criar o pagamento pendente inicial.' : '',
+    }
+  }
+
   async function createStudent(event: React.FormEvent) {
     event.preventDefault()
 
@@ -347,6 +367,14 @@ export default function StudentsPage() {
 
     if (billingResult.error) {
       setError(`${labels.customerSingular} criado, mas a cobranca nao pode ser configurada.`)
+      setSaving(false)
+      return
+    }
+
+    const initialCycleResult = await createInitialBillingCycle(createdStudentId)
+
+    if (initialCycleResult.error) {
+      setError(`${labels.customerSingular} criado, mas o pagamento pendente inicial nao pode ser criado.`)
       setSaving(false)
       return
     }
@@ -667,7 +695,7 @@ export default function StudentsPage() {
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="max-w-6xl mx-auto space-y-4">
-        <section className="w-full bg-white rounded-2xl shadow p-5">
+        <section className="w-full rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
           <button
             onClick={() => router.push('/dashboard')}
             className="text-sm text-gray-500 mb-3"
@@ -702,13 +730,13 @@ export default function StudentsPage() {
         </section>
 
         {error && (
-          <div className="bg-red-50 text-red-700 rounded-xl p-4 text-sm">
+          <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        <section className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <div className="bg-white rounded-2xl shadow p-5 space-y-4">
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 space-y-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
             <div className="grid items-stretch gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
               <input
                 value={query}
@@ -828,7 +856,7 @@ export default function StudentsPage() {
           </div>
 
           <aside className="space-y-4">
-            <form onSubmit={createGroup} className="bg-white rounded-2xl shadow p-5 space-y-3">
+            <form onSubmit={createGroup} className="space-y-3 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
               <div>
                 <h2 className="font-bold">{labels.groupPlural}</h2>
                 <p className="text-sm text-gray-500">
@@ -869,7 +897,7 @@ export default function StudentsPage() {
               </button>
             </form>
 
-            <div className="bg-white rounded-2xl shadow p-5">
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
               <h2 className="font-bold">Resumo</h2>
               <dl className="mt-3 space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -896,7 +924,7 @@ export default function StudentsPage() {
         <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-4 md:items-center md:justify-center">
           <form
             onSubmit={creatingStudent ? createStudent : saveStudent}
-            className="w-full rounded-2xl bg-white p-5 shadow-xl md:max-w-lg"
+            className="w-full rounded-lg border border-gray-200 bg-white p-5 shadow-xl md:max-w-lg"
           >
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
@@ -1012,7 +1040,7 @@ export default function StudentsPage() {
 
       {showGroupsManager && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-4 md:items-center md:justify-center">
-          <div className="w-full rounded-2xl bg-white p-5 shadow-xl md:max-w-2xl">
+          <div className="w-full rounded-lg border border-gray-200 bg-white p-5 shadow-xl md:max-w-2xl">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold">{labels.groupPlural}</h2>

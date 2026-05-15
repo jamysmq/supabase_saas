@@ -1,9 +1,21 @@
-import { requireTenantUser } from '../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseBilling } from '../../../src/lib/tenant-admin'
+
+function errorResponse(message: string, status = 400, details?: string) {
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message }, { status })
+}
 
 export async function GET(request: Request) {
   const result = await requireTenantUser(request)
 
   if (result.error) return result.error
+
+  if (!tenantCanUseBilling(result.tenant)) {
+    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+  }
 
   const { data: groups, error } = await result.supabase
     .from('tenant_customer_groups')
@@ -13,10 +25,7 @@ export async function GET(request: Request) {
     .order('name', { ascending: true })
 
   if (error) {
-    return Response.json(
-      { error: 'Could not list groups.', message: error.message },
-      { status: 500 }
-    )
+    return errorResponse('Could not list groups.', 500, error.message)
   }
 
   const { data: customers, error: customersError } = await result.supabase
@@ -27,10 +36,7 @@ export async function GET(request: Request) {
     .not('group_id', 'is', null)
 
   if (customersError) {
-    return Response.json(
-      { error: 'Could not count group members.', message: customersError.message },
-      { status: 500 }
-    )
+    return errorResponse('Could not count group members.', 500, customersError.message)
   }
 
   const counts = new Map<string, number>()
@@ -54,6 +60,10 @@ export async function POST(request: Request) {
 
   if (result.error) return result.error
 
+  if (!tenantCanUseBilling(result.tenant)) {
+    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+  }
+
   const body = await request.json().catch(() => null)
   const name = typeof body?.name === 'string' ? body.name.trim() : ''
   const description = typeof body?.description === 'string'
@@ -61,7 +71,7 @@ export async function POST(request: Request) {
     : null
     
   if (!name) {
-    return Response.json({ error: 'Group name is required.' }, { status: 400 })
+    return errorResponse('Group name is required.')
   }
 
   const { data: group, error: groupError } = await result.supabase
@@ -76,14 +86,7 @@ export async function POST(request: Request) {
     .single()
 
   if (groupError) {
-    return Response.json(
-      {
-        error: 'Could not create group.',
-        message: groupError.message,
-        code: groupError.code,
-      },
-      { status: 500 }
-    )
+    return errorResponse('Could not create group.', 500, groupError.message)
   }
 
   return Response.json({ group })

@@ -4,14 +4,21 @@ const allowedStatuses = new Set(['pending', 'active', 'suspended', 'cancelled'])
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon'])
 
 function errorResponse(message: string, status = 400, details?: string) {
+  if (details) {
+    console.error(message, details)
+  }
+
   return Response.json(
     {
       error: message,
       message,
-      details,
     },
     { status }
   )
+}
+
+function parseAmountCents(value: unknown) {
+  return Math.round(Number(String(value ?? '').replace(',', '.')) * 100)
 }
 
 export async function GET(
@@ -96,20 +103,38 @@ export async function PATCH(
   const body = await request.json().catch(() => null)
 
   if (!body) {
-    return errorResponse('Dados inválidos. Recarregue a página e tente novamente.')
+    return errorResponse('Dados invalidos. Recarregue a pagina e tente novamente.')
+  }
+
+  const { data: currentTenant, error: currentTenantError } = await result.supabase
+    .from('tenants')
+    .select('id, plan')
+    .eq('id', id)
+    .single()
+
+  if (currentTenantError || !currentTenant) {
+    return errorResponse('Tenant nao encontrado.', 404, currentTenantError?.message)
   }
 
   const patch: Record<string, string | null> = {}
 
-  for (const key of ['legal_name', 'cpf', 'email', 'birth_date', 'whatsapp_e164', 'plan']) {
+  for (const key of ['legal_name', 'cpf', 'email', 'birth_date', 'whatsapp_e164']) {
     if (typeof body[key] === 'string') {
       patch[key] = body[key].trim() || null
     }
   }
 
+  const nextPlan = typeof body.plan === 'string'
+    ? body.plan.trim()
+    : currentTenant.plan
+
+  if (nextPlan !== currentTenant.plan) {
+    patch.plan = nextPlan
+  }
+
   if (typeof body.status === 'string') {
     if (!allowedStatuses.has(body.status)) {
-      return errorResponse('Status inválido.')
+      return errorResponse('Status invalido.')
     }
 
     patch.status = body.status
@@ -117,14 +142,46 @@ export async function PATCH(
 
   if (typeof body.business_type === 'string') {
     if (!allowedBusinessTypes.has(body.business_type)) {
-      return errorResponse('Tipo de negócio inválido.')
+      return errorResponse('Tipo de negocio invalido.')
     }
 
     patch.business_type = body.business_type
   }
 
-  if (Object.keys(patch).length === 0) {
-    return errorResponse('Nenhuma alteração para salvar.')
+  const shouldUpdateBilling =
+    typeof body.plan === 'string' ||
+    body.monthly_amount !== undefined ||
+    body.due_day !== undefined
+
+  if (Object.keys(patch).length === 0 && !shouldUpdateBilling) {
+    return errorResponse('Nenhuma alteracao para salvar.')
+  }
+
+  const { data: selectedPlan, error: selectedPlanError } = await result.supabase
+    .from('platform_plans')
+    .select('code, monthly_amount_cents, max_customer_groups, is_active')
+    .eq('code', nextPlan)
+    .maybeSingle()
+
+  if (selectedPlanError) {
+    return errorResponse('Nao foi possivel validar o plano selecionado.', 500, selectedPlanError.message)
+  }
+
+  if (!selectedPlan || !selectedPlan.is_active) {
+    return errorResponse('Plano invalido ou inativo. Escolha um plano ativo.')
+  }
+
+  const amountCents = body.monthly_amount !== undefined
+    ? parseAmountCents(body.monthly_amount)
+    : selectedPlan.monthly_amount_cents
+  const dueDay = body.due_day !== undefined ? Number(body.due_day) : null
+
+  if (body.monthly_amount !== undefined && (!Number.isFinite(amountCents) || amountCents <= 0)) {
+    return errorResponse('Mensalidade invalida. Informe um valor maior que zero.')
+  }
+
+  if (dueDay !== null && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) {
+    return errorResponse('Dia de cobranca invalido. Informe um numero entre 1 e 31.')
   }
 
   const { data, error } = await result.supabase
@@ -139,10 +196,96 @@ export async function PATCH(
 
   if (error || !data) {
     return errorResponse(
-      'Não foi possível atualizar o tenant.',
+      'Nao foi possivel atualizar o tenant.',
       500,
       error?.message
     )
+  }
+
+  if (shouldUpdateBilling) {
+    const { data: subscription } = await result.supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('tenant_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    let subscriptionId = subscription?.id
+
+    if (subscriptionId) {
+      const { error: subscriptionError } = await result.supabase
+        .from('subscriptions')
+        .update({
+          plan: nextPlan,
+          status: 'active',
+          activated_at: new Date().toISOString(),
+        })
+        .eq('id', subscriptionId)
+
+      if (subscriptionError) {
+        return errorResponse('Tenant atualizado, mas nao foi possivel atualizar a assinatura.', 500, subscriptionError.message)
+      }
+    } else {
+      const { data: createdSubscription, error: subscriptionError } = await result.supabase
+        .from('subscriptions')
+        .insert({
+          tenant_id: id,
+          plan: nextPlan,
+          status: 'active',
+          activated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single()
+
+      if (subscriptionError || !createdSubscription) {
+        return errorResponse('Tenant atualizado, mas nao foi possivel criar a assinatura.', 500, subscriptionError?.message)
+      }
+
+      subscriptionId = createdSubscription.id
+    }
+
+    const { data: billingProfile } = await result.supabase
+      .from('platform_tenant_billing_profiles')
+      .select('id, due_day, status')
+      .eq('tenant_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const billingPayload = {
+      subscription_id: subscriptionId,
+      amount_cents: amountCents,
+      due_day: dueDay ?? billingProfile?.due_day ?? new Date().getDate(),
+      status: billingProfile?.status ?? 'active',
+      updated_at: new Date().toISOString(),
+    }
+
+    const billingResult = billingProfile
+      ? await result.supabase
+          .from('platform_tenant_billing_profiles')
+          .update(billingPayload)
+          .eq('id', billingProfile.id)
+      : await result.supabase
+          .from('platform_tenant_billing_profiles')
+          .insert({
+            tenant_id: id,
+            ...billingPayload,
+          })
+
+    if (billingResult.error) {
+      return errorResponse('Tenant atualizado, mas nao foi possivel atualizar a cobranca mensal.', 500, billingResult.error.message)
+    }
+
+    await result.supabase
+      .from('tenant_billing_settings')
+      .upsert({
+        tenant_id: id,
+        default_due_template_key: 'billing_reminder_due_today',
+        default_overdue_template_key: 'billing_reminder_overdue',
+        timezone: 'America/Fortaleza',
+        max_customer_groups: selectedPlan.max_customer_groups,
+      })
   }
 
   return Response.json({ ok: true })
@@ -158,6 +301,38 @@ export async function DELETE(
 
   const { id } = await context.params
 
+  const { data: tenantSnapshot, error: tenantSnapshotError } = await result.supabase
+    .from('tenants')
+    .select('id, legal_name, email, cpf, whatsapp_e164, business_type, plan, status')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (tenantSnapshotError || !tenantSnapshot) {
+    return errorResponse('Tenant nao encontrado.', 404, tenantSnapshotError?.message)
+  }
+
+  const { error: deleteEventError } = await result.supabase
+    .from('platform_payment_events')
+    .insert({
+      tenant_id: id,
+      platform_admin_auth_user_id: result.user.id,
+      event_type: 'tenant_deleted',
+      old_status: tenantSnapshot.status,
+      new_status: 'deleted',
+      source: 'manual_delete',
+      note: 'Tenant excluido pelo painel da plataforma.',
+      tenant_legal_name_snapshot: tenantSnapshot.legal_name,
+      tenant_email_snapshot: tenantSnapshot.email,
+      tenant_cpf_snapshot: tenantSnapshot.cpf,
+      tenant_whatsapp_snapshot: tenantSnapshot.whatsapp_e164,
+      tenant_business_type_snapshot: tenantSnapshot.business_type,
+      tenant_plan_snapshot: tenantSnapshot.plan,
+    })
+
+  if (deleteEventError) {
+    return errorResponse('Nao foi possivel registrar o historico antes de excluir o tenant.', 500, deleteEventError.message)
+  }
+
   const { data: tenantUsers, error: usersError } = await result.supabase
     .from('tenant_users')
     .select('auth_user_id')
@@ -165,7 +340,7 @@ export async function DELETE(
 
   if (usersError) {
     return errorResponse(
-      'NÃ£o foi possÃ­vel localizar os usuÃ¡rios do tenant.',
+      'Nao foi possivel localizar os usuarios do tenant.',
       500,
       usersError.message
     )
@@ -205,7 +380,7 @@ export async function DELETE(
 
   if (error || !data) {
     return errorResponse(
-      'NÃ£o foi possÃ­vel excluir o tenant.',
+      'Nao foi possivel excluir o tenant.',
       error?.code === 'PGRST116' ? 404 : 500,
       error?.message
     )

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
+import { tenantCanUseBilling } from '../../src/lib/plan-features'
 
 type PendingPayment = {
   billing_cycle_id: string
@@ -42,22 +43,36 @@ export default function PendingPaymentsPage() {
       return
     }
 
+    if (!tenantCanUseBilling(result.tenant?.plan)) {
+      router.push('/dashboard')
+      return
+    }
+
     setBusinessType(result.tenant?.business_type ?? null)
 
-    const { data, error } = await supabase.rpc(
-      'admin_list_pending_customer_payments',
-      {
-        p_tenant_id: result.tenantUser.tenant_id,
-      }
-    )
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    if (error) {
-      setError('Não foi possível carregar os pagamentos pendentes.')
+    if (!session) {
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/pending-payments', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      setError('Nao foi possivel carregar os pagamentos pendentes.')
       setLoading(false)
       return
     }
 
-    setItems(data ?? [])
+    const data = await response.json()
+    setItems(data.payments ?? [])
     setLoading(false)
   }, [router])
 
@@ -70,16 +85,28 @@ export default function PendingPaymentsPage() {
   }, [load])
 
   async function confirmPayment(billingCycleId: string) {
-    const { error } = await supabase.rpc(
-      'admin_confirm_customer_payment',
-      {
-        p_billing_cycle_id: billingCycleId,
-        p_note: 'Confirmado pelo professor no painel',
-      }
-    )
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    if (error) {
-      alert('Não foi possível confirmar o pagamento.')
+    if (!session) {
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch(`/api/pending-payments/${billingCycleId}/confirm`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        note: 'Confirmado pelo painel',
+      }),
+    })
+
+    if (!response.ok) {
+      alert('Nao foi possivel confirmar o pagamento.')
       return
     }
 
@@ -102,19 +129,29 @@ export default function PendingPaymentsPage() {
     )
 
     if (error) {
-      alert(`Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
+      alert(`Nao foi possivel desativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 
     await load()
   }
 
-  function formatMoney(amountCents: number) {
+function formatMoney(amountCents: number) {
     return (amountCents / 100).toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    })
+  })
+}
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    overdue: 'Pendente',
+    paid_manual: 'Pago',
+    canceled: 'Cancelado',
   }
+
+  return labels[status] ?? status
+}
 
   if (loading) {
     return (
@@ -128,12 +165,20 @@ export default function PendingPaymentsPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-5xl space-y-4">
         <div className="bg-white rounded-2xl shadow p-5">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-sm text-gray-500 mb-3"
-          >
-            ← Voltar
-          </button>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="text-sm text-gray-500"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={() => router.push('/payment-history?from=pending-payments')}
+              className="text-sm font-medium text-gray-950 underline"
+            >
+              Historico
+            </button>
+          </div>
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
@@ -164,47 +209,49 @@ export default function PendingPaymentsPage() {
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="overflow-hidden rounded-2xl bg-white shadow">
           {items.map((item) => (
             <div
               key={item.billing_cycle_id}
-              className="bg-white rounded-2xl shadow p-5 space-y-3"
+              className="grid gap-3 border-b border-gray-100 p-4 last:border-b-0 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_220px] md:items-center"
             >
-              <div>
-                <h2 className="font-bold text-lg">
+              <div className="min-w-0">
+                <h2 className="break-words text-sm font-bold">
                   {item.customer_name}
                 </h2>
 
-                <p className="text-sm text-gray-600">
+                <p className="mt-1 break-words text-xs text-gray-500">
                   Telefone: {item.phone}
                 </p>
+              </div>
 
-                <p className="text-sm text-gray-600">
+              <div className="min-w-0">
+                <p className="text-xs text-gray-600">
                   Vencimento: {item.due_date}
                 </p>
 
-                <p className="text-sm text-gray-600">
+                <p className="text-xs text-gray-600">
                   Valor: {formatMoney(item.amount_cents)}
                 </p>
 
                 <p className="text-xs text-gray-500">
-                  Status: {item.status}
+                  Status: {statusLabel(item.status)}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex md:justify-end">
                 <button
                   onClick={() => confirmPayment(item.billing_cycle_id)}
-                  className="w-full rounded-lg bg-gray-950 text-white py-2 font-medium"
+                  className="h-9 rounded-lg bg-gray-950 px-3 text-xs font-medium text-white md:w-28"
                 >
-                  Confirmar pagamento
+                  Confirmar
                 </button>
 
                 <button
                   onClick={() => deactivateCustomer(item.customer_id)}
-                  className="w-full rounded-lg bg-red-50 text-red-700 py-2 font-medium"
+                  className="h-9 rounded-lg bg-red-50 px-3 text-xs font-medium text-red-700 md:w-28"
                 >
-                  Desativar {labels.customerSingular.toLowerCase()}
+                  Desativar
                 </button>
               </div>
             </div>

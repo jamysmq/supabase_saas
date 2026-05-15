@@ -1,0 +1,444 @@
+{
+  "name": "WA_TENANT_APPOINTMENTS_INBOUND_v1",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wa-tenant-appointments-inbound-v1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f3a90a2a-57e8-48f2-89fd-c20d6dff23b7",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body ?? {};\nconst onlyDigits = (value) => String(value ?? '').replace(/\\D/g, '');\nconst normalizeBrazilPhone = (value) => {\n  const digits = onlyDigits(value);\n  if (digits.length === 10 || digits.length === 11) return `55${digits}`;\n  return digits;\n};\nconst chatId = String(body.chat_id ?? body.from ?? body.customer_phone ?? '').replace(/\\s+/g, '').trim();\nconst msg = String(body.text ?? body.message ?? '').replace(/\\s+/g, ' ').trim();\nreturn {\n  tenant_id: body.tenant_id || null,\n  tenant_phone_e164: normalizeBrazilPhone(body.tenant_phone_e164 ?? body.to ?? body.receiver ?? ''),\n  customer_phone_e164: normalizeBrazilPhone(body.customer_phone_e164 ?? body.from ?? body.chat_id ?? ''),\n  chat_id: chatId,\n  msg,\n  raw_body: body\n};"
+      },
+      "id": "0e5e4f4a-96cf-4dc8-ae3f-2e7f049d5e75",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_load_or_create_context'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_tenant_id",
+              "value": "={{$json.tenant_id}}"
+            },
+            {
+              "name": "p_tenant_phone_e164",
+              "value": "={{$json.tenant_phone_e164}}"
+            },
+            {
+              "name": "p_chat_id",
+              "value": "={{$json.chat_id}}"
+            },
+            {
+              "name": "p_init_payload",
+              "value": "={{ { appointment: { customer_whatsapp: $json.customer_phone_e164 } } }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ef021dc9-65be-452b-807a-76e2705706a8",
+      "name": "RPC_load_context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = Array.isArray($json) ? $json[0] : $json;\nconst msg = String($node.Normalize.json.msg ?? '').trim();\nconst customerPhone = String($node.Normalize.json.customer_phone_e164 ?? '').trim();\nconst payload = row.payload_draft ?? {};\nconst draft = payload.appointment ?? {};\nconst services = Array.isArray(row.services) ? row.services : [];\nconst staff = Array.isArray(row.staff_members) ? row.staff_members : [];\nconst step = row.step || 'appointment_welcome';\nconst tenantName = row.tenant_name || 'nossa equipe';\n\nfunction reply(text, nextStep, patch = {}, close = false) {\n  return [{ json: {\n    action: 'patch',\n    reply: text,\n    conversation_id: row.conversation_id,\n    next_step: nextStep,\n    p_close: close,\n    data_patch: {\n      appointment: {\n        ...patch,\n        customer_whatsapp: customerPhone || draft.customer_whatsapp || null\n      },\n      metadata: { last_step: nextStep, updated_at: new Date().toISOString() }\n    }\n  }}];\n}\n\nfunction createAppointment() {\n  const service = services.find((item) => item.id === draft.service_id) ?? null;\n  const staffMember = staff.find((item) => item.id === draft.staff_member_id) ?? null;\n  return [{ json: {\n    action: 'create',\n    conversation_id: row.conversation_id,\n    next_step: 'appointment_done',\n    p_close: true,\n    create_body: {\n      p_tenant_id: row.tenant_id,\n      p_full_name: draft.full_name,\n      p_cpf: draft.cpf,\n      p_whatsapp_e164: customerPhone || draft.customer_whatsapp,\n      p_birth_date: draft.birth_date,\n      p_service_id: draft.service_id || null,\n      p_staff_member_id: draft.staff_member_id || null,\n      p_starts_at: draft.starts_at,\n      p_ends_at: draft.ends_at,\n      p_title: service ? service.name : 'Agendamento via WhatsApp',\n      p_notes: `Criado via WhatsApp${staffMember ? ' com ' + staffMember.name : ''}.`\n    }\n  }}];\n}\n\nfunction parseCpf(value) {\n  const cpf = String(value ?? '').replace(/\\D/g, '');\n  if (cpf.length !== 11 || /^(\\d)\\1{10}$/.test(cpf)) return null;\n  return cpf;\n}\n\nfunction parseDateBR(value) {\n  const match = String(value ?? '').trim().match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})$/);\n  if (!match) return null;\n  const day = match[1].padStart(2, '0');\n  const month = match[2].padStart(2, '0');\n  const year = match[3];\n  const iso = `${year}-${month}-${day}`;\n  const date = new Date(`${iso}T00:00:00-03:00`);\n  if (Number.isNaN(date.getTime())) return null;\n  return iso;\n}\n\nfunction parseTime(value) {\n  const match = String(value ?? '').trim().match(/^(\\d{1,2})[:hH](\\d{2})$/);\n  if (!match) return null;\n  const hour = Number(match[1]);\n  const minute = Number(match[2]);\n  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;\n  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;\n}\n\nfunction renderServiceMenu() {\n  if (!services.length) return 'Ainda nao ha servicos cadastrados para este tenant. Fale com a equipe para configurar a agenda.';\n  return 'Escolha o servico:\\n' + services.map((service, index) => `${index + 1}) ${service.name}${service.duration_minutes ? ' - ' + service.duration_minutes + 'min' : ''}`).join('\\n');\n}\n\nfunction renderStaffMenu() {\n  if (!staff.length) return 'Nao ha profissionais cadastrados. Vou seguir sem profissional especifico. Envie *ok* para continuar.';\n  return 'Escolha o profissional:\\n' + staff.map((member, index) => `${index + 1}) ${member.name}`).join('\\n') + '\\n\\nEnvie 0 para sem preferencia.';\n}\n\nif (!msg && step !== 'appointment_welcome') {\n  return reply('Nao recebi nenhuma mensagem. Pode enviar novamente?', step, draft);\n}\n\nif (['menu', '0', 'inicio', 'iniciar'].includes(msg.toLowerCase()) || step === 'appointment_welcome') {\n  const welcome = String(row.welcome_message || '').replaceAll('{{tenant_name}}', tenantName);\n  return reply(`${welcome}\\n\\nPara comecar, me informe seu nome completo.`, 'collect_full_name', {});\n}\n\nif (step === 'collect_full_name') {\n  const name = msg.replace(/\\s+/g, ' ').trim();\n  if (name.split(' ').filter(Boolean).length < 2) return reply('Me informe seu nome completo, por favor. Ex: Joao Silva.', step, draft);\n  return reply('Perfeito. Agora envie seu CPF com 11 digitos.', 'collect_cpf', { ...draft, full_name: name });\n}\n\nif (step === 'collect_cpf') {\n  const cpf = parseCpf(msg);\n  if (!cpf) return reply('CPF invalido. Envie apenas os 11 digitos.', step, draft);\n  return reply('Agora envie sua data de nascimento no formato DD/MM/AAAA.', 'collect_birth_date', { ...draft, cpf });\n}\n\nif (step === 'collect_birth_date') {\n  const birthDate = parseDateBR(msg);\n  if (!birthDate) return reply('Data invalida. Envie no formato DD/MM/AAAA.', step, draft);\n  return reply(renderServiceMenu(), 'choose_service', { ...draft, birth_date: birthDate });\n}\n\nif (step === 'choose_service') {\n  if (!services.length) return reply(renderServiceMenu(), step, draft);\n  const selected = services[Number(msg) - 1];\n  if (!selected) return reply(renderServiceMenu(), step, draft);\n  return reply(renderStaffMenu(), 'choose_staff', { ...draft, service_id: selected.id, service_name: selected.name, duration_minutes: selected.duration_minutes || 60 });\n}\n\nif (step === 'choose_staff') {\n  let selected = null;\n  if (msg !== '0' && msg.toLowerCase() !== 'ok') {\n    selected = staff[Number(msg) - 1];\n    if (!selected) return reply(renderStaffMenu(), step, draft);\n  }\n  return reply('Qual dia voce deseja agendar? Envie no formato DD/MM/AAAA.', 'collect_date', { ...draft, staff_member_id: selected?.id ?? null, staff_member_name: selected?.name ?? null });\n}\n\nif (step === 'collect_date') {\n  const date = parseDateBR(msg);\n  if (!date) return reply('Data invalida. Envie no formato DD/MM/AAAA.', step, draft);\n  return reply('Qual horario? Envie no formato HH:MM, por exemplo 14:30.', 'collect_time', { ...draft, appointment_date: date });\n}\n\nif (step === 'collect_time') {\n  const time = parseTime(msg);\n  if (!time) return reply('Horario invalido. Envie no formato HH:MM, por exemplo 14:30.', step, draft);\n  const duration = Number(draft.duration_minutes || 60);\n  const startsAt = `${draft.appointment_date}T${time}:00-03:00`;\n  const ends = new Date(new Date(startsAt).getTime() + duration * 60 * 1000);\n  const endsAt = ends.toISOString();\n  const summary = `Confirme seu agendamento:\\n\\nNome: ${draft.full_name}\\nServico: ${draft.service_name || '-'}\\nProfissional: ${draft.staff_member_name || 'Sem preferencia'}\\nData: ${draft.appointment_date}\\nHorario: ${time}\\n\\nResponda *sim* para confirmar ou *0* para recomecar.`;\n  return reply(summary, 'confirm_appointment', { ...draft, appointment_time: time, starts_at: startsAt, ends_at: endsAt });\n}\n\nif (step === 'confirm_appointment') {\n  if (!['sim', 's', 'confirmar', 'confirmo'].includes(msg.toLowerCase())) {\n    return reply('Tudo bem. Envie 0 para recomecar ou responda *sim* para confirmar os dados acima.', step, draft);\n  }\n  return createAppointment();\n}\n\nreturn reply('Vamos recomecar. Me informe seu nome completo.', 'collect_full_name', {});"
+      },
+      "id": "4aef57e8-30f8-492f-8a3f-fc4f824b5f08",
+      "name": "FN_appointment_state_machine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "09ec23bf-261a-4b54-b7d1-06d40143366c",
+      "name": "Switch_action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_create_external'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.create_body}}",
+        "options": {}
+      },
+      "id": "ddf58fb9-2abd-46f2-824c-78ee5c72b704",
+      "name": "RPC_create_appointment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: {\n  reply: 'Agendamento confirmado! Em breve a equipe pode falar com voce por aqui se precisar ajustar algo.',\n  conversation_id: $node.FN_appointment_state_machine.json.conversation_id,\n  next_step: 'appointment_done',\n  p_close: true,\n  data_patch: {\n    appointment: {\n      appointment_id: Array.isArray($json) ? $json[0] : $json\n    },\n    metadata: {\n      completed_at: new Date().toISOString()\n    }\n  }\n}}];"
+      },
+      "id": "068040f7-d14a-4f2e-8110-97c44d3178a8",
+      "name": "FN_render_success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_conversation_patch'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{$json.conversation_id}}"
+            },
+            {
+              "name": "p_step",
+              "value": "={{$json.next_step}}"
+            },
+            {
+              "name": "p_patch",
+              "value": "={{$json.data_patch}}"
+            },
+            {
+              "name": "p_close",
+              "value": "={{$json.p_close || false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bfdc7816-90d2-4591-9a1c-fe9819e624b2",
+      "name": "RPC_patch_conversation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{$node.FN_appointment_state_machine.json.reply}}",
+        "options": {}
+      },
+      "id": "0d51bc09-02b1-4358-a17e-e42798e22e88",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_conversation_patch'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{$json.conversation_id}}"
+            },
+            {
+              "name": "p_step",
+              "value": "={{$json.next_step}}"
+            },
+            {
+              "name": "p_patch",
+              "value": "={{$json.data_patch}}"
+            },
+            {
+              "name": "p_close",
+              "value": "={{$json.p_close || false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ff3d8221-36da-4587-a3bd-7dbcb45f0f37",
+      "name": "RPC_patch_conversation_success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        820,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{$node.FN_render_success.json.reply}}",
+        "options": {}
+      },
+      "id": "fa8b07e9-df09-45b9-b7f4-7596769963db",
+      "name": "Respond_success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        -160
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "RPC_load_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_load_context": {
+      "main": [
+        [
+          {
+            "node": "FN_appointment_state_machine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_appointment_state_machine": {
+      "main": [
+        [
+          {
+            "node": "Switch_action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_action": {
+      "main": [
+        [
+          {
+            "node": "RPC_create_appointment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RPC_patch_conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_create_appointment": {
+      "main": [
+        [
+          {
+            "node": "FN_render_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_render_success": {
+      "main": [
+        [
+          {
+            "node": "RPC_patch_conversation_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_patch_conversation": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_patch_conversation_success": {
+      "main": [
+        [
+          {
+            "node": "Respond_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

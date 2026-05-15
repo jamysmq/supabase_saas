@@ -1,4 +1,12 @@
-import { requireTenantUser } from '../../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseBilling } from '../../../../src/lib/tenant-admin'
+
+function errorResponse(message: string, status = 400, details?: string) {
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message }, { status })
+}
 
 export async function PATCH(
   request: Request,
@@ -8,6 +16,10 @@ export async function PATCH(
 
   if (result.error) return result.error
 
+  if (!tenantCanUseBilling(result.tenant)) {
+    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+  }
+
   const { groupId } = await context.params
   const body = await request.json().catch(() => null)
   const name = typeof body?.name === 'string' ? body.name.trim() : ''
@@ -16,7 +28,7 @@ export async function PATCH(
     : null
 
   if (!name) {
-    return Response.json({ error: 'Group name is required.' }, { status: 400 })
+    return errorResponse('Group name is required.')
   }
 
   const { data: group, error } = await result.supabase
@@ -33,10 +45,7 @@ export async function PATCH(
     .single()
 
   if (error || !group) {
-    return Response.json(
-      { error: 'Could not update group.', message: error?.message },
-      { status: 500 }
-    )
+    return errorResponse('Could not update group.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
   }
 
   return Response.json({ group })
@@ -50,6 +59,10 @@ export async function DELETE(
 
   if (result.error) return result.error
 
+  if (!tenantCanUseBilling(result.tenant)) {
+    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+  }
+
   const { groupId } = await context.params
 
   const { error: unlinkError } = await result.supabase
@@ -62,10 +75,7 @@ export async function DELETE(
     .eq('group_id', groupId)
 
   if (unlinkError) {
-    return Response.json(
-      { error: 'Could not unlink customers.', message: unlinkError.message },
-      { status: 500 }
-    )
+    return errorResponse('Could not unlink customers.', 500, unlinkError.message)
   }
 
   const { error: groupError } = await result.supabase
@@ -78,10 +88,7 @@ export async function DELETE(
     .eq('tenant_id', result.tenantUser.tenant_id)
 
   if (groupError) {
-    return Response.json(
-      { error: 'Could not delete group.', message: groupError.message },
-      { status: 500 }
-    )
+    return errorResponse('Could not delete group.', 500, groupError.message)
   }
 
   return Response.json({ ok: true })

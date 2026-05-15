@@ -1,7 +1,11 @@
 import { requirePlatformAdmin } from '../../../../../src/lib/platform-admin'
 
 function errorResponse(message: string, status = 400, details?: string) {
-  return Response.json({ error: message, message, details }, { status })
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message, message }, { status })
 }
 
 function parseAmountCents(value: unknown) {

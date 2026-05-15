@@ -1,4 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import {
+  tenantCanUseAppointments as planCanUseAppointments,
+  tenantCanUseBilling as planCanUseBilling,
+  tenantCanUseRestaurant as planCanUseRestaurant,
+} from './plan-features'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -51,9 +56,34 @@ export async function requireTenantUser(request: Request) {
     }
   }
 
+  const { data: tenant, error: tenantError } = await supabase
+    .from('tenants')
+    .select('id, plan, status, business_type')
+    .eq('id', tenantUser.tenant_id)
+    .single()
+
+  if (tenantError || !tenant) {
+    return {
+      error: Response.json({ error: 'Tenant not found.' }, { status: 403 }),
+    }
+  }
+
   return {
     supabase,
     user,
     tenantUser,
+    tenant,
   }
+}
+
+export function tenantCanUseAppointments(tenant: { plan?: string | null }) {
+  return planCanUseAppointments(tenant.plan)
+}
+
+export function tenantCanUseBilling(tenant: { plan?: string | null }) {
+  return planCanUseBilling(tenant.plan)
+}
+
+export function tenantCanUseRestaurant(tenant: { plan?: string | null }) {
+  return planCanUseRestaurant(tenant.plan)
 }

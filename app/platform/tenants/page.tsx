@@ -386,6 +386,13 @@ export default function PlatformTenantsPage() {
               </button>
 
               <button
+                onClick={() => router.push('/platform/payment-history')}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
+              >
+                Historico de pagamentos
+              </button>
+
+              <button
                 onClick={() => router.push('/platform/plans')}
                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
               >
@@ -443,18 +450,18 @@ export default function PlatformTenantsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1180px] text-sm">
+            <table className="w-full text-xs">
               <thead className="border-b border-gray-200 text-left text-gray-500">
                 <tr>
-                  <th className="py-3 pr-4 font-medium">Tenant</th>
-                  <th className="py-3 pr-4 font-medium">Contato</th>
-                  <th className="py-3 pr-4 font-medium">Tipo</th>
-                  <th className="py-3 pr-4 font-medium">Plano</th>
-                  <th className="py-3 pr-4 font-medium">Status</th>
-                  <th className="py-3 pr-4 font-medium">Cobranca</th>
-                  <th className="py-3 pr-4 font-medium">Pagamento</th>
-                  <th className="py-3 pr-4 font-medium">Criado em</th>
-                  <th className="py-3 text-right font-medium">Acoes</th>
+                  <th className="py-2 pr-2 font-medium">Tenant</th>
+                  <th className="py-2 pr-2 font-medium">Contato</th>
+                  <th className="py-2 pr-2 font-medium">Tipo</th>
+                  <th className="py-2 pr-2 font-medium">Plano</th>
+                  <th className="py-2 pr-2 font-medium">Status</th>
+                  <th className="py-2 pr-2 font-medium">Cobranca</th>
+                  <th className="py-2 pr-2 font-medium">Pagamento</th>
+                  <th className="py-2 pr-2 font-medium">Criado</th>
+                  <th className="py-2 text-right font-medium">Acoes</th>
                 </tr>
               </thead>
 
@@ -468,22 +475,22 @@ export default function PlatformTenantsPage() {
                 ) : (
                   filteredTenants.map((tenant) => (
                     <tr key={tenant.id} className="border-b border-gray-100">
-                      <td className="py-3 pr-4 font-medium">
+                      <td className="py-2 pr-2 font-medium">
                         <div>{tenant.legal_name}</div>
                         <div className="text-xs font-normal text-gray-400">
                           {tenant.cpf}
                         </div>
                       </td>
-                      <td className="py-3 pr-4 text-gray-600">
+                      <td className="py-2 pr-2 text-gray-600">
                         <div>{tenant.email}</div>
                         <div className="text-xs text-gray-400">
                           {tenant.whatsapp_e164}
                         </div>
                       </td>
-                      <td className="py-3 pr-4 text-gray-600">{tenant.business_type ?? 'teacher'}</td>
-                      <td className="py-3 pr-4 text-gray-600">{tenant.plan}</td>
-                      <td className="py-3 pr-4 text-gray-600">{tenant.status}</td>
-                      <td className="py-3 pr-4 text-gray-600">
+                      <td className="py-2 pr-2 text-gray-600">{tenant.business_type ?? 'teacher'}</td>
+                      <td className="py-2 pr-2 text-gray-600">{tenant.plan}</td>
+                      <td className="py-2 pr-2 text-gray-600">{tenant.status}</td>
+                      <td className="py-2 pr-2 text-gray-600">
                         {tenant.platform_billing_profile ? (
                           <div>
                             <div>
@@ -505,24 +512,24 @@ export default function PlatformTenantsPage() {
                               {billingStatusSavingId === tenant.platform_billing_profile.id
                                 ? 'Salvando...'
                                 : tenant.platform_billing_profile.status === 'active'
-                                  ? 'Pausar cobranca'
-                                  : 'Ativar cobranca'}
+                                  ? 'Pausar'
+                                  : 'Ativar'}
                             </button>
                           </div>
                         ) : (
                           <span className="text-amber-700">Sem cobranca</span>
                         )}
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="py-2 pr-2">
                         <span
                           className={
                             !tenant.platform_billing_profile
-                              ? 'rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800'
+                              ? 'rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800'
                               : tenant.platform_billing_profile.status !== 'active'
-                                ? 'rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700'
+                                ? 'rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700'
                                 : tenant.has_pending_payment
-                              ? 'rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800'
-                              : 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800'
+                              ? 'rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800'
+                              : 'rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800'
                           }
                         >
                           {!tenant.platform_billing_profile
@@ -534,21 +541,21 @@ export default function PlatformTenantsPage() {
                                 : 'Em dia'}
                         </span>
                       </td>
-                      <td className="py-3 pr-4 text-gray-600">
+                      <td className="py-2 pr-2 text-gray-600">
                         {new Date(tenant.created_at).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="py-3 text-right">
-                        <div className="flex justify-end gap-2">
+                      <td className="py-2 text-right">
+                        <div className="flex justify-end gap-1">
                           <button
                             onClick={() => router.push(`/platform/tenants/${tenant.id}`)}
-                            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium"
+                            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium"
                           >
                             Gerenciar
                           </button>
                           <button
                             onClick={() => void deleteTenant(tenant)}
                             disabled={deletingTenantId === tenant.id}
-                            className="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 disabled:opacity-50"
+                            className="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 disabled:opacity-50"
                           >
                             {deletingTenantId === tenant.id ? 'Excluindo...' : 'Excluir'}
                           </button>

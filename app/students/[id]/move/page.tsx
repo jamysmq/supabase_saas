@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../src/lib/supabase'
 import { getBusinessLabels } from '../../../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../../../src/services/auth'
+import { tenantCanUseBilling } from '../../../../src/lib/plan-features'
 
 type Group = {
   id: string
@@ -44,6 +45,11 @@ export default function MoveStudentPage() {
 
     if (result.tenantUser.must_change_password) {
       router.push('/change-password')
+      return
+    }
+
+    if (!tenantCanUseBilling(result.tenant?.plan)) {
+      router.push('/dashboard')
       return
     }
 

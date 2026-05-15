@@ -9,16 +9,22 @@ export async function POST(
   if (result.error) return result.error
 
   const { paymentId } = await context.params
+  const body = await request.json().catch(() => null)
+  const note = typeof body?.note === 'string' ? body.note.trim() : ''
+  const confirmedAt = new Date().toISOString()
 
   const { data, error } = await result.supabase
     .from('payments')
     .update({
       status: 'paid',
-      confirmed_at: new Date().toISOString(),
+      confirmed_at: confirmedAt,
+      confirmed_source: 'manual',
+      confirmed_note: note || 'Confirmado manualmente pelo painel da plataforma.',
     })
     .eq('id', paymentId)
     .eq('status', 'pending')
-    .select('id')
+    .is('deleted_at', null)
+    .select('id, tenant_id')
     .single()
 
   if (error || !data) {
@@ -26,6 +32,23 @@ export async function POST(
       { error: 'Could not confirm platform payment.' },
       { status: error?.code === 'PGRST116' ? 404 : 500 }
     )
+  }
+
+  const { error: eventError } = await result.supabase
+    .from('platform_payment_events')
+    .insert({
+      payment_id: data.id,
+      tenant_id: data.tenant_id,
+      platform_admin_auth_user_id: result.user.id,
+      event_type: 'payment_status',
+      old_status: 'pending',
+      new_status: 'paid',
+      source: 'manual',
+      note: note || 'Confirmado manualmente pelo painel da plataforma.',
+    })
+
+  if (eventError) {
+    console.error('Could not register platform payment confirmation event.', eventError.message)
   }
 
   return Response.json({ ok: true })

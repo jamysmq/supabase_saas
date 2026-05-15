@@ -19,6 +19,7 @@ export async function GET(request: Request) {
       payload,
       created_at,
       confirmed_at,
+      deleted_at,
       tenants (
         legal_name,
         email,
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
       )
     `)
     .eq('status', 'pending')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   if (error) {

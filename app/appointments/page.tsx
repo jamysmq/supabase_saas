@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
+import { tenantCanUseAppointments } from '../../src/lib/plan-features'
 
 type Appointment = {
   appointment_id: string
@@ -105,10 +106,13 @@ export default function AppointmentsPage() {
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>(emptyAppointmentForm)
-  const [serviceForm, setServiceForm] = useState({ name: '', duration_minutes: '60', price: '' })
+  const [serviceForm, setServiceForm] = useState({ name: '' })
+  const [editingServiceId, setEditingServiceId] = useState('')
   const [staffForm, setStaffForm] = useState({ name: '', role: '' })
+  const [editingStaffId, setEditingStaffId] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [actingId, setActingId] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -129,6 +133,11 @@ export default function AppointmentsPage() {
 
     if (result.tenantUser.must_change_password) {
       router.push('/change-password')
+      return
+    }
+
+    if (!tenantCanUseAppointments(result.tenant?.plan)) {
+      router.push('/dashboard')
       return
     }
 
@@ -255,7 +264,7 @@ export default function AppointmentsPage() {
     await load()
   }
 
-  async function createService(event: React.FormEvent) {
+  async function saveService(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
     setError('')
@@ -268,29 +277,35 @@ export default function AppointmentsPage() {
       return
     }
 
-    const response = await fetch('/api/appointment-services', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(serviceForm),
-    })
+    const response = await fetch(
+      editingServiceId
+        ? `/api/appointment-services/${editingServiceId}`
+        : '/api/appointment-services',
+      {
+        method: editingServiceId ? 'PATCH' : 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(serviceForm),
+      }
+    )
 
     setSaving(false)
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel criar o servico.')
+      setError(data?.message || 'Nao foi possivel salvar o servico.')
       return
     }
 
-    setSuccess('Servico criado.')
-    setServiceForm({ name: '', duration_minutes: '60', price: '' })
+    setSuccess(editingServiceId ? 'Servico atualizado.' : 'Servico criado.')
+    setServiceForm({ name: '' })
+    setEditingServiceId('')
     await load()
   }
 
-  async function createStaff(event: React.FormEvent) {
+  async function saveStaff(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
     setError('')
@@ -303,25 +318,109 @@ export default function AppointmentsPage() {
       return
     }
 
-    const response = await fetch('/api/appointment-staff', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(staffForm),
-    })
+    const response = await fetch(
+      editingStaffId
+        ? `/api/appointment-staff/${editingStaffId}`
+        : '/api/appointment-staff',
+      {
+        method: editingStaffId ? 'PATCH' : 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(staffForm),
+      }
+    )
 
     setSaving(false)
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel criar o profissional.')
+      setError(data?.message || 'Nao foi possivel salvar o profissional.')
       return
     }
 
-    setSuccess('Profissional criado.')
+    setSuccess(editingStaffId ? 'Profissional atualizado.' : 'Profissional criado.')
     setStaffForm({ name: '', role: '' })
+    setEditingStaffId('')
+    await load()
+  }
+
+  async function deleteService(service: Service) {
+    const confirmed = confirm(`Excluir o servico ${service.name}?`)
+    if (!confirmed) return
+
+    const token = await getToken()
+
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
+    setActingId(service.id)
+    setError('')
+    setSuccess('')
+
+    const response = await fetch(`/api/appointment-services/${service.id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    setActingId('')
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Nao foi possivel excluir o servico.')
+      return
+    }
+
+    if (editingServiceId === service.id) {
+      setEditingServiceId('')
+      setServiceForm({ name: '' })
+    }
+
+    setSuccess('Servico excluido.')
+    await load()
+  }
+
+  async function deleteStaff(member: StaffMember) {
+    const confirmed = confirm(`Excluir o profissional ${member.name}?`)
+    if (!confirmed) return
+
+    const token = await getToken()
+
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
+    setActingId(member.id)
+    setError('')
+    setSuccess('')
+
+    const response = await fetch(`/api/appointment-staff/${member.id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    setActingId('')
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Nao foi possivel excluir o profissional.')
+      return
+    }
+
+    if (editingStaffId === member.id) {
+      setEditingStaffId('')
+      setStaffForm({ name: '', role: '' })
+    }
+
+    setSuccess('Profissional excluido.')
     await load()
   }
 
@@ -332,6 +431,10 @@ export default function AppointmentsPage() {
       router.push('/login')
       return
     }
+
+    setError('')
+    setSuccess('')
+    setActingId(appointment.appointment_id)
 
     const response = await fetch(`/api/appointments/${appointment.appointment_id}/status`, {
       method: 'PATCH',
@@ -345,9 +448,49 @@ export default function AppointmentsPage() {
     if (!response.ok) {
       const data = await response.json().catch(() => null)
       setError(data?.message || 'Nao foi possivel alterar o status.')
+      setActingId('')
       return
     }
 
+    setSuccess('Status atualizado.')
+    setActingId('')
+    await load()
+  }
+
+  async function deleteAppointment(appointment: Appointment) {
+    const confirmed = window.confirm('Excluir este agendamento?')
+
+    if (!confirmed) {
+      return
+    }
+
+    const token = await getToken()
+
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setActingId(appointment.appointment_id)
+
+    const response = await fetch(`/api/appointments/${appointment.appointment_id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Nao foi possivel excluir o agendamento.')
+      setActingId('')
+      return
+    }
+
+    setSuccess('Agendamento excluido.')
+    setActingId('')
     await load()
   }
 
@@ -361,32 +504,42 @@ export default function AppointmentsPage() {
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
-      <div className="mx-auto max-w-6xl space-y-4">
+      <div className="mx-auto max-w-7xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-sm text-gray-500 mb-3"
-          >
-            Voltar
-          </button>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="text-sm text-gray-500"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={() => router.push('/appointment-history?from=appointments')}
+              className="text-sm font-medium text-gray-950 underline"
+            >
+              Historico
+            </button>
+          </div>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-4">
               <h1 className="text-2xl font-bold">Agenda</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Organize atendimentos, consultas e horarios por profissional.
               </p>
+              <label className="block max-w-xs text-sm font-medium">
+                Dia da agenda
+                <input
+                  value={selectedDate}
+                  onChange={(event) => {
+                    setSelectedDate(event.target.value)
+                    setAppointmentForm({ ...appointmentForm, date: event.target.value })
+                  }}
+                  className="mt-1 h-11 w-full rounded-lg border border-gray-200 px-3 text-base font-normal"
+                  type="date"
+                />
+              </label>
             </div>
-
-            <input
-              value={selectedDate}
-              onChange={(event) => {
-                setSelectedDate(event.target.value)
-                setAppointmentForm({ ...appointmentForm, date: event.target.value })
-              }}
-              className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
-              type="date"
-            />
           </div>
         </section>
 
@@ -402,7 +555,7 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_460px]">
           <div className="space-y-4">
             <section className="grid gap-4 md:grid-cols-3">
               <div className="rounded-2xl bg-white p-5 shadow">
@@ -436,33 +589,31 @@ export default function AppointmentsPage() {
                   appointments.map((appointment) => (
                     <div
                       key={appointment.appointment_id}
-                      className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between"
+                      className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-center"
                     >
-                      <div>
+                      <div className="min-w-0">
                         <div className="font-bold">
                           {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
                         </div>
-                        <div className="mt-1 text-sm font-medium">
+                        <div className="mt-1 break-words text-sm font-medium">
                           {appointment.customer_name || appointment.title || 'Sem pessoa'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="break-words text-sm text-gray-500">
                           {appointment.customer_phone_e164 || 'Sem WhatsApp'} · {appointment.service_name || 'Sem servico'} · {appointment.staff_member_name || 'Sem profissional'}
                         </div>
                         {appointment.notes && (
-                          <div className="mt-1 text-xs text-gray-500">
+                          <div className="mt-1 break-words text-xs text-gray-500">
                             {appointment.notes}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-2 md:items-end">
-                        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                          {statusLabel(appointment.status)}
-                        </span>
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] md:flex md:flex-col md:items-end">
                         <select
                           value={appointment.status}
                           onChange={(event) => void updateStatus(appointment, event.target.value)}
-                          className="h-9 rounded-lg border border-gray-200 px-2 text-sm"
+                          disabled={actingId === appointment.appointment_id}
+                          className="h-10 w-full rounded-lg border border-gray-200 px-2 text-sm disabled:bg-gray-100 md:w-44"
                         >
                           <option value="scheduled">Agendado</option>
                           <option value="confirmed">Confirmado</option>
@@ -470,6 +621,17 @@ export default function AppointmentsPage() {
                           <option value="cancelled">Cancelado</option>
                           <option value="no_show">Faltou</option>
                         </select>
+                        <button
+                          type="button"
+                          onClick={() => void deleteAppointment(appointment)}
+                          disabled={actingId === appointment.appointment_id}
+                          className="h-10 rounded-lg border border-red-200 px-3 text-sm font-medium text-red-700 disabled:opacity-60 md:w-44"
+                        >
+                          Excluir
+                        </button>
+                        <span className="text-xs font-medium text-gray-500 md:text-right">
+                          {statusLabel(appointment.status)}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -493,7 +655,7 @@ export default function AppointmentsPage() {
                 />
               </label>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-medium">
                   CPF
                   <input
@@ -513,12 +675,12 @@ export default function AppointmentsPage() {
                     onChange={(event) => setAppointmentForm({ ...appointmentForm, whatsapp_e164: event.target.value })}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     inputMode="numeric"
-                    placeholder="5583999999999"
+                    placeholder="83999999999"
                     required
                   />
                 </label>
 
-                <label className="text-sm font-medium">
+                <label className="text-sm font-medium sm:col-span-2">
                   Nascimento
                   <input
                     value={appointmentForm.birth_date}
@@ -562,7 +724,7 @@ export default function AppointmentsPage() {
                 </select>
               </label>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <label className="text-sm font-medium">
                   Data
                   <input
@@ -619,60 +781,146 @@ export default function AppointmentsPage() {
               </button>
             </form>
 
-            <form onSubmit={createService} className="rounded-2xl bg-white p-5 shadow space-y-3">
-              <h2 className="font-bold">Servicos</h2>
+            <form onSubmit={saveService} className="rounded-2xl bg-white p-5 shadow space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold">Servicos</h2>
+                {editingServiceId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingServiceId('')
+                      setServiceForm({ name: '' })
+                    }}
+                    className="text-xs font-medium text-gray-500"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
               <input
                 value={serviceForm.name}
                 onChange={(event) => setServiceForm({ ...serviceForm, name: event.target.value })}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 placeholder="Nome do servico"
+                required
               />
-              <div className="grid gap-3 md:grid-cols-2">
-                <input
-                  value={serviceForm.duration_minutes}
-                  onChange={(event) => setServiceForm({ ...serviceForm, duration_minutes: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                  placeholder="Duracao"
-                  type="number"
-                />
-                <input
-                  value={serviceForm.price}
-                  onChange={(event) => setServiceForm({ ...serviceForm, price: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                  placeholder="Valor"
-                  inputMode="decimal"
-                />
-              </div>
               <button
                 type="submit"
                 disabled={saving}
                 className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium disabled:opacity-50"
               >
-                Criar servico
+                {editingServiceId ? 'Salvar servico' : 'Criar servico'}
               </button>
+
+              <div className="divide-y divide-gray-100">
+                {services.length === 0 ? (
+                  <p className="py-3 text-sm text-gray-500">Nenhum servico cadastrado.</p>
+                ) : (
+                  services.map((service) => (
+                    <div key={service.id} className="flex items-start justify-between gap-3 py-3">
+                      <span className="min-w-0 break-words text-sm font-medium">{service.name}</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingServiceId(service.id)
+                            setServiceForm({ name: service.name })
+                          }}
+                          className="text-xs font-medium text-gray-950 underline"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteService(service)}
+                          disabled={actingId === service.id}
+                          className="text-xs font-medium text-red-700 underline disabled:opacity-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </form>
 
-            <form onSubmit={createStaff} className="rounded-2xl bg-white p-5 shadow space-y-3">
-              <h2 className="font-bold">Profissionais</h2>
+            <form onSubmit={saveStaff} className="rounded-2xl bg-white p-5 shadow space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold">Profissionais</h2>
+                {editingStaffId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingStaffId('')
+                      setStaffForm({ name: '', role: '' })
+                    }}
+                    className="text-xs font-medium text-gray-500"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
               <input
                 value={staffForm.name}
                 onChange={(event) => setStaffForm({ ...staffForm, name: event.target.value })}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 placeholder="Nome"
+                required
               />
               <input
                 value={staffForm.role}
                 onChange={(event) => setStaffForm({ ...staffForm, role: event.target.value })}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                placeholder="Funcao"
+                placeholder="Observacoes"
               />
               <button
                 type="submit"
                 disabled={saving}
                 className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium disabled:opacity-50"
               >
-                Criar profissional
+                {editingStaffId ? 'Salvar profissional' : 'Criar profissional'}
               </button>
+
+              <div className="divide-y divide-gray-100">
+                {staff.length === 0 ? (
+                  <p className="py-3 text-sm text-gray-500">Nenhum profissional cadastrado.</p>
+                ) : (
+                  staff.map((member) => (
+                    <div key={member.id} className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <div className="break-words text-sm font-medium">{member.name}</div>
+                        {member.role && (
+                          <div className="break-words text-xs text-gray-500">{member.role}</div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingStaffId(member.id)
+                            setStaffForm({
+                              name: member.name,
+                              role: member.role ?? '',
+                            })
+                          }}
+                          className="text-xs font-medium text-gray-950 underline"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteStaff(member)}
+                          disabled={actingId === member.id}
+                          className="text-xs font-medium text-red-700 underline disabled:opacity-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </form>
           </aside>
         </section>

@@ -1,13 +1,31 @@
-import { requireTenantUser } from '../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseAppointments } from '../../../src/lib/tenant-admin'
 
 function errorResponse(message: string, status = 400, details?: string) {
-  return Response.json({ error: message, message, details }, { status })
+  if (details) {
+    console.error(message, details)
+  }
+
+  return Response.json({ error: message, message }, { status })
+}
+
+function normalizeBrazilWhatsapp(value: string) {
+  const digits = value.replace(/\D/g, '')
+
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`
+  }
+
+  return digits
 }
 
 export async function GET(request: Request) {
   const result = await requireTenantUser(request)
 
   if (result.error) return result.error
+
+  if (!tenantCanUseAppointments(result.tenant)) {
+    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+  }
 
   const url = new URL(request.url)
   const from = url.searchParams.get('from')
@@ -35,6 +53,10 @@ export async function POST(request: Request) {
 
   if (result.error) return result.error
 
+  if (!tenantCanUseAppointments(result.tenant)) {
+    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+  }
+
   const body = await request.json().catch(() => null)
   const startsAt = String(body?.starts_at ?? '').trim()
   const endsAt = String(body?.ends_at ?? '').trim()
@@ -42,7 +64,7 @@ export async function POST(request: Request) {
   const notes = String(body?.notes ?? '').trim() || null
   const fullName = String(body?.full_name ?? '').trim()
   const cpf = String(body?.cpf ?? '').replace(/\D/g, '')
-  const whatsapp = String(body?.whatsapp_e164 ?? '').replace(/\D/g, '')
+  const whatsapp = normalizeBrazilWhatsapp(String(body?.whatsapp_e164 ?? ''))
   const birthDate = String(body?.birth_date ?? '').trim()
   const serviceId = String(body?.service_id ?? '').trim() || null
   const staffMemberId = String(body?.staff_member_id ?? '').trim() || null
@@ -56,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   if (whatsapp.length < 12 || whatsapp.length > 13 || !whatsapp.startsWith('55')) {
-    return errorResponse('WhatsApp invalido. Use pais e DDD, por exemplo 5583999999999.')
+    return errorResponse('WhatsApp invalido. Informe DDD e numero, por exemplo 83999999999.')
   }
 
   if (!birthDate) {
