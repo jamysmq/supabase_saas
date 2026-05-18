@@ -118,6 +118,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Workflow base `WA_TENANT_INBOUND_Assistant_v1` foi localizado no n8n.
 - Workflow inativo `WA_TENANT_APPOINTMENTS_INBOUND_v1` foi criado no n8n com id `X1lUop6Q5fh9uxTG`.
 - Workflow inativo `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi criado no n8n com id `zWflZZXKn2XIlHEc`.
+- Workflow ativo `DAILY_BILLING_REMINDERS` foi localizado no n8n com id `YbD6NHWbgz9vLe33w_UU-`.
 - Rascunho versionado em `n8n/WA_TENANT_APPOINTMENTS_INBOUND_v1.workflow.json`.
 - Rascunho versionado em `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json`.
 - O novo workflow usa fluxo generico por tenant e depende de variaveis de ambiente no n8n Docker:
@@ -133,6 +134,10 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - remarcar sugere novos horarios e atualiza `starts_at`/`ends_at`.
 - Sugestao de horarios foi modelada por RPC para retornar poucas opcoes por vez dentro de 60 dias, com comando `mais` para paginar.
 - Menu de servicos e profissionais do WhatsApp e dinamico: o workflow carrega `tenant_services` e `tenant_staff_members` ativos do tenant a cada conversa, conforme configurado no front.
+- O workflow remoto `DAILY_BILLING_REMINDERS` passou a usar `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do ambiente do n8n, em vez de credenciais fixas nos nos HTTP.
+- O no de renderizacao de cobranca do `DAILY_BILLING_REMINDERS` passou a usar `template_content` retornado pelo Supabase, mantendo a mensagem editavel por tenant.
+- SQL de apoio criado em `supabase/whatsapp_billing_workflow_support.sql` para geracao idempotente de ciclos mensais, listagem de ciclos vencidos e baixa de lembrete enviado.
+- Validacao controlada de cobranca mensal em 2026-05-18 criou cliente/perfil/ciclo de teste em tenant `plan3`; o ciclo foi criado corretamente como vencido, mas o RPC remoto antigo ainda nao o listou. Aplicar `supabase/whatsapp_billing_workflow_support.sql` antes de considerar o workflow mensal validado ponta a ponta.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
@@ -226,6 +231,7 @@ Premissa importante: ao excluir tenant, os historicos internos dele podem sumir.
 - `supabase/platform_plan_catalog.sql`
 - `supabase/tenant_message_templates.sql`
 - `supabase/whatsapp_appointment_workflow_support.sql`
+- `supabase/whatsapp_billing_workflow_support.sql`
 - `supabase/platform_plan4_constraints.sql`
 - `supabase/salon_service_revenue.sql`
 - `supabase/restaurant_menu.sql`
