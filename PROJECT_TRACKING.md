@@ -137,7 +137,13 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - O workflow remoto `DAILY_BILLING_REMINDERS` passou a usar `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do ambiente do n8n, em vez de credenciais fixas nos nos HTTP.
 - O no de renderizacao de cobranca do `DAILY_BILLING_REMINDERS` passou a usar `template_content` retornado pelo Supabase, mantendo a mensagem editavel por tenant.
 - SQL de apoio criado em `supabase/whatsapp_billing_workflow_support.sql` para geracao idempotente de ciclos mensais, listagem de ciclos vencidos e baixa de lembrete enviado.
-- Validacao controlada de cobranca mensal em 2026-05-18 criou cliente/perfil/ciclo de teste em tenant `plan3`; o ciclo foi criado corretamente como vencido, mas o RPC remoto antigo ainda nao o listou. Aplicar `supabase/whatsapp_billing_workflow_support.sql` antes de considerar o workflow mensal validado ponta a ponta.
+- Validacao controlada de cobranca mensal em 2026-05-18 passou apos aplicar `supabase/whatsapp_billing_workflow_support.sql`:
+  - cliente/perfil/ciclo de teste em tenant `plan3` foi listado como vencido;
+  - template de cobranca veio de `tenant_message_templates`;
+  - mensagem foi renderizada com nome, valor, vencimento e Pix;
+  - ciclo recebeu `message_rendered` e `message_sent_at`;
+  - gerador mensal criou ciclo novo para perfil sem ciclo no mes;
+  - listagem de vencidos ficou vazia apos a baixa do lembrete.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
