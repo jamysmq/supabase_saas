@@ -1,3 +1,7 @@
+drop function if exists public.admin_generate_billing_cycles_for_all_tenants(date);
+drop function if exists public.admin_list_due_cycles_for_date(date);
+drop function if exists public.admin_mark_cycle_reminder_sent(uuid, text);
+
 create or replace function public.admin_generate_billing_cycles_for_all_tenants(
   p_reference_date date default current_date
 )
