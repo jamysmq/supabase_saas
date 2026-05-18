@@ -1,4 +1,4 @@
-export type BusinessType = 'teacher' | 'autonomous' | 'clinic' | 'salon'
+export type BusinessType = 'teacher' | 'autonomous' | 'clinic' | 'salon' | 'restaurant'
 
 export type BusinessLabels = {
   customerSingular: string
@@ -76,6 +76,21 @@ const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
     dashboardInactiveDescription: 'Consulte clientes pausados e reative quando necessário.',
     billingTitle: 'Mensalidades',
     billingDescription: 'Ajuste valor e vencimento por cliente.',
+  },
+  restaurant: {
+    customerSingular: 'Cliente',
+    customerPlural: 'Clientes',
+    customerPluralLower: 'clientes',
+    inactiveCustomers: 'Clientes inativos',
+    addCustomer: 'Adicionar cliente',
+    editCustomer: 'Editar cliente',
+    groupSingular: 'Grupo',
+    groupPlural: 'Grupos',
+    groupPluralLower: 'grupos',
+    dashboardCustomersDescription: 'Cadastre clientes e mantenha dados de contato organizados.',
+    dashboardInactiveDescription: 'Consulte clientes pausados e reative quando necessário.',
+    billingTitle: 'Cobranças',
+    billingDescription: 'Acompanhe valores e vencimentos quando o módulo financeiro estiver ativo.',
   },
 }
 

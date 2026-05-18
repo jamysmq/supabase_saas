@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Cobrancas disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Cobranças disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const { data, error } = await result.supabase
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     .order('due_date', { ascending: true })
 
   if (error) {
-    return errorResponse('Nao foi possivel carregar pagamentos pendentes.', 500, error.message)
+    return errorResponse('Não foi possível carregar pagamentos pendentes.', 500, error.message)
   }
 
   return Response.json({

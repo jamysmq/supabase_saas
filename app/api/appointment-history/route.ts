@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Historico de agendamentos disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Histórico de agendamentos disponível apenas em planos com agenda.', 403)
   }
 
   const url = new URL(request.url)
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   const status = String(url.searchParams.get('status') ?? '').trim() || null
 
   if (new Date(to).getTime() <= new Date(from).getTime()) {
-    return errorResponse('Periodo invalido.')
+    return errorResponse('Período inválido.')
   }
 
   const { data, error } = await result.supabase.rpc('admin_list_appointment_history', {
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   })
 
   if (error) {
-    return errorResponse('Nao foi possivel carregar o historico de agendamentos.', 500, error.message)
+    return errorResponse('Não foi possível carregar o histórico de agendamentos.', 500, error.message)
   }
 
   return Response.json({ appointments: data ?? [] })

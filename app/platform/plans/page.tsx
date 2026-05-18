@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
 
 type Plan = {
   code: string
@@ -32,17 +33,6 @@ const emptyForm: PlanForm = {
   max_customer_groups: '20',
   sort_order: '0',
   is_active: true,
-}
-
-function formatMoney(amountCents: number) {
-  return (amountCents / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
-function formatAmount(amountCents: number) {
-  return String(amountCents / 100).replace('.', ',')
 }
 
 export default function PlatformPlansPage() {
@@ -82,13 +72,13 @@ export default function PlatformPlansPage() {
     }
 
     if (response.status === 403) {
-      setError('Seu usuario nao tem permissao de administrador da plataforma.')
+      setError('Seu usuário não tem permissão de administrador da plataforma.')
       setLoading(false)
       return
     }
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar os planos.')
+      setError('Não foi possível carregar os planos.')
       setLoading(false)
       return
     }
@@ -121,7 +111,7 @@ export default function PlatformPlansPage() {
       code: plan.code,
       name: plan.name,
       description: plan.description ?? '',
-      monthly_amount: formatAmount(plan.monthly_amount_cents),
+      monthly_amount: formatCentsAsMoneyInput(plan.monthly_amount_cents),
       max_customer_groups: String(plan.max_customer_groups),
       sort_order: String(plan.sort_order),
       is_active: plan.is_active,
@@ -173,7 +163,7 @@ export default function PlatformPlansPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      const message = data?.message || data?.error || 'Nao foi possivel salvar o plano.'
+      const message = data?.message || data?.error || 'Não foi possível salvar o plano.'
       const details = data?.details ? ` Detalhe: ${data.details}` : ''
 
       setError(`${message}${details}`)
@@ -210,7 +200,7 @@ export default function PlatformPlansPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel alterar o status do plano.')
+      setError(data?.message || 'Não foi possível alterar o status do plano.')
       return
     }
 
@@ -320,9 +310,10 @@ export default function PlatformPlansPage() {
                 <input
                   value={form.monthly_amount}
                   onChange={(event) => setForm({ ...form, monthly_amount: event.target.value })}
+                  onBlur={() => setForm({ ...form, monthly_amount: formatMoneyInput(form.monthly_amount) })}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                   inputMode="decimal"
-                  placeholder="197,00"
+                  placeholder="R$ 0,00"
                   required
                 />
               </label>
@@ -399,7 +390,7 @@ export default function PlatformPlansPage() {
                         )}
                       </td>
                       <td className="py-3 pr-4 text-gray-600">
-                        {formatMoney(plan.monthly_amount_cents)}
+                        {formatCurrencyFromCents(plan.monthly_amount_cents)}
                       </td>
                       <td className="py-3 pr-4 text-gray-600">
                         {plan.max_customer_groups}

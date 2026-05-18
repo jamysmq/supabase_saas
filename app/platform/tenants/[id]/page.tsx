@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../src/lib/supabase'
+import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../../src/lib/money'
 
 type Tenant = {
   id: string
@@ -76,15 +77,6 @@ type FormState = {
   due_day: string
 }
 
-function formatMoney(amountCents: number | null | undefined) {
-  if (!amountCents) return '-'
-
-  return (amountCents / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
 export default function PlatformTenantDetailPage() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
@@ -147,13 +139,13 @@ export default function PlatformTenantDetailPage() {
     }
 
     if (response.status === 403) {
-      setError('Seu usuario nao tem permissao de administrador da plataforma.')
+      setError('Seu usuário não tem permissão de administrador da plataforma.')
       setLoading(false)
       return
     }
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar o tenant.')
+      setError('Não foi possível carregar o tenant.')
       setLoading(false)
       return
     }
@@ -182,9 +174,7 @@ export default function PlatformTenantDetailPage() {
       business_type: loadedTenant.business_type ?? 'teacher',
       plan: loadedTenant.plan,
       status: loadedTenant.status,
-      monthly_amount: loadedBillingProfile?.amount_cents
-        ? String(loadedBillingProfile.amount_cents / 100).replace('.', ',')
-        : '',
+      monthly_amount: formatCentsAsMoneyInput(loadedBillingProfile?.amount_cents),
       due_day: loadedBillingProfile?.due_day ? String(loadedBillingProfile.due_day) : '',
     })
     setLoading(false)
@@ -197,7 +187,7 @@ export default function PlatformTenantDetailPage() {
       ...form,
       plan: planCode,
       monthly_amount: selectedPlan
-        ? String(selectedPlan.monthly_amount_cents / 100).replace('.', ',')
+        ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
         : form.monthly_amount,
     })
   }
@@ -238,7 +228,7 @@ export default function PlatformTenantDetailPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      const message = data?.message || data?.error || 'Nao foi possivel salvar o tenant.'
+      const message = data?.message || data?.error || 'Não foi possível salvar o tenant.'
       const details = data?.details ? ` Detalhe: ${data.details}` : ''
 
       setError(`${message}${details}`)
@@ -281,7 +271,7 @@ export default function PlatformTenantDetailPage() {
     setResettingUserId('')
 
     if (!response.ok) {
-      setError('Nao foi possivel resetar a senha do usuario.')
+      setError('Não foi possível resetar a senha do usuário.')
       return
     }
 
@@ -296,14 +286,14 @@ export default function PlatformTenantDetailPage() {
 
   async function updateBillingStatus(nextStatus: 'active' | 'paused') {
     if (!billingProfile) {
-      setError('Este tenant ainda nao tem cobranca da plataforma configurada.')
+      setError('Este tenant ainda não tem cobrança da plataforma configurada.')
       return
     }
 
     const confirmed = confirm(
       nextStatus === 'active'
-        ? 'Ativar a cobranca deste tenant?'
-        : 'Pausar a cobranca deste tenant?'
+        ? 'Ativar a cobrança deste tenant?'
+        : 'Pausar a cobrança deste tenant?'
     )
 
     if (!confirmed) return
@@ -337,11 +327,11 @@ export default function PlatformTenantDetailPage() {
     setBillingSaving(false)
 
     if (!response.ok) {
-      setError('Nao foi possivel alterar o status da cobranca.')
+      setError('Não foi possível alterar o status da cobrança.')
       return
     }
 
-    setSuccess('Status da cobranca atualizado.')
+    setSuccess('Status da cobrança atualizado.')
     await load()
   }
 
@@ -478,6 +468,7 @@ export default function PlatformTenantDetailPage() {
                   <option value="autonomous">Autônomo</option>
                   <option value="clinic">Clínica</option>
                   <option value="salon">Salão</option>
+                  <option value="restaurant">Restaurante</option>
                 </select>
               </label>
             </div>
@@ -502,9 +493,10 @@ export default function PlatformTenantDetailPage() {
                 <input
                   value={form.monthly_amount}
                   onChange={(event) => setForm({ ...form, monthly_amount: event.target.value })}
+                  onBlur={() => setForm({ ...form, monthly_amount: formatMoneyInput(form.monthly_amount) })}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                   inputMode="decimal"
-                  placeholder="197,00"
+                  placeholder="R$ 0,00"
                   required
                 />
               </label>
@@ -512,7 +504,7 @@ export default function PlatformTenantDetailPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block text-sm font-medium">
-                Dia de cobranca
+                Dia de cobrança
                 <input
                   value={form.due_day}
                   onChange={(event) => setForm({ ...form, due_day: event.target.value })}
@@ -556,11 +548,11 @@ export default function PlatformTenantDetailPage() {
             </section>
 
             <section className="bg-white rounded-2xl shadow p-5">
-              <h2 className="font-bold">Cobranca</h2>
+              <h2 className="font-bold">Cobrança</h2>
               <dl className="mt-3 space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
                   <dt className="text-gray-500">Mensalidade</dt>
-                  <dd className="font-medium">{formatMoney(billingProfile?.amount_cents)}</dd>
+                  <dd className="font-medium">{formatCurrencyFromCents(billingProfile?.amount_cents)}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-gray-500">Vencimento</dt>
@@ -596,8 +588,8 @@ export default function PlatformTenantDetailPage() {
                   {billingSaving
                     ? 'Salvando...'
                     : billingProfile.status === 'active'
-                      ? 'Pausar cobranca'
-                      : 'Ativar cobranca'}
+                      ? 'Pausar cobrança'
+                      : 'Ativar cobrança'}
                 </button>
               )}
             </section>
@@ -605,11 +597,11 @@ export default function PlatformTenantDetailPage() {
         </section>
 
         <section className="bg-white rounded-2xl shadow p-5">
-          <h2 className="font-bold mb-3">Usuarios do tenant</h2>
+          <h2 className="font-bold mb-3">Usuários do tenant</h2>
           <div className="divide-y divide-gray-100">
             {users.length === 0 ? (
               <p className="py-6 text-sm text-gray-500">
-                Nenhum usuario vinculado.
+                Nenhum usuário vinculado.
               </p>
             ) : (
               users.map((user) => (

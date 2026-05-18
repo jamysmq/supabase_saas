@@ -89,13 +89,13 @@ export default function PlatformPaymentsPage() {
     }
 
     if (response.status === 403) {
-      setError('Seu usuario nao tem permissao de administrador da plataforma.')
+      setError('Seu usuário não tem permissão de administrador da plataforma.')
       setLoading(false)
       return
     }
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar pagamentos pendentes.')
+      setError('Não foi possível carregar pagamentos pendentes.')
       setLoading(false)
       return
     }
@@ -172,8 +172,8 @@ export default function PlatformPaymentsPage() {
     if (!response.ok) {
       setError(
         action === 'confirm'
-          ? 'Nao foi possivel confirmar o pagamento.'
-          : 'Nao foi possivel excluir o pagamento.'
+          ? 'Não foi possível confirmar o pagamento.'
+          : 'Não foi possível excluir o pagamento.'
       )
       return
     }

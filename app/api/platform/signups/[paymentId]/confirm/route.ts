@@ -22,7 +22,7 @@ export async function POST(
 
   if (error) {
     return Response.json(
-      { error: 'Could not confirm signup payment.' },
+      { error: 'Não foi possível confirmar o pagamento do cadastro.' },
       { status: 500 }
     )
   }

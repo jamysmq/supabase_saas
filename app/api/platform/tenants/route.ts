@@ -1,6 +1,7 @@
 import { requirePlatformAdmin } from '../../../../src/lib/platform-admin'
+import { parseMoneyToCents } from '../../../../src/lib/money'
 
-const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon'])
+const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
 
   if (error) {
     return Response.json(
-      { error: 'Could not list tenants.' },
+      { error: 'Não foi possível listar os tenants.' },
       { status: 500 }
     )
   }
@@ -207,7 +208,7 @@ export async function POST(request: Request) {
     return errorResponse('Plano inválido ou inativo. Escolha um plano ativo.')
   }
 
-  const amountCents = Math.round(Number(String(body.monthly_amount).replace(',', '.')) * 100)
+  const amountCents = parseMoneyToCents(body.monthly_amount)
   const dueDay = Number(body.due_day)
 
   if (!Number.isFinite(amountCents) || amountCents <= 0) {
@@ -330,7 +331,7 @@ export async function POST(request: Request) {
 
   if (initialPaymentError) {
     await cleanupTenant()
-    return errorResponse('Tenant criado, mas nao foi possivel criar o pagamento pendente inicial.', 500, initialPaymentError.message)
+    return errorResponse('Tenant criado, mas não foi possível criar o pagamento pendente inicial.', 500, initialPaymentError.message)
   }
 
   const { data: existingUsers } = await result.supabase.auth.admin.listUsers()

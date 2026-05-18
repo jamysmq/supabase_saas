@@ -80,13 +80,13 @@ export default function PlatformSignupsPage() {
     }
 
     if (response.status === 403) {
-      setError('Seu usuario nao tem permissao de administrador da plataforma.')
+      setError('Seu usuário não tem permissão de administrador da plataforma.')
       setLoading(false)
       return
     }
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar cadastros pendentes.')
+      setError('Não foi possível carregar cadastros pendentes.')
       setLoading(false)
       return
     }
@@ -149,8 +149,8 @@ export default function PlatformSignupsPage() {
     if (!response.ok) {
       setError(
         action === 'confirm'
-          ? 'Nao foi possivel confirmar o cadastro.'
-          : 'Nao foi possivel cancelar o cadastro.'
+          ? 'Não foi possível confirmar o cadastro.'
+          : 'Não foi possível cancelar o cadastro.'
       )
       return
     }

@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   const status = String(url.searchParams.get('status') ?? '').trim()
 
   if (new Date(to).getTime() <= new Date(from).getTime()) {
-    return errorResponse('Periodo invalido.')
+    return errorResponse('Período inválido.')
   }
 
   let query = result.supabase
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
   const { data, error } = await query
 
   if (error) {
-    return errorResponse('Nao foi possivel carregar historico de pagamentos.', 500, error.message)
+    return errorResponse('Não foi possível carregar histórico de pagamentos.', 500, error.message)
   }
 
   const paymentIds = (data ?? []).map((payment) => payment.id)
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
 
     if (eventsError) {
-      console.error('Nao foi possivel carregar eventos de pagamento.', eventsError.message)
+      console.error('Não foi possível carregar eventos de pagamento.', eventsError.message)
     }
 
     for (const event of events ?? []) {
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false })
 
   if (billingEventsError) {
-    console.error('Nao foi possivel carregar eventos de cobranca.', billingEventsError.message)
+    console.error('Não foi possível carregar eventos de cobrança.', billingEventsError.message)
   }
 
   return Response.json({

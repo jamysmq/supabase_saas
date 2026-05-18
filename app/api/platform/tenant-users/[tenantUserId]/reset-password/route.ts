@@ -26,7 +26,7 @@ export async function POST(
     .single()
 
   if (tenantUserError || !tenantUser) {
-    return Response.json({ error: 'Tenant user not found.' }, { status: 404 })
+    return Response.json({ error: 'Usuário do tenant não encontrado.' }, { status: 404 })
   }
 
   const temporaryPassword = generateTemporaryPassword()
@@ -42,7 +42,7 @@ export async function POST(
 
     if (createUserError || !createdUser.user) {
       return Response.json(
-        { error: 'Could not create auth user.' },
+        { error: 'Não foi possível criar o usuário de autenticação.' },
         { status: 500 }
       )
     }
@@ -57,7 +57,7 @@ export async function POST(
 
     if (updateUserError) {
       return Response.json(
-        { error: 'Could not reset auth password.' },
+        { error: 'Não foi possível redefinir a senha de autenticação.' },
         { status: 500 }
       )
     }
@@ -74,7 +74,7 @@ export async function POST(
 
   if (updateTenantUserError) {
     return Response.json(
-      { error: 'Could not update tenant user.' },
+      { error: 'Não foi possível atualizar o usuário do tenant.' },
       { status: 500 }
     )
   }

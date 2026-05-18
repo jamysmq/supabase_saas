@@ -22,7 +22,7 @@ export async function POST(
 
   if (error) {
     return Response.json(
-      { error: 'Could not cancel signup.' },
+      { error: 'Não foi possível cancelar o cadastro.' },
       { status: 500 }
     )
   }

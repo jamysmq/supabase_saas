@@ -12,9 +12,9 @@ export function tenantCanUseRestaurant(plan?: string | null) {
 
 export function tenantPlanLabel(plan?: string | null) {
   const labels: Record<string, string> = {
-    plan1: 'Plano 1 - Cobrancas',
+    plan1: 'Plano 1 - Cobranças',
     plan2: 'Plano 2 - Agenda',
-    plan3: 'Plano 3 - Cobrancas + agenda',
+    plan3: 'Plano 3 - Cobranças + agenda',
     plan4: 'Plano 4 - Restaurantes',
   }
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseAppointments } from '../../src/lib/plan-features'
+import { formatCurrencyFromCents, formatMoneyInput } from '../../src/lib/money'
 
 type Appointment = {
   appointment_id: string
@@ -29,8 +30,16 @@ type Appointment = {
 type Service = {
   id: string
   name: string
+  description: string | null
   duration_minutes: number
   price_cents: number | null
+}
+
+type ServiceForm = {
+  name: string
+  description: string
+  duration_minutes: string
+  price: string
 }
 
 type StaffMember = {
@@ -85,6 +94,12 @@ function formatTime(value: string) {
   })
 }
 
+function formatCurrency(valueCents: number | null | undefined) {
+  return valueCents === null || valueCents === undefined
+    ? formatCurrencyFromCents(0)
+    : formatCurrencyFromCents(valueCents)
+}
+
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
     scheduled: 'Agendado',
@@ -106,7 +121,12 @@ export default function AppointmentsPage() {
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>(emptyAppointmentForm)
-  const [serviceForm, setServiceForm] = useState({ name: '' })
+  const [serviceForm, setServiceForm] = useState<ServiceForm>({
+    name: '',
+    description: '',
+    duration_minutes: '60',
+    price: '',
+  })
   const [editingServiceId, setEditingServiceId] = useState('')
   const [staffForm, setStaffForm] = useState({ name: '', role: '' })
   const [editingStaffId, setEditingStaffId] = useState('')
@@ -165,7 +185,7 @@ export default function AppointmentsPage() {
       ])
 
     if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok) {
-      setError('Nao foi possivel carregar a agenda.')
+      setError('Não foi possível carregar a agenda.')
       setLoading(false)
       return
     }
@@ -255,7 +275,7 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel criar o agendamento.')
+      setError(data?.message || 'Não foi possível criar o agendamento.')
       return
     }
 
@@ -295,12 +315,12 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel salvar o servico.')
+      setError(data?.message || 'Não foi possível salvar o serviço.')
       return
     }
 
-    setSuccess(editingServiceId ? 'Servico atualizado.' : 'Servico criado.')
-    setServiceForm({ name: '' })
+    setSuccess(editingServiceId ? 'Serviço atualizado.' : 'Serviço criado.')
+    setServiceForm({ name: '', description: '', duration_minutes: '60', price: '' })
     setEditingServiceId('')
     await load()
   }
@@ -336,7 +356,7 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel salvar o profissional.')
+      setError(data?.message || 'Não foi possível salvar o profissional.')
       return
     }
 
@@ -347,7 +367,7 @@ export default function AppointmentsPage() {
   }
 
   async function deleteService(service: Service) {
-    const confirmed = confirm(`Excluir o servico ${service.name}?`)
+    const confirmed = confirm(`Excluir o serviço ${service.name}?`)
     if (!confirmed) return
 
     const token = await getToken()
@@ -372,16 +392,16 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel excluir o servico.')
+      setError(data?.message || 'Não foi possível excluir o serviço.')
       return
     }
 
     if (editingServiceId === service.id) {
       setEditingServiceId('')
-      setServiceForm({ name: '' })
+      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '' })
     }
 
-    setSuccess('Servico excluido.')
+    setSuccess('Serviço excluído.')
     await load()
   }
 
@@ -411,7 +431,7 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel excluir o profissional.')
+      setError(data?.message || 'Não foi possível excluir o profissional.')
       return
     }
 
@@ -420,7 +440,7 @@ export default function AppointmentsPage() {
       setStaffForm({ name: '', role: '' })
     }
 
-    setSuccess('Profissional excluido.')
+    setSuccess('Profissional excluído.')
     await load()
   }
 
@@ -447,7 +467,7 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel alterar o status.')
+      setError(data?.message || 'Não foi possível alterar o status.')
       setActingId('')
       return
     }
@@ -484,12 +504,12 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel excluir o agendamento.')
+      setError(data?.message || 'Não foi possível excluir o agendamento.')
       setActingId('')
       return
     }
 
-    setSuccess('Agendamento excluido.')
+    setSuccess('Agendamento excluído.')
     setActingId('')
     await load()
   }
@@ -517,7 +537,7 @@ export default function AppointmentsPage() {
               onClick={() => router.push('/appointment-history?from=appointments')}
               className="text-sm font-medium text-gray-950 underline"
             >
-              Historico
+              Histórico
             </button>
           </div>
 
@@ -525,7 +545,7 @@ export default function AppointmentsPage() {
             <div className="space-y-4">
               <h1 className="text-2xl font-bold">Agenda</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Organize atendimentos, consultas e horarios por profissional.
+                Organize atendimentos, consultas e horários por profissional.
               </p>
               <label className="block max-w-xs text-sm font-medium">
                 Dia da agenda
@@ -574,7 +594,7 @@ export default function AppointmentsPage() {
 
             <section className="rounded-2xl bg-white p-5 shadow">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-bold">Horarios do dia</h2>
+                <h2 className="font-bold">Horários do dia</h2>
                 <span className="text-sm text-gray-500">
                   {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('pt-BR')}
                 </span>
@@ -599,7 +619,7 @@ export default function AppointmentsPage() {
                           {appointment.customer_name || appointment.title || 'Sem pessoa'}
                         </div>
                         <div className="break-words text-sm text-gray-500">
-                          {appointment.customer_phone_e164 || 'Sem WhatsApp'} · {appointment.service_name || 'Sem servico'} · {appointment.staff_member_name || 'Sem profissional'}
+                          {appointment.customer_phone_e164 || 'Sem WhatsApp'} · {appointment.service_name || 'Sem serviço'} · {appointment.staff_member_name || 'Sem profissional'}
                         </div>
                         {appointment.notes && (
                           <div className="mt-1 break-words text-xs text-gray-500">
@@ -693,13 +713,13 @@ export default function AppointmentsPage() {
               </div>
 
               <label className="block text-sm font-medium">
-                Servico
+                Serviço
                 <select
                   value={appointmentForm.service_id}
                   onChange={(event) => selectService(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                 >
-                  <option value="">Sem servico</option>
+                  <option value="">Sem serviço</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.name}
@@ -769,7 +789,7 @@ export default function AppointmentsPage() {
                 value={appointmentForm.notes}
                 onChange={(event) => setAppointmentForm({ ...appointmentForm, notes: event.target.value })}
                 className="min-h-20 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                placeholder="Observacoes"
+                placeholder="Observações"
               />
 
               <button
@@ -783,13 +803,13 @@ export default function AppointmentsPage() {
 
             <form onSubmit={saveService} className="rounded-2xl bg-white p-5 shadow space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="font-bold">Servicos</h2>
+                <h2 className="font-bold">Serviços</h2>
                 {editingServiceId && (
                   <button
                     type="button"
                     onClick={() => {
                       setEditingServiceId('')
-                      setServiceForm({ name: '' })
+                      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '' })
                     }}
                     className="text-xs font-medium text-gray-500"
                   >
@@ -801,30 +821,70 @@ export default function AppointmentsPage() {
                 value={serviceForm.name}
                 onChange={(event) => setServiceForm({ ...serviceForm, name: event.target.value })}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                placeholder="Nome do servico"
+                placeholder="Nome do serviço"
                 required
               />
+              <textarea
+                value={serviceForm.description}
+                onChange={(event) => setServiceForm({ ...serviceForm, description: event.target.value })}
+                className="min-h-20 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                placeholder="Descrição"
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  type="number"
+                  min="15"
+                  max="480"
+                  step="15"
+                  value={serviceForm.duration_minutes}
+                  onChange={(event) => setServiceForm({ ...serviceForm, duration_minutes: event.target.value })}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                  placeholder="Duracao em minutos"
+                  required
+                />
+                <input
+                  inputMode="decimal"
+                  value={serviceForm.price}
+                  onChange={(event) => setServiceForm({ ...serviceForm, price: event.target.value })}
+                  onBlur={() => setServiceForm({ ...serviceForm, price: formatMoneyInput(serviceForm.price) })}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                  placeholder="R$ 0,00"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={saving}
                 className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium disabled:opacity-50"
               >
-                {editingServiceId ? 'Salvar servico' : 'Criar servico'}
+                {editingServiceId ? 'Salvar serviço' : 'Criar serviço'}
               </button>
 
               <div className="divide-y divide-gray-100">
                 {services.length === 0 ? (
-                  <p className="py-3 text-sm text-gray-500">Nenhum servico cadastrado.</p>
+                  <p className="py-3 text-sm text-gray-500">Nenhum serviço cadastrado.</p>
                 ) : (
                   services.map((service) => (
                     <div key={service.id} className="flex items-start justify-between gap-3 py-3">
-                      <span className="min-w-0 break-words text-sm font-medium">{service.name}</span>
+                      <div className="min-w-0">
+                        <div className="break-words text-sm font-medium">{service.name}</div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {service.duration_minutes} min · {formatCurrency(service.price_cents)}
+                        </div>
+                        {service.description && (
+                          <div className="mt-1 break-words text-xs text-gray-500">{service.description}</div>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             setEditingServiceId(service.id)
-                            setServiceForm({ name: service.name })
+                            setServiceForm({
+                              name: service.name,
+                              description: service.description ?? '',
+                              duration_minutes: String(service.duration_minutes ?? 60),
+                              price: service.price_cents ? formatCurrencyFromCents(service.price_cents) : '',
+                            })
                           }}
                           className="text-xs font-medium text-gray-950 underline"
                         >
@@ -872,7 +932,7 @@ export default function AppointmentsPage() {
                 value={staffForm.role}
                 onChange={(event) => setStaffForm({ ...staffForm, role: event.target.value })}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                placeholder="Observacoes"
+                placeholder="Observações"
               />
               <button
                 type="submit"

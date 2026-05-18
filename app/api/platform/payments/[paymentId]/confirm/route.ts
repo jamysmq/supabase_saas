@@ -29,7 +29,7 @@ export async function POST(
 
   if (error || !data) {
     return Response.json(
-      { error: 'Could not confirm platform payment.' },
+      { error: 'Não foi possível confirmar o pagamento da plataforma.' },
       { status: error?.code === 'PGRST116' ? 404 : 500 }
     )
   }
@@ -48,7 +48,7 @@ export async function POST(
     })
 
   if (eventError) {
-    console.error('Could not register platform payment confirmation event.', eventError.message)
+    console.error('Não foi possível registrar o evento de confirmação do pagamento da plataforma.', eventError.message)
   }
 
   return Response.json({ ok: true })

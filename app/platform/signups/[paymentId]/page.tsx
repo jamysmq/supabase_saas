@@ -52,7 +52,7 @@ export default function PlatformSignupDetailPage() {
     }
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar o detalhe do cadastro.')
+      setError('Não foi possível carregar o detalhe do cadastro.')
       setLoading(false)
       return
     }
@@ -104,8 +104,8 @@ export default function PlatformSignupDetailPage() {
     if (!response.ok) {
       setError(
         action === 'confirm'
-          ? 'Nao foi possivel confirmar o cadastro.'
-          : 'Nao foi possivel cancelar o cadastro.'
+          ? 'Não foi possível confirmar o cadastro.'
+          : 'Não foi possível cancelar o cadastro.'
       )
       return
     }

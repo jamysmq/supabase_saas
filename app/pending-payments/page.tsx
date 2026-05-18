@@ -66,7 +66,7 @@ export default function PendingPaymentsPage() {
     })
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar os pagamentos pendentes.')
+      setError('Não foi possível carregar os pagamentos pendentes.')
       setLoading(false)
       return
     }
@@ -106,7 +106,7 @@ export default function PendingPaymentsPage() {
     })
 
     if (!response.ok) {
-      alert('Nao foi possivel confirmar o pagamento.')
+      alert('Não foi possível confirmar o pagamento.')
       return
     }
 
@@ -129,7 +129,7 @@ export default function PendingPaymentsPage() {
     )
 
     if (error) {
-      alert(`Nao foi possivel desativar o ${labels.customerSingular.toLowerCase()}.`)
+      alert(`Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 
@@ -176,7 +176,7 @@ function statusLabel(status: string) {
               onClick={() => router.push('/payment-history?from=pending-payments')}
               className="text-sm font-medium text-gray-950 underline"
             >
-              Historico
+              Histórico
             </button>
           </div>
 

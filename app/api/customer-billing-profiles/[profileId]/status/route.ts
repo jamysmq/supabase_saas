@@ -19,7 +19,7 @@ export async function PATCH(
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Cobrancas disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Cobranças disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const { profileId } = await context.params
@@ -27,7 +27,7 @@ export async function PATCH(
   const status = typeof body?.status === 'string' ? body.status : ''
 
   if (!allowedStatuses.has(status)) {
-    return errorResponse('Status invalido.')
+    return errorResponse('Status inválido.')
   }
 
   const { data: profile, error: profileError } = await result.supabase
@@ -46,7 +46,7 @@ export async function PATCH(
     .single()
 
   if (profileError || !profile) {
-    return errorResponse('Perfil de cobranca nao encontrado.', 404, profileError?.message)
+    return errorResponse('Perfil de cobrança não encontrado.', 404, profileError?.message)
   }
 
   if (profile.status === status) {
@@ -62,7 +62,7 @@ export async function PATCH(
     .eq('id', profileId)
 
   if (updateError) {
-    return errorResponse('Nao foi possivel atualizar a cobranca.', 500, updateError.message)
+    return errorResponse('Não foi possível atualizar a cobrança.', 500, updateError.message)
   }
 
   const { error: eventError } = await result.supabase
@@ -82,7 +82,7 @@ export async function PATCH(
     })
 
   if (eventError) {
-    console.error('Nao foi possivel registrar evento de cobranca do cliente.', eventError.message)
+    console.error('Não foi possível registrar evento de cobrança do cliente.', eventError.message)
   }
 
   return Response.json({ ok: true })

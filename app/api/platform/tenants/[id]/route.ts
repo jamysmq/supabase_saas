@@ -1,7 +1,8 @@
 import { requirePlatformAdmin } from '../../../../../src/lib/platform-admin'
+import { parseMoneyToCents } from '../../../../../src/lib/money'
 
 const allowedStatuses = new Set(['pending', 'active', 'suspended', 'cancelled'])
-const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon'])
+const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -18,7 +19,7 @@ function errorResponse(message: string, status = 400, details?: string) {
 }
 
 function parseAmountCents(value: unknown) {
-  return Math.round(Number(String(value ?? '').replace(',', '.')) * 100)
+  return parseMoneyToCents(value)
 }
 
 export async function GET(
@@ -51,7 +52,7 @@ export async function GET(
     .single()
 
   if (tenantError || !tenant) {
-    return Response.json({ error: 'Tenant not found.' }, { status: 404 })
+    return Response.json({ error: 'Tenant não encontrado.' }, { status: 404 })
   }
 
   const [{ data: users }, { data: subscription }, { data: settings }, { data: billingProfile }] =
@@ -103,7 +104,7 @@ export async function PATCH(
   const body = await request.json().catch(() => null)
 
   if (!body) {
-    return errorResponse('Dados invalidos. Recarregue a pagina e tente novamente.')
+    return errorResponse('Dados inválidos. Recarregue a página e tente novamente.')
   }
 
   const { data: currentTenant, error: currentTenantError } = await result.supabase
@@ -113,7 +114,7 @@ export async function PATCH(
     .single()
 
   if (currentTenantError || !currentTenant) {
-    return errorResponse('Tenant nao encontrado.', 404, currentTenantError?.message)
+    return errorResponse('Tenant não encontrado.', 404, currentTenantError?.message)
   }
 
   const patch: Record<string, string | null> = {}
@@ -134,7 +135,7 @@ export async function PATCH(
 
   if (typeof body.status === 'string') {
     if (!allowedStatuses.has(body.status)) {
-      return errorResponse('Status invalido.')
+      return errorResponse('Status inválido.')
     }
 
     patch.status = body.status
@@ -142,7 +143,7 @@ export async function PATCH(
 
   if (typeof body.business_type === 'string') {
     if (!allowedBusinessTypes.has(body.business_type)) {
-      return errorResponse('Tipo de negocio invalido.')
+      return errorResponse('Tipo de negócio inválido.')
     }
 
     patch.business_type = body.business_type
@@ -164,11 +165,11 @@ export async function PATCH(
     .maybeSingle()
 
   if (selectedPlanError) {
-    return errorResponse('Nao foi possivel validar o plano selecionado.', 500, selectedPlanError.message)
+    return errorResponse('Não foi possível validar o plano selecionado.', 500, selectedPlanError.message)
   }
 
   if (!selectedPlan || !selectedPlan.is_active) {
-    return errorResponse('Plano invalido ou inativo. Escolha um plano ativo.')
+    return errorResponse('Plano inválido ou inativo. Escolha um plano ativo.')
   }
 
   const amountCents = body.monthly_amount !== undefined
@@ -177,11 +178,11 @@ export async function PATCH(
   const dueDay = body.due_day !== undefined ? Number(body.due_day) : null
 
   if (body.monthly_amount !== undefined && (!Number.isFinite(amountCents) || amountCents <= 0)) {
-    return errorResponse('Mensalidade invalida. Informe um valor maior que zero.')
+    return errorResponse('Mensalidade inválida. Informe um valor maior que zero.')
   }
 
   if (dueDay !== null && (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31)) {
-    return errorResponse('Dia de cobranca invalido. Informe um numero entre 1 e 31.')
+    return errorResponse('Dia de cobrança inválido. Informe um número entre 1 e 31.')
   }
 
   const { data, error } = await result.supabase
@@ -196,7 +197,7 @@ export async function PATCH(
 
   if (error || !data) {
     return errorResponse(
-      'Nao foi possivel atualizar o tenant.',
+      'Não foi possível atualizar o tenant.',
       500,
       error?.message
     )
@@ -224,7 +225,7 @@ export async function PATCH(
         .eq('id', subscriptionId)
 
       if (subscriptionError) {
-        return errorResponse('Tenant atualizado, mas nao foi possivel atualizar a assinatura.', 500, subscriptionError.message)
+        return errorResponse('Tenant atualizado, mas não foi possível atualizar a assinatura.', 500, subscriptionError.message)
       }
     } else {
       const { data: createdSubscription, error: subscriptionError } = await result.supabase
@@ -239,7 +240,7 @@ export async function PATCH(
         .single()
 
       if (subscriptionError || !createdSubscription) {
-        return errorResponse('Tenant atualizado, mas nao foi possivel criar a assinatura.', 500, subscriptionError?.message)
+        return errorResponse('Tenant atualizado, mas não foi possível criar a assinatura.', 500, subscriptionError?.message)
       }
 
       subscriptionId = createdSubscription.id
@@ -274,7 +275,7 @@ export async function PATCH(
           })
 
     if (billingResult.error) {
-      return errorResponse('Tenant atualizado, mas nao foi possivel atualizar a cobranca mensal.', 500, billingResult.error.message)
+      return errorResponse('Tenant atualizado, mas não foi possível atualizar a cobrança mensal.', 500, billingResult.error.message)
     }
 
     await result.supabase
@@ -308,7 +309,7 @@ export async function DELETE(
     .maybeSingle()
 
   if (tenantSnapshotError || !tenantSnapshot) {
-    return errorResponse('Tenant nao encontrado.', 404, tenantSnapshotError?.message)
+    return errorResponse('Tenant não encontrado.', 404, tenantSnapshotError?.message)
   }
 
   const { error: deleteEventError } = await result.supabase
@@ -320,7 +321,7 @@ export async function DELETE(
       old_status: tenantSnapshot.status,
       new_status: 'deleted',
       source: 'manual_delete',
-      note: 'Tenant excluido pelo painel da plataforma.',
+      note: 'Tenant excluído pelo painel da plataforma.',
       tenant_legal_name_snapshot: tenantSnapshot.legal_name,
       tenant_email_snapshot: tenantSnapshot.email,
       tenant_cpf_snapshot: tenantSnapshot.cpf,
@@ -330,7 +331,7 @@ export async function DELETE(
     })
 
   if (deleteEventError) {
-    return errorResponse('Nao foi possivel registrar o historico antes de excluir o tenant.', 500, deleteEventError.message)
+    return errorResponse('Não foi possível registrar o histórico antes de excluir o tenant.', 500, deleteEventError.message)
   }
 
   const { data: tenantUsers, error: usersError } = await result.supabase
@@ -340,7 +341,7 @@ export async function DELETE(
 
   if (usersError) {
     return errorResponse(
-      'Nao foi possivel localizar os usuarios do tenant.',
+      'Não foi possível localizar os usuários do tenant.',
       500,
       usersError.message
     )
@@ -380,7 +381,7 @@ export async function DELETE(
 
   if (error || !data) {
     return errorResponse(
-      'Nao foi possivel excluir o tenant.',
+      'Não foi possível excluir o tenant.',
       error?.code === 'PGRST116' ? 404 : 500,
       error?.message
     )

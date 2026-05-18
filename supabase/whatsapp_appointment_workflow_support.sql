@@ -1,3 +1,5 @@
+drop function if exists public.jsonb_deep_merge(jsonb, jsonb);
+
 create or replace function public.jsonb_deep_merge(left_value jsonb, right_value jsonb)
 returns jsonb
 language sql
@@ -126,7 +128,7 @@ begin
       false,
       now()
     )
-    returning id, step, payload_draft
+    returning wa_conversations.id, wa_conversations.step, wa_conversations.payload_draft
       into v_conversation_id, v_step, v_payload;
   else
     update public.wa_conversations
@@ -199,6 +201,11 @@ security definer
 set search_path = public
 as $$
 begin
+  conversation_id := null;
+  step := null;
+  payload_draft := null;
+  is_closed := null;
+
   if p_conversation_id is null then
     raise exception 'conversation_id_required';
   end if;
@@ -446,14 +453,26 @@ as $$
 declare
   v_tenant_id uuid;
   v_recipient text;
+  v_service_id uuid;
+  v_staff_member_id uuid;
+  v_service_name text;
+  v_staff_member_name text;
+  v_duration_minutes integer;
 begin
   select
     a.tenant_id,
-    coalesce(tc.phone_e164, ec.whatsapp_e164)
-    into v_tenant_id, v_recipient
+    coalesce(tc.phone_e164, ec.whatsapp_e164),
+    a.service_id,
+    a.staff_member_id,
+    coalesce(a.service_name_snapshot, s.name),
+    coalesce(a.staff_member_name_snapshot, sm.name),
+    coalesce(s.duration_minutes, 60)
+    into v_tenant_id, v_recipient, v_service_id, v_staff_member_id, v_service_name, v_staff_member_name, v_duration_minutes
   from public.appointments a
   left join public.tenant_customers tc on tc.id = a.tenant_customer_id
   left join public.end_customers ec on ec.id = a.end_customer_id
+  left join public.tenant_services s on s.id = a.service_id
+  left join public.tenant_staff_members sm on sm.id = a.staff_member_id
   where a.id = p_appointment_id;
 
   if v_tenant_id is null then
@@ -501,7 +520,12 @@ begin
       'module', 'appointments',
       'appointment', jsonb_build_object(
         'appointment_id', p_appointment_id,
-        'customer_whatsapp', regexp_replace(coalesce(v_recipient, ''), '\D', '', 'g')
+        'customer_whatsapp', regexp_replace(coalesce(v_recipient, ''), '\D', '', 'g'),
+        'service_id', v_service_id,
+        'service_name', v_service_name,
+        'staff_member_id', v_staff_member_id,
+        'staff_member_name', v_staff_member_name,
+        'duration_minutes', v_duration_minutes
       ),
       'metadata', jsonb_build_object(
         'source', 'appointment_d1_09',
@@ -623,6 +647,8 @@ begin
     coalesce(p_note, 'Alteracao feita pelo cliente via WhatsApp.')
   );
 
+  perform public.admin_sync_appointment_service_revenue(p_appointment_id, 'whatsapp');
+
   return query
   select
     a.id,
@@ -638,3 +664,146 @@ $$;
 grant execute on function public.wa_appointment_list_confirmation_reminders(date, text) to authenticated, service_role;
 grant execute on function public.wa_appointment_mark_confirmation_reminder_sent(uuid, text, jsonb) to authenticated, service_role;
 grant execute on function public.wa_appointment_apply_customer_action(uuid, text, timestamptz, timestamptz, text) to authenticated, service_role;
+
+create or replace function public.wa_appointment_suggest_slots(
+  p_tenant_id uuid,
+  p_service_id uuid,
+  p_staff_member_id uuid default null,
+  p_from_date date default current_date,
+  p_period text default null,
+  p_limit integer default 5,
+  p_offset integer default 0,
+  p_days_ahead integer default 60,
+  p_timezone text default 'America/Fortaleza'
+)
+returns table (
+  slot_number integer,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  label text,
+  staff_member_id uuid,
+  staff_member_name text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  with service_config as (
+    select coalesce(s.duration_minutes, 60) as duration_minutes
+    from public.tenant_services s
+    where s.id = p_service_id
+      and s.tenant_id = p_tenant_id
+      and s.is_active = true
+  ),
+  period_config as (
+    select
+      case lower(coalesce(p_period, 'any'))
+        when 'morning' then time '08:00'
+        when 'manha' then time '08:00'
+        when 'afternoon' then time '12:00'
+        when 'tarde' then time '12:00'
+        when 'night' then time '18:00'
+        when 'noite' then time '18:00'
+        else time '08:00'
+      end as starts_at,
+      case lower(coalesce(p_period, 'any'))
+        when 'morning' then time '12:00'
+        when 'manha' then time '12:00'
+        when 'afternoon' then time '18:00'
+        when 'tarde' then time '18:00'
+        when 'night' then time '21:00'
+        when 'noite' then time '21:00'
+        else time '18:00'
+      end as ends_at
+  ),
+  staff_candidates as (
+    select sm.id, sm.name
+    from public.tenant_staff_members sm
+    where sm.tenant_id = p_tenant_id
+      and sm.is_active = true
+      and (p_staff_member_id is null or sm.id = p_staff_member_id)
+    union all
+    select null::uuid, null::text
+    where p_staff_member_id is null
+      and not exists (
+        select 1
+        from public.tenant_staff_members sm
+        where sm.tenant_id = p_tenant_id
+          and sm.is_active = true
+      )
+  ),
+  candidate_slots as (
+    select
+      (slot_start.slot_local at time zone p_timezone) as starts_at,
+      ((slot_start.slot_local + make_interval(mins => sc.duration_minutes)) at time zone p_timezone) as ends_at,
+      staff_candidates.id as staff_member_id,
+      staff_candidates.name as staff_member_name
+    from service_config sc
+    cross join period_config pc
+    cross join staff_candidates
+    cross join generate_series(
+      greatest(coalesce(p_from_date, current_date), current_date)::timestamp,
+      (current_date + greatest(1, least(coalesce(p_days_ahead, 60), 60)))::timestamp,
+      interval '1 day'
+    ) as day_series(day_local)
+    cross join lateral (
+      select generate_series(
+        day_series.day_local + pc.starts_at,
+        day_series.day_local + pc.ends_at - make_interval(mins => sc.duration_minutes),
+        interval '30 minutes'
+      ) as slot_local
+    ) slot_start
+    where (slot_start.slot_local at time zone p_timezone) > now()
+  ),
+  available_slots as (
+    select candidate_slots.*
+    from candidate_slots
+    where not exists (
+      select 1
+      from public.appointments a
+      where a.tenant_id = p_tenant_id
+        and a.deleted_at is null
+        and a.status not in ('cancelled', 'no_show')
+        and (
+          (candidate_slots.staff_member_id is null and a.staff_member_id is null)
+          or (candidate_slots.staff_member_id is not null and a.staff_member_id = candidate_slots.staff_member_id)
+        )
+        and tstzrange(a.starts_at, a.ends_at, '[)') && tstzrange(candidate_slots.starts_at, candidate_slots.ends_at, '[)')
+    )
+  ),
+  ranked_slots as (
+    select
+      available_slots.*,
+      row_number() over (
+        partition by available_slots.starts_at
+        order by available_slots.staff_member_name nulls last
+      ) as staff_rank
+    from available_slots
+  ),
+  compact_slots as (
+    select *
+    from ranked_slots
+    where staff_rank = 1
+    order by starts_at asc, staff_member_name nulls last
+    limit greatest(1, least(coalesce(p_limit, 5), 8))
+    offset greatest(0, coalesce(p_offset, 0))
+  )
+  select
+    row_number() over (order by compact_slots.starts_at asc)::integer as slot_number,
+    compact_slots.starts_at,
+    compact_slots.ends_at,
+    concat(
+      to_char(compact_slots.starts_at at time zone p_timezone, 'Dy DD/MM'),
+      ' as ',
+      to_char(compact_slots.starts_at at time zone p_timezone, 'HH24:MI'),
+      case
+        when compact_slots.staff_member_name is null then ''
+        else concat(' com ', compact_slots.staff_member_name)
+      end
+    ) as label,
+    compact_slots.staff_member_id,
+    compact_slots.staff_member_name
+  from compact_slots;
+$$;
+
+grant execute on function public.wa_appointment_suggest_slots(uuid, uuid, uuid, date, text, integer, integer, integer, text) to authenticated, service_role;

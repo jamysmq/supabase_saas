@@ -22,35 +22,35 @@ type TemplateDefinition = {
 const templateDefinitions: TemplateDefinition[] = [
   {
     key: 'billing_reminder_due_today',
-    title: 'Cobranca mensal',
+    title: 'Cobrança mensal',
     description: 'Mensagem usada para avisar clientes sobre mensalidades pendentes.',
     capability: 'billing',
     defaultContent:
-      'Ola, {{customer_name}}! Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.',
+      'Olá, {{customer_name}}! Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.',
   },
   {
     key: 'appointment_welcome',
     title: 'Boas-vindas da agenda',
-    description: 'Mensagem inicial para clientes que vao marcar horarios pelo WhatsApp.',
+    description: 'Mensagem inicial para clientes que vão marcar horários pelo WhatsApp.',
     capability: 'appointments',
     defaultContent:
-      'Ola! Eu sou o assistente de agendamento de {{tenant_name}}. Me diga o servico e o melhor dia para voce.',
+      'Olá! Eu sou o assistente de agendamento de {{tenant_name}}. Me diga o serviço e o melhor dia para você.',
   },
   {
     key: 'appointment_confirmation_reminder',
-    title: 'Confirmacao de agendamento',
+    title: 'Confirmação de agendamento',
     description: 'Mensagem enviada um dia antes do agendamento para confirmar, remarcar ou cancelar.',
     capability: 'appointments',
     defaultContent:
-      'Ola, {{customer_name}}! Confirmando seu horario em {{appointment_date}} as {{appointment_time}} com {{tenant_name}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
+      'Olá, {{customer_name}}! Confirmando seu horário em {{appointment_date}} às {{appointment_time}} com {{tenant_name}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
   },
   {
     key: 'restaurant_welcome',
     title: 'Mensagem inicial do restaurante',
-    description: 'Mensagem futura para iniciar pedidos e consulta de cardapio pelo WhatsApp.',
+    description: 'Mensagem futura para iniciar pedidos e consulta de cardápio pelo WhatsApp.',
     capability: 'restaurant',
     defaultContent:
-      'Ola! Bem-vindo ao {{tenant_name}}. Me diga se voce quer ver o cardapio ou fazer um pedido.',
+      'Olá! Bem-vindo ao {{tenant_name}}. Me diga se você quer ver o cardápio ou fazer um pedido.',
   },
 ]
 
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
     .in('template_key', keys)
 
   if (error) {
-    return errorResponse('Nao foi possivel carregar as mensagens.', 500, error.message)
+    return errorResponse('Não foi possível carregar as mensagens.', 500, error.message)
   }
 
   const rowsByKey = new Map((data ?? []).map((row) => [row.template_key, row]))
@@ -142,7 +142,7 @@ export async function PUT(request: Request) {
     const definition = allowedByKey.get(key)
 
     if (!definition) {
-      return errorResponse('Mensagem nao permitida para o plano atual.', 403)
+      return errorResponse('Mensagem não permitida para o plano atual.', 403)
     }
 
     const content = String(template?.content ?? '').trim()
@@ -152,7 +152,7 @@ export async function PUT(request: Request) {
     }
 
     if (content.length > 2000) {
-      return errorResponse(`A mensagem "${definition.title}" deve ter no maximo 2000 caracteres.`)
+      return errorResponse(`A mensagem "${definition.title}" deve ter no máximo 2000 caracteres.`)
     }
 
     const basePayload = {
@@ -172,7 +172,7 @@ export async function PUT(request: Request) {
       .maybeSingle()
 
     if (existingError) {
-      return errorResponse('Nao foi possivel validar a mensagem existente.', 500, existingError.message)
+      return errorResponse('Não foi possível validar a mensagem existente.', 500, existingError.message)
     }
 
     const query = existing
@@ -194,7 +194,7 @@ export async function PUT(request: Request) {
     const { data, error } = await query
 
     if (error || !data) {
-      return errorResponse('Nao foi possivel salvar a mensagem.', 500, error?.message)
+      return errorResponse('Não foi possível salvar a mensagem.', 500, error?.message)
     }
 
     savedTemplates.push(data)

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
 
 type Tenant = {
   id: string
@@ -65,15 +66,6 @@ const emptyTenantForm: TenantForm = {
   due_day: '',
 }
 
-function formatMoney(amountCents: number | null | undefined) {
-  if (!amountCents) return '-'
-
-  return (amountCents / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
 export default function PlatformTenantsPage() {
   const router = useRouter()
 
@@ -123,13 +115,13 @@ export default function PlatformTenantsPage() {
     }
 
     if (response.status === 403) {
-      setError('Seu usuario nao tem permissao de administrador da plataforma.')
+      setError('Seu usuário não tem permissão de administrador da plataforma.')
       setLoading(false)
       return
     }
 
     if (!response.ok) {
-      setError('Nao foi possivel carregar os tenants.')
+      setError('Não foi possível carregar os tenants.')
       setLoading(false)
       return
     }
@@ -150,7 +142,7 @@ export default function PlatformTenantsPage() {
           return {
             ...currentForm,
             plan: selectedPlan.code,
-            monthly_amount: currentForm.monthly_amount || String(selectedPlan.monthly_amount_cents / 100).replace('.', ','),
+            monthly_amount: currentForm.monthly_amount || formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents),
           }
         })
       }
@@ -197,7 +189,7 @@ export default function PlatformTenantsPage() {
       ...form,
       plan: planCode,
       monthly_amount: selectedPlan
-        ? String(selectedPlan.monthly_amount_cents / 100).replace('.', ',')
+        ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
         : form.monthly_amount,
     })
   }
@@ -230,7 +222,7 @@ export default function PlatformTenantsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      const message = data?.message || data?.error || 'Nao foi possivel criar o tenant.'
+      const message = data?.message || data?.error || 'Não foi possível criar o tenant.'
       const details = data?.details ? ` Detalhe: ${data.details}` : ''
 
       setCreateError(`${message}${details}`)
@@ -279,7 +271,7 @@ export default function PlatformTenantsPage() {
     setDeletingTenantId('')
 
     if (!response.ok) {
-      setError('Nao foi possivel excluir o tenant.')
+      setError('Não foi possível excluir o tenant.')
       return
     }
 
@@ -293,14 +285,14 @@ export default function PlatformTenantsPage() {
     const profile = tenant.platform_billing_profile
 
     if (!profile) {
-      setError('Este tenant ainda nao tem cobranca da plataforma configurada.')
+      setError('Este tenant ainda não tem cobrança da plataforma configurada.')
       return
     }
 
     const confirmed = confirm(
       nextStatus === 'active'
-        ? `Ativar a cobranca de ${tenant.legal_name}?`
-        : `Pausar a cobranca de ${tenant.legal_name}?`
+        ? `Ativar a cobrança de ${tenant.legal_name}?`
+        : `Pausar a cobrança de ${tenant.legal_name}?`
     )
 
     if (!confirmed) return
@@ -333,7 +325,7 @@ export default function PlatformTenantsPage() {
     setBillingStatusSavingId('')
 
     if (!response.ok) {
-      setError('Nao foi possivel alterar o status da cobranca.')
+      setError('Não foi possível alterar o status da cobrança.')
       return
     }
 
@@ -356,7 +348,7 @@ export default function PlatformTenantsPage() {
             <div>
               <h1 className="text-2xl font-bold">Tenants</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Gerencie professores, clinicas, saloes e demais contas da plataforma.
+                Gerencie professores, clinicas, saloes, restaurantes e demais contas da plataforma.
               </p>
             </div>
 
@@ -458,7 +450,7 @@ export default function PlatformTenantsPage() {
                   <th className="py-2 pr-2 font-medium">Tipo</th>
                   <th className="py-2 pr-2 font-medium">Plano</th>
                   <th className="py-2 pr-2 font-medium">Status</th>
-                  <th className="py-2 pr-2 font-medium">Cobranca</th>
+                  <th className="py-2 pr-2 font-medium">Cobrança</th>
                   <th className="py-2 pr-2 font-medium">Pagamento</th>
                   <th className="py-2 pr-2 font-medium">Criado</th>
                   <th className="py-2 text-right font-medium">Acoes</th>
@@ -494,7 +486,7 @@ export default function PlatformTenantsPage() {
                         {tenant.platform_billing_profile ? (
                           <div>
                             <div>
-                              {formatMoney(tenant.platform_billing_profile.amount_cents)} · dia {tenant.platform_billing_profile.due_day}
+                              {formatCurrencyFromCents(tenant.platform_billing_profile.amount_cents)} · dia {tenant.platform_billing_profile.due_day}
                             </div>
                             <div className="text-xs text-gray-400">
                               {tenant.platform_billing_profile.status}
@@ -517,7 +509,7 @@ export default function PlatformTenantsPage() {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-amber-700">Sem cobranca</span>
+                          <span className="text-amber-700">Sem cobrança</span>
                         )}
                       </td>
                       <td className="py-2 pr-2">
@@ -533,7 +525,7 @@ export default function PlatformTenantsPage() {
                           }
                         >
                           {!tenant.platform_billing_profile
-                            ? 'Sem cobranca'
+                            ? 'Sem cobrança'
                             : tenant.platform_billing_profile.status !== 'active'
                               ? 'Pausada'
                               : tenant.has_pending_payment
@@ -580,7 +572,7 @@ export default function PlatformTenantsPage() {
               <div>
                 <h2 className="text-xl font-bold">Adicionar tenant</h2>
                 <p className="text-sm text-gray-500">
-                  Crie a conta do cliente e a regra de cobranca mensal.
+                  Crie a conta do cliente e a regra de cobrança mensal.
                 </p>
               </div>
 
@@ -683,6 +675,7 @@ export default function PlatformTenantsPage() {
                     <option value="autonomous">Autônomo</option>
                     <option value="clinic">Clínica</option>
                     <option value="salon">Salão</option>
+                    <option value="restaurant">Restaurante</option>
                   </select>
                 </label>
               </div>
@@ -729,15 +722,16 @@ export default function PlatformTenantsPage() {
                   <input
                     value={form.monthly_amount}
                     onChange={(event) => setForm({ ...form, monthly_amount: event.target.value })}
+                    onBlur={() => setForm({ ...form, monthly_amount: formatMoneyInput(form.monthly_amount) })}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     inputMode="decimal"
-                    placeholder="197,00"
+                    placeholder="R$ 0,00"
                     required
                   />
                 </label>
 
                 <label className="text-sm font-medium">
-                  Dia de cobranca
+                  Dia de cobrança
                   <input
                     value={form.due_day}
                     onChange={(event) => setForm({ ...form, due_day: event.target.value })}

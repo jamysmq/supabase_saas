@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
   if (error) {
     return Response.json(
-      { error: 'Could not list platform pending payments.' },
+      { error: 'Não foi possível listar os pagamentos pendentes da plataforma.' },
       { status: 500 }
     )
   }

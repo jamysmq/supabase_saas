@@ -70,7 +70,7 @@ export default function MoveStudentPage() {
     ])
 
     if (groupsResult.error || studentResult.error || !studentResult.data) {
-      setError(`Nao foi possivel carregar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível carregar o ${labels.customerSingular.toLowerCase()}.`)
       setLoading(false)
       return
     }
@@ -108,7 +108,7 @@ export default function MoveStudentPage() {
     )
 
     if (moveError) {
-      setError(`Nao foi possivel mover o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível mover o ${labels.customerSingular.toLowerCase()}.`)
       setSaving(false)
       return
     }

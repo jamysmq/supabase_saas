@@ -123,13 +123,13 @@ export default function SettingsPage() {
     ])
 
     if (tenantResult.error) {
-      setError('Nao foi possivel carregar as configuracoes.')
+      setError('Não foi possível carregar as configurações.')
       setLoading(false)
       return
     }
 
     if (!templatesResponse.ok) {
-      setError('Nao foi possivel carregar as mensagens.')
+      setError('Não foi possível carregar as mensagens.')
       setLoading(false)
       return
     }
@@ -177,7 +177,7 @@ export default function SettingsPage() {
     setSavingPix(false)
 
     if (rpcError) {
-      setError('Nao foi possivel salvar os dados de Pix.')
+      setError('Não foi possível salvar os dados de Pix.')
       return
     }
 
@@ -231,7 +231,7 @@ export default function SettingsPage() {
 
     if (!response.ok) {
       const payload = await response.json().catch(() => null)
-      setError(payload?.message ?? 'Nao foi possivel salvar as mensagens.')
+      setError(payload?.message ?? 'Não foi possível salvar as mensagens.')
       return
     }
 
@@ -252,7 +252,7 @@ export default function SettingsPage() {
     }
 
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setError('As senhas nao conferem.')
+      setError('As senhas não conferem.')
       setSavingPassword(false)
       return
     }
@@ -264,7 +264,7 @@ export default function SettingsPage() {
     setSavingPassword(false)
 
     if (updateError) {
-      setError('Nao foi possivel alterar a senha.')
+      setError('Não foi possível alterar a senha.')
       return
     }
 
@@ -299,7 +299,7 @@ export default function SettingsPage() {
             Voltar
           </button>
 
-          <h1 className="text-2xl font-bold">Configuracoes</h1>
+          <h1 className="text-2xl font-bold">Configurações</h1>
           <p className="text-sm text-gray-500 mt-1">
             Ajuste sua conta, Pix e dados de acesso.
           </p>
@@ -355,7 +355,7 @@ export default function SettingsPage() {
               <div>
                 <h2 className="font-bold">Pix de recebimento</h2>
                 <p className="text-sm text-gray-500">
-                  Estes dados podem aparecer nas mensagens de cobranca dos seus {labels.customerPluralLower}.
+                  Estes dados podem aparecer nas mensagens de cobrança dos seus {labels.customerPluralLower}.
                 </p>
               </div>
 

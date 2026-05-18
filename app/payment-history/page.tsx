@@ -154,7 +154,7 @@ export default function PaymentHistoryPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel carregar historico de pagamentos.')
+      setError(data?.message || 'Não foi possível carregar histórico de pagamentos.')
       setLoading(false)
       return
     }
@@ -232,12 +232,12 @@ export default function PaymentHistoryPage() {
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Historico de pagamentos</h1>
+              <h1 className="text-2xl font-bold">Histórico de pagamentos</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Consulte pagamentos dos clientes e pausas/ativacoes de cobranca.
+                Consulte pagamentos dos clientes e pausas/ativações de cobrança.
               </p>
               <p className="mt-2 hidden text-xs text-gray-500 print:block">
-                Periodo: {from} ate {to} - Status: {statusLabel(status)}
+                Período: {from} até {to} - Status: {statusLabel(status)}
               </p>
             </div>
 
@@ -287,7 +287,7 @@ export default function PaymentHistoryPage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} className="mb-4 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm print:hidden md:max-w-md" placeholder="Buscar por cliente, CPF, email ou telefone" />
 
           {filteredCycles.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">Nenhum pagamento encontrado no periodo.</p>
+            <p className="py-8 text-center text-sm text-gray-500">Nenhum pagamento encontrado no período.</p>
           ) : (
             <div className="divide-y divide-gray-100">
               {filteredCycles.map((cycle) => (
@@ -295,7 +295,7 @@ export default function PaymentHistoryPage() {
                   <div className="min-w-0">
                     <div className="break-words text-sm font-semibold">{cycle.tenant_customers?.full_name ?? 'Cliente sem nome'}</div>
                     <div className="mt-1 break-words text-sm text-gray-500">{cycle.tenant_customers?.phone_e164 ?? '-'} - {cycle.tenant_customers?.email ?? '-'}</div>
-                    <div className="mt-1 text-xs text-gray-500">Referencia {String(cycle.reference_month).padStart(2, '0')}/{cycle.reference_year} - Vencimento {formatDate(cycle.due_date)}</div>
+                    <div className="mt-1 text-xs text-gray-500">Referência {String(cycle.reference_month).padStart(2, '0')}/{cycle.reference_year} - Vencimento {formatDate(cycle.due_date)}</div>
                     {cycle.payment_note && <div className="mt-1 text-xs text-gray-500">{cycle.payment_note}</div>}
                   </div>
                   <div>
@@ -312,16 +312,16 @@ export default function PaymentHistoryPage() {
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow print:rounded-none print:p-0 print:shadow-none">
-          <h2 className="mb-3 font-bold">Eventos de cobranca</h2>
+          <h2 className="mb-3 font-bold">Eventos de cobrança</h2>
           {events.length === 0 ? (
-            <p className="py-6 text-center text-sm text-gray-500">Nenhuma pausa ou ativacao de cobranca no periodo.</p>
+            <p className="py-6 text-center text-sm text-gray-500">Nenhuma pausa ou ativação de cobrança no período.</p>
           ) : (
             <div className="divide-y divide-gray-100">
               {events.map((event) => (
                 <article key={event.id} className="grid gap-3 py-4 print:break-inside-avoid lg:grid-cols-[minmax(0,1fr)_220px]">
                   <div>
                     <div className="text-sm font-semibold">{event.tenant_customers?.full_name ?? 'Cliente sem nome'}</div>
-                    <div className="mt-1 text-sm text-gray-500">{event.note || 'Status de cobranca alterado.'}</div>
+                    <div className="mt-1 text-sm text-gray-500">{event.note || 'Status de cobrança alterado.'}</div>
                   </div>
                   <div className="flex flex-wrap gap-2 lg:justify-end">
                     <span className="h-7 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{statusLabel(event.old_status || '')} para {statusLabel(event.new_status)}</span>

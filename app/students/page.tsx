@@ -6,6 +6,7 @@ import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseBilling } from '../../src/lib/plan-features'
+import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput, parseMoneyToCents } from '../../src/lib/money'
 
 type Group = {
   id: string
@@ -67,7 +68,7 @@ function firstRelation<T>(relation: T | T[] | null | undefined) {
 }
 
 function parseBillingFields(form: StudentForm) {
-  const amountInCents = Math.round(Number(form.amount.replace(',', '.')) * 100)
+  const amountInCents = parseMoneyToCents(form.amount)
   const billingDay = Number(form.billing_day)
 
   if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
@@ -176,7 +177,7 @@ export default function StudentsPage() {
     ])
 
     if (groupsResult.error || studentsResult.error) {
-      setError(`Nao foi possivel carregar ${labels.customerPluralLower} e ${labels.groupPluralLower}.`)
+      setError(`Não foi possível carregar ${labels.customerPluralLower} e ${labels.groupPluralLower}.`)
       setLoading(false)
       return
     }
@@ -222,7 +223,7 @@ export default function StudentsPage() {
       cpf: student.cpf ?? '',
       phone: student.phone_e164,
       group_id: student.group_id ?? '',
-      amount: billing?.amount_cents ? String(billing.amount_cents / 100) : '',
+      amount: formatCentsAsMoneyInput(billing?.amount_cents),
       billing_day: billing?.due_day ? String(billing.due_day) : '',
     })
   }
@@ -255,7 +256,7 @@ export default function StudentsPage() {
         .eq('id', billingProfileId)
 
       return {
-        error: billingError ? 'Nao foi possivel atualizar a mensalidade.' : '',
+        error: billingError ? 'Não foi possível atualizar a mensalidade.' : '',
       }
     }
 
@@ -272,7 +273,7 @@ export default function StudentsPage() {
     )
 
     return {
-        error: billingError ? `Nao foi possivel criar a cobranca do ${labels.customerSingular.toLowerCase()}.` : '',
+        error: billingError ? `Não foi possível criar a cobrança do ${labels.customerSingular.toLowerCase()}.` : '',
     }
   }
 
@@ -286,7 +287,7 @@ export default function StudentsPage() {
     )
 
     return {
-      error: error ? 'Nao foi possivel criar o pagamento pendente inicial.' : '',
+      error: error ? 'Não foi possível criar o pagamento pendente inicial.' : '',
     }
   }
 
@@ -342,7 +343,7 @@ export default function StudentsPage() {
     }
 
     if (studentError || !createdStudentId) {
-      setError(`Nao foi possivel adicionar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível adicionar o ${labels.customerSingular.toLowerCase()}.`)
       setSaving(false)
       return
     }
@@ -357,7 +358,7 @@ export default function StudentsPage() {
       )
 
       if (moveError) {
-        setError(`${labels.customerSingular} criado, mas nao foi possivel mover para a ${labels.groupSingular.toLowerCase()}.`)
+        setError(`${labels.customerSingular} criado, mas não foi possível mover para a ${labels.groupSingular.toLowerCase()}.`)
         setSaving(false)
         return
       }
@@ -366,7 +367,7 @@ export default function StudentsPage() {
     const billingResult = await saveBillingProfile(createdStudentId)
 
     if (billingResult.error) {
-      setError(`${labels.customerSingular} criado, mas a cobranca nao pode ser configurada.`)
+      setError(`${labels.customerSingular} criado, mas a cobrança não pode ser configurada.`)
       setSaving(false)
       return
     }
@@ -374,7 +375,7 @@ export default function StudentsPage() {
     const initialCycleResult = await createInitialBillingCycle(createdStudentId)
 
     if (initialCycleResult.error) {
-      setError(`${labels.customerSingular} criado, mas o pagamento pendente inicial nao pode ser criado.`)
+      setError(`${labels.customerSingular} criado, mas o pagamento pendente inicial não pode ser criado.`)
       setSaving(false)
       return
     }
@@ -404,7 +405,7 @@ export default function StudentsPage() {
       .eq('tenant_id', tenantId)
 
     if (studentError) {
-      setError(`Nao foi possivel salvar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível salvar o ${labels.customerSingular.toLowerCase()}.`)
       setSaving(false)
       return
     }
@@ -463,7 +464,7 @@ export default function StudentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setGroupError(data?.message || `Nao foi possivel criar a ${labels.groupSingular.toLowerCase()}.`)
+      setGroupError(data?.message || `Não foi possível criar a ${labels.groupSingular.toLowerCase()}.`)
       setGroupSaving(false)
       return
     }
@@ -506,7 +507,7 @@ export default function StudentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setGroupError(data?.message || `Nao foi possivel listar ${labels.groupPluralLower}.`)
+      setGroupError(data?.message || `Não foi possível listar ${labels.groupPluralLower}.`)
       return
     }
 
@@ -560,7 +561,7 @@ export default function StudentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setGroupError(data?.message || `Nao foi possivel editar a ${labels.groupSingular.toLowerCase()}.`)
+      setGroupError(data?.message || `Não foi possível editar a ${labels.groupSingular.toLowerCase()}.`)
       return
     }
 
@@ -601,7 +602,7 @@ export default function StudentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setGroupError(data?.message || `Nao foi possivel excluir a ${labels.groupSingular.toLowerCase()}.`)
+      setGroupError(data?.message || `Não foi possível excluir a ${labels.groupSingular.toLowerCase()}.`)
       return
     }
 
@@ -648,7 +649,7 @@ export default function StudentsPage() {
     setBillingStatusSavingId('')
 
     if (!response.ok) {
-      setError('Nao foi possivel alterar o status da cobranca.')
+      setError('Não foi possível alterar o status da cobrança.')
       return
     }
 
@@ -668,20 +669,11 @@ export default function StudentsPage() {
     )
 
     if (deactivateError) {
-      setError(`Nao foi possivel desativar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 
     await load()
-  }
-
-  function formatMoney(amountCents: number | null | undefined) {
-    if (!amountCents) return '-'
-
-    return (amountCents / 100).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    })
   }
 
   if (loading) {
@@ -768,7 +760,7 @@ export default function StudentsPage() {
                     <th className="py-3 pr-4 font-medium">Telefone</th>
                   <th className="py-3 pr-4 font-medium">{labels.groupSingular}</th>
                     <th className="py-3 pr-4 font-medium">Mensalidade</th>
-                    <th className="py-3 pr-4 font-medium">Cobranca</th>
+                    <th className="py-3 pr-4 font-medium">Cobrança</th>
                     <th className="py-3 text-right font-medium">Acoes</th>
                   </tr>
                 </thead>
@@ -789,7 +781,7 @@ export default function StudentsPage() {
                           <td className="py-3 pr-4 font-medium">
                             <div>{student.full_name}</div>
                             <div className="text-xs font-normal text-gray-400">
-                              {student.cpf || 'CPF nao informado'}
+                              {student.cpf || 'CPF não informado'}
                             </div>
                           </td>
                           <td className="py-3 pr-4 text-gray-600">
@@ -799,7 +791,7 @@ export default function StudentsPage() {
                             {firstRelation(student.tenant_customer_groups)?.name || `Sem ${labels.groupSingular.toLowerCase()}`}
                           </td>
                           <td className="py-3 pr-4 text-gray-600">
-                            {formatMoney(billing?.amount_cents)}
+                            {formatCurrencyFromCents(billing?.amount_cents)}
                           </td>
                           <td className="py-3 pr-4 text-gray-600">
                             {billing ? (
@@ -816,8 +808,8 @@ export default function StudentsPage() {
                                   {billingStatusSavingId === billing.id
                                     ? 'Salvando...'
                                     : billing.status === 'active'
-                                      ? 'Pausar cobranca'
-                                      : 'Ativar cobranca'}
+                                      ? 'Pausar cobrança'
+                                      : 'Ativar cobrança'}
                                 </button>
                               </div>
                             ) : (
@@ -934,7 +926,7 @@ export default function StudentsPage() {
                 <p className="text-sm text-gray-500">
                   {creatingStudent
                     ? `Cadastre o ${labels.customerSingular.toLowerCase()} ja com ${labels.groupSingular.toLowerCase()} e mensalidade.`
-                    : 'Alteracoes ficam vinculadas ao tenant atual.'}
+                    : 'Alterações ficam vinculadas ao tenant atual.'}
                 </p>
               </div>
               <button
@@ -1000,9 +992,10 @@ export default function StudentsPage() {
                   <input
                     value={form.amount}
                     onChange={(event) => setForm({ ...form, amount: event.target.value })}
+                    onBlur={() => setForm({ ...form, amount: formatMoneyInput(form.amount) })}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     inputMode="decimal"
-                    placeholder="150,00"
+                    placeholder="R$ 0,00"
                     required={creatingStudent}
                   />
                 </label>
@@ -1032,7 +1025,7 @@ export default function StudentsPage() {
                 ? 'Salvando...'
                 : creatingStudent
                   ? labels.addCustomer
-                  : 'Salvar alteracoes'}
+                  : 'Salvar alterações'}
             </button>
           </form>
         </div>

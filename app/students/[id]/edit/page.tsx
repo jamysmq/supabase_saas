@@ -6,6 +6,7 @@ import { supabase } from '../../../../src/lib/supabase'
 import { getBusinessLabels } from '../../../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../../../src/services/auth'
 import { tenantCanUseBilling } from '../../../../src/lib/plan-features'
+import { formatCentsAsMoneyInput, formatMoneyInput, parseMoneyToCents } from '../../../../src/lib/money'
 
 type Group = {
   id: string
@@ -38,7 +39,7 @@ type FormState = {
 }
 
 function parseBillingFields(form: FormState) {
-  const amountInCents = Math.round(Number(form.amount.replace(',', '.')) * 100)
+  const amountInCents = parseMoneyToCents(form.amount)
   const billingDay = Number(form.billing_day)
 
   if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
@@ -129,7 +130,7 @@ export default function EditStudentPage() {
     ])
 
     if (groupsResult.error || studentResult.error || !studentResult.data) {
-      setError(`Nao foi possivel carregar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível carregar o ${labels.customerSingular.toLowerCase()}.`)
       setLoading(false)
       return
     }
@@ -144,7 +145,7 @@ export default function EditStudentPage() {
       cpf: loadedStudent.cpf ?? '',
       phone: loadedStudent.phone_e164,
       group_id: loadedStudent.group_id ?? '',
-      amount: billing?.amount_cents ? String(billing.amount_cents / 100) : '',
+      amount: formatCentsAsMoneyInput(billing?.amount_cents),
       billing_day: billing?.due_day ? String(billing.due_day) : '',
     })
     setLoading(false)
@@ -178,7 +179,7 @@ export default function EditStudentPage() {
       .eq('tenant_id', tenantId)
 
     if (studentError) {
-      setError(`Nao foi possivel salvar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível salvar o ${labels.customerSingular.toLowerCase()}.`)
       setSaving(false)
       return
     }
@@ -199,7 +200,7 @@ export default function EditStudentPage() {
         .eq('id', billing.id)
 
       if (billingError) {
-        setError(`${labels.customerSingular} salvo, mas a mensalidade nao pode ser atualizada.`)
+        setError(`${labels.customerSingular} salvo, mas a mensalidade não pode ser atualizada.`)
         setSaving(false)
         return
       }
@@ -217,7 +218,7 @@ export default function EditStudentPage() {
       )
 
       if (billingError) {
-        setError(`${labels.customerSingular} salvo, mas a cobranca nao pode ser criada.`)
+        setError(`${labels.customerSingular} salvo, mas a cobrança não pode ser criada.`)
         setSaving(false)
         return
       }
@@ -231,7 +232,7 @@ export default function EditStudentPage() {
       )
 
       if (cycleError) {
-        setError(`${labels.customerSingular} salvo, mas o pagamento pendente inicial nao pode ser criado.`)
+        setError(`${labels.customerSingular} salvo, mas o pagamento pendente inicial não pode ser criado.`)
         setSaving(false)
         return
       }
@@ -262,7 +263,7 @@ export default function EditStudentPage() {
 
           <h1 className="text-2xl font-bold">{labels.editCustomer}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Atualize cadastro, {labels.groupSingular.toLowerCase()} e dados basicos de cobranca.
+            Atualize cadastro, {labels.groupSingular.toLowerCase()} e dados básicos de cobrança.
           </p>
         </section>
 
@@ -326,8 +327,10 @@ export default function EditStudentPage() {
               <input
                 value={form.amount}
                 onChange={(event) => setForm({ ...form, amount: event.target.value })}
+                onBlur={() => setForm({ ...form, amount: formatMoneyInput(form.amount) })}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                 inputMode="decimal"
+                placeholder="R$ 0,00"
               />
             </label>
 
@@ -350,7 +353,7 @@ export default function EditStudentPage() {
             disabled={saving}
             className="w-full rounded-lg bg-gray-950 py-2 font-medium text-white disabled:opacity-50"
           >
-            {saving ? 'Salvando...' : 'Salvar alteracoes'}
+            {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
         </section>
       </form>

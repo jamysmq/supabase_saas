@@ -17,7 +17,7 @@ export async function POST(
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Cobrancas disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Cobranças disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const { billingCycleId } = await context.params
@@ -32,7 +32,7 @@ export async function POST(
     .maybeSingle()
 
   if (cycleError || !cycle) {
-    return errorResponse('Pagamento nao encontrado.', 404, cycleError?.message)
+    return errorResponse('Pagamento não encontrado.', 404, cycleError?.message)
   }
 
   const { error } = await result.supabase.rpc('admin_confirm_customer_payment', {
@@ -41,7 +41,7 @@ export async function POST(
   })
 
   if (error) {
-    return errorResponse('Nao foi possivel confirmar o pagamento.', 500, error.message)
+    return errorResponse('Não foi possível confirmar o pagamento.', 500, error.message)
   }
 
   const { error: eventError } = await result.supabase
@@ -60,7 +60,7 @@ export async function POST(
     })
 
   if (eventError) {
-    console.error('Nao foi possivel registrar evento de pagamento do tenant.', eventError.message)
+    console.error('Não foi possível registrar evento de pagamento do tenant.', eventError.message)
   }
 
   return Response.json({ ok: true })

@@ -23,7 +23,7 @@ export async function PATCH(
   const status = typeof body?.status === 'string' ? body.status : ''
 
   if (!allowedStatuses.has(status)) {
-    return errorResponse('Status invalido.')
+    return errorResponse('Status inválido.')
   }
 
   const { data: profile, error: profileError } = await result.supabase
@@ -33,7 +33,7 @@ export async function PATCH(
     .single()
 
   if (profileError || !profile) {
-    return errorResponse('Perfil de cobranca nao encontrado.', 404, profileError?.message)
+    return errorResponse('Perfil de cobrança não encontrado.', 404, profileError?.message)
   }
 
   if (profile.status === status) {
@@ -49,7 +49,7 @@ export async function PATCH(
     .eq('id', profileId)
 
   if (updateError) {
-    return errorResponse('Nao foi possivel atualizar o status da cobranca.', 500, updateError.message)
+    return errorResponse('Não foi possível atualizar o status da cobrança.', 500, updateError.message)
   }
 
   const { error: eventError } = await result.supabase
@@ -63,12 +63,12 @@ export async function PATCH(
       new_status: status,
       source: 'manual',
       note: status === 'active'
-        ? 'Cobranca da plataforma ativada manualmente.'
-        : 'Cobranca da plataforma pausada manualmente.',
+        ? 'Cobrança da plataforma ativada manualmente.'
+        : 'Cobrança da plataforma pausada manualmente.',
     })
 
   if (eventError) {
-    console.error('Could not register platform billing profile status event.', eventError.message)
+    console.error('Não foi possível registrar o evento de status da cobrança da plataforma.', eventError.message)
   }
 
   return Response.json({ ok: true })

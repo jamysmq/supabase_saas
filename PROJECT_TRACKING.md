@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-05-15
+Atualizado em: 2026-05-18
 
 ## Visao Geral
 
@@ -88,6 +88,30 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - `appointment_welcome`;
   - `restaurant_welcome`.
 
+### Financeiro de Atendimentos
+
+- Servicos da agenda passaram a aceitar duracao, descricao e valor.
+- Tenants do tipo `salon` passam a reconhecer receita automaticamente quando um agendamento muda para `confirmed`.
+- Receita de atendimento fica registrada em `tenant_service_revenue_events`, com snapshot de cliente, servico, profissional, valor e origem.
+- Cancelamento/remarcacao para status diferente de `confirmed` estorna logicamente o evento financeiro reconhecido.
+- Tela tenant-side `Financeiro de atendimentos` lista valores reconhecidos e exporta via impressao/PDF do navegador.
+
+### Restaurante
+
+- Tipo de negocio `restaurant` foi liberado no front e nas APIs da plataforma.
+- Plano `plan4` aponta para o modulo restaurante.
+- Tela tenant-side `Cardapio` criada para cadastrar grupos dinamicos e itens com nome, descricao e valor.
+- Cardapio fica em `tenant_menu_groups` e `tenant_menu_items`, protegido por tenant e preparado para o workflow WhatsApp de pedidos.
+- RPC `wa_restaurant_menu_grouped` retorna cardapio agrupado e texto pronto para WhatsApp, com grupos em negrito.
+- Tela tenant-side `Pedidos` criada para conferir pedidos confirmados, confirmar pagamento/entrega ou cancelar pedido.
+- Tela tenant-side `Pedidos pendentes` fica focada apenas nos pedidos que ainda precisam de baixa.
+- Cadastro manual de pedido usa busca de itens cadastrados e carrinho com quantidades, simulando fluxo de app de delivery.
+- Tela tenant-side `Financeiro de pedidos` separa o historico financeiro de pedidos pagos e cancelados.
+- Pedidos ficam em `tenant_restaurant_orders` e `tenant_restaurant_order_items`.
+- Baixa manual de pedido cria historico financeiro em `tenant_restaurant_order_revenue_events`.
+- Cancelamento de pedido estorna logicamente a receita reconhecida.
+- Inputs monetarios principais foram padronizados para exibicao e parse em formato `R$ 0,00`.
+
 ### n8n / WhatsApp
 
 - Integracao com n8n via API confirmada usando `N8N_BASE_URL` e `N8N_API_KEY`.
@@ -96,12 +120,30 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Workflow inativo `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi criado no n8n com id `zWflZZXKn2XIlHEc`.
 - Rascunho versionado em `n8n/WA_TENANT_APPOINTMENTS_INBOUND_v1.workflow.json`.
 - Rascunho versionado em `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json`.
-- O novo workflow usa fluxo generico por tenant e depende de variaveis de ambiente no n8n:
+- O novo workflow usa fluxo generico por tenant e depende de variaveis de ambiente no n8n Docker:
   - `SUPABASE_URL`;
   - `SUPABASE_SERVICE_ROLE_KEY`.
+- Variaveis `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` foram configuradas no container n8n em 2026-05-18.
 - SQL de apoio criado em `supabase/whatsapp_appointment_workflow_support.sql` para contexto, patch de conversa e criacao de agendamento via WhatsApp.
 - Lembrete D-1 de agendamento foi modelado para rodar as 09h, evitar duplicidade por evento e abrir conversa de confirmacao com opcoes de confirmar/remarcar/cancelar.
 - `appointment_confirmation_reminder` foi adicionado como template editavel por tenants com agenda.
+- Inbound `WA_TENANT_APPOINTMENTS_INBOUND_v1` passou a tratar resposta do lembrete:
+  - confirmar atualiza status para `confirmed`;
+  - cancelar atualiza status para `cancelled`;
+  - remarcar sugere novos horarios e atualiza `starts_at`/`ends_at`.
+- Sugestao de horarios foi modelada por RPC para retornar poucas opcoes por vez dentro de 60 dias, com comando `mais` para paginar.
+- Menu de servicos e profissionais do WhatsApp e dinamico: o workflow carrega `tenant_services` e `tenant_staff_members` ativos do tenant a cada conversa, conforme configurado no front.
+- Testes controlados sem WhatsApp real passaram em 2026-05-18:
+  - inbound criou agendamento via webhook real do n8n usando envs do container;
+  - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
+  - resposta `1` confirmou agendamento e mudou status para `confirmed`;
+  - resposta `2` iniciou remarcacao, sugeriu horarios e aplicou novo `starts_at`/`ends_at`;
+  - workflow remoto foi mantido inativo apos os testes.
+- Ajustes feitos durante os testes:
+  - `webhookId` estavel adicionado ao workflow inbound para registrar webhook de producao;
+  - renderizacao de slots ajustada para ler multiplos itens do n8n com `$input.all()`;
+  - criacao de agendamento ajustada para aceitar resposta escalar/texto do PostgREST;
+  - `wa_appointment_load_or_create_context` corrigida para evitar ambiguidade de coluna `step`.
 
 ## Modelo de Historico
 
@@ -184,6 +226,10 @@ Premissa importante: ao excluir tenant, os historicos internos dele podem sumir.
 - `supabase/platform_plan_catalog.sql`
 - `supabase/tenant_message_templates.sql`
 - `supabase/whatsapp_appointment_workflow_support.sql`
+- `supabase/platform_plan4_constraints.sql`
+- `supabase/salon_service_revenue.sql`
+- `supabase/restaurant_menu.sql`
+- `supabase/restaurant_menu_groups_and_orders.sql`
 
 Antes de producao, consolidar em migrations numeradas, por exemplo:
 
@@ -232,26 +278,29 @@ Fluxo agenda:
 ## Proximos Passos de Produto
 
 1. Revisao final dos fluxos principais apos os ajustes recentes.
-2. Aplicar `supabase/whatsapp_appointment_workflow_support.sql` no Supabase.
-3. Configurar no ambiente do n8n `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`, ou trocar os nos HTTP do workflow por credenciais nativas do n8n.
-4. Ligar no inbound o tratamento completo das respostas do lembrete:
-   - 1 confirma e atualiza status para `confirmed`;
-   - 2 inicia remarcacao e atualiza horario no banco;
-   - 3 cancela e atualiza status para `cancelled`.
-5. Melhorar o fluxo de escolha de horarios para mostrar poucas opcoes por vez dentro de 60 dias, com filtros por periodo e comando de mais opcoes.
-6. Testar `WA_TENANT_APPOINTMENTS_INBOUND_v1` inativo com payload manual.
-7. Testar `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` inativo com agendamento de amanha.
-8. Ativar webhook de agendamento somente apos teste com tenant `plan2` ou `plan3`.
-9. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-10. Apos o fluxo de agendamento via WhatsApp, iniciar preparacao do tipo de tenant restaurante (`plan4`).
-11. Para restaurantes, planejar cardapio alimentado pelo tenant no site e workflow WhatsApp separado do fluxo de agenda/cobranca.
-12. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-13. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-14. Transformar SQL solto em migrations ordenadas.
-15. Criar checklist de release/deploy.
-16. Definir provedor/deploy da aplicacao.
-17. Fazer teste multi-tenant com usuarios reais separados.
-18. Preparar backups e politica de retencao.
+2. Escolher provedor WhatsApp real e criar camada/adaptador de envio para nao acoplar o produto ao provedor.
+3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
+4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
+5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
+6. Aplicar `supabase/platform_plan4_constraints.sql`, `supabase/salon_service_revenue.sql`, `supabase/restaurant_menu.sql` e `supabase/restaurant_menu_groups_and_orders.sql` no Supabase se ainda nao estiverem aplicados no ambiente alvo.
+7. Testar troca de plano para `plan4` e criacao de tenant restaurante.
+8. Testar cardapio tenant-side em tenant `plan4`, incluindo grupos dinamicos.
+9. Testar pedidos tenant-side em tenant `plan4`, incluindo baixa manual e cancelamento.
+10. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
+11. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+12. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+   - QR Code Pix para pedidos de restaurante;
+   - QR Code Pix para cobrancas mensais de alunos/clientes;
+   - pagamento por cartao de credito;
+   - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
+13. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+14. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+15. Transformar SQL solto em migrations ordenadas.
+16. Criar checklist de release/deploy.
+17. Definir provedor/deploy da aplicacao.
+18. Fazer teste multi-tenant com usuarios reais separados.
+19. Preparar backups e politica de retencao.
+20. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 

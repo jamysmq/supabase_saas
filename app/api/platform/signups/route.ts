@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   if (error) {
     return Response.json(
-      { error: 'Could not list pending signups.' },
+      { error: 'Não foi possível listar os cadastros pendentes.' },
       { status: 500 }
     )
   }

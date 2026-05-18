@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Historico de pagamentos disponivel apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Histórico de pagamentos disponível apenas em planos com cobrança mensal.', 403)
   }
 
   const url = new URL(request.url)
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   const status = String(url.searchParams.get('status') ?? '').trim()
 
   if (new Date(to).getTime() <= new Date(from).getTime()) {
-    return errorResponse('Periodo invalido.')
+    return errorResponse('Período inválido.')
   }
 
   let cyclesQuery = result.supabase
@@ -108,11 +108,11 @@ export async function GET(request: Request) {
     ])
 
   if (cyclesError) {
-    return errorResponse('Nao foi possivel carregar historico de pagamentos.', 500, cyclesError.message)
+    return errorResponse('Não foi possível carregar histórico de pagamentos.', 500, cyclesError.message)
   }
 
   if (eventsError) {
-    console.error('Nao foi possivel carregar eventos de cobranca do tenant.', eventsError.message)
+    console.error('Não foi possível carregar eventos de cobrança do tenant.', eventsError.message)
   }
 
   return Response.json({

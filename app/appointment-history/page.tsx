@@ -50,7 +50,7 @@ function sourceLabel(source: string | null) {
     n8n: 'WhatsApp',
   }
 
-  return labels[source || ''] ?? source ?? 'Origem nao informada'
+  return labels[source || ''] ?? source ?? 'Origem não informada'
 }
 
 function formatDateTime(value: string) {
@@ -130,7 +130,7 @@ export default function AppointmentHistoryPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel carregar o historico.')
+      setError(data?.message || 'Não foi possível carregar o histórico.')
       setLoading(false)
       return
     }
@@ -196,12 +196,12 @@ export default function AppointmentHistoryPage() {
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Historico de agendamentos</h1>
+              <h1 className="text-2xl font-bold">Histórico de agendamentos</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Consulte atendimentos passados, cancelados, faltas e exclusoes.
+                Consulte atendimentos passados, cancelados, faltas e exclusões.
               </p>
               <p className="mt-2 hidden text-xs text-gray-500 print:block">
-                Periodo: {from} ate {to} - Status: {statusLabel(status)}
+                Período: {from} até {to} - Status: {statusLabel(status)}
               </p>
             </div>
 
@@ -260,7 +260,7 @@ export default function AppointmentHistoryPage() {
             <p className="mt-1 text-2xl font-bold">{stats.completed}</p>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow print:rounded-none print:border print:border-gray-200 print:p-3 print:shadow-none">
-            <p className="text-sm text-gray-500">Cancelados/excluidos</p>
+            <p className="text-sm text-gray-500">Cancelados/excluídos</p>
             <p className="mt-1 text-2xl font-bold">{stats.cancelled}</p>
           </div>
         </section>
@@ -268,7 +268,7 @@ export default function AppointmentHistoryPage() {
         <section className="rounded-2xl bg-white p-5 shadow print:rounded-none print:p-0 print:shadow-none">
           {appointments.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500">
-              Nenhum registro encontrado no periodo.
+              Nenhum registro encontrado no período.
             </p>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -282,7 +282,7 @@ export default function AppointmentHistoryPage() {
                       {formatDateTime(appointment.starts_at)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      ate {formatDateTime(appointment.ends_at)}
+                      até {formatDateTime(appointment.ends_at)}
                     </div>
                   </div>
 
@@ -291,7 +291,7 @@ export default function AppointmentHistoryPage() {
                       {appointment.customer_name || appointment.title || 'Sem pessoa'}
                     </div>
                     <div className="mt-1 break-words text-sm text-gray-500">
-                      {appointment.customer_phone_e164 || 'Sem WhatsApp'} - {appointment.service_name || 'Sem servico'} - {appointment.staff_member_name || 'Sem profissional'}
+                      {appointment.customer_phone_e164 || 'Sem WhatsApp'} - {appointment.service_name || 'Sem serviço'} - {appointment.staff_member_name || 'Sem profissional'}
                     </div>
                     {appointment.notes && (
                       <div className="mt-1 break-words text-xs text-gray-500">
@@ -300,7 +300,7 @@ export default function AppointmentHistoryPage() {
                     )}
                     {appointment.latest_status_changed_at && (
                       <div className="mt-2 text-xs text-gray-500">
-                        Ultima mudanca: {statusLabel(appointment.latest_status_old || '')} para {statusLabel(appointment.latest_status_new || '')} em {formatDateTime(appointment.latest_status_changed_at)}
+                        Última mudança: {statusLabel(appointment.latest_status_old || '')} para {statusLabel(appointment.latest_status_new || '')} em {formatDateTime(appointment.latest_status_changed_at)}
                       </div>
                     )}
                   </div>

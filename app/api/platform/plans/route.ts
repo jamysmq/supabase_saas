@@ -1,4 +1,5 @@
 import { requirePlatformAdmin } from '../../../../src/lib/platform-admin'
+import { parseMoneyToCents } from '../../../../src/lib/money'
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -9,7 +10,7 @@ function errorResponse(message: string, status = 400, details?: string) {
 }
 
 function parseAmountCents(value: unknown) {
-  return Math.round(Number(String(value ?? '').replace(',', '.')) * 100)
+  return parseMoneyToCents(value)
 }
 
 function normalizeCode(value: string) {

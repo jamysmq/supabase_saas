@@ -25,7 +25,7 @@ export async function DELETE(
 
   if (error || !data) {
     return Response.json(
-      { error: 'Could not delete platform payment.' },
+      { error: 'Não foi possível excluir o pagamento da plataforma.' },
       { status: error?.code === 'PGRST116' ? 404 : 500 }
     )
   }
@@ -40,11 +40,11 @@ export async function DELETE(
       old_status: 'pending',
       new_status: 'deleted',
       source: 'manual_delete',
-      note: 'Pagamento pendente excluido pelo painel da plataforma.',
+      note: 'Pagamento pendente excluído pelo painel da plataforma.',
     })
 
   if (eventError) {
-    console.error('Could not register platform payment delete event.', eventError.message)
+    console.error('Não foi possível registrar o evento de exclusão do pagamento da plataforma.', eventError.message)
   }
 
   return Response.json({ ok: true })

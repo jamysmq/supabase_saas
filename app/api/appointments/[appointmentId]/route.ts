@@ -17,7 +17,7 @@ export async function DELETE(
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const { appointmentId } = await context.params
@@ -32,7 +32,7 @@ export async function DELETE(
     .maybeSingle()
 
   if (appointmentError || !appointment) {
-    return errorResponse('Agendamento nao encontrado.', 404, appointmentError?.message)
+    return errorResponse('Agendamento não encontrado.', 404, appointmentError?.message)
   }
 
   const { error } = await result.supabase
@@ -50,7 +50,7 @@ export async function DELETE(
     .single()
 
   if (error) {
-    return errorResponse('Nao foi possivel excluir o agendamento.', 500, error.message)
+    return errorResponse('Não foi possível excluir o agendamento.', 500, error.message)
   }
 
   const { error: eventError } = await result.supabase
@@ -62,11 +62,11 @@ export async function DELETE(
       old_status: appointment.status,
       new_status: 'cancelled',
       source: 'panel_delete',
-      note: 'Agendamento excluido pelo painel.',
+      note: 'Agendamento excluído pelo painel.',
     })
 
   if (eventError) {
-    console.error('Nao foi possivel registrar historico de exclusao do agendamento.', eventError.message)
+    console.error('Não foi possível registrar histórico de exclusão do agendamento.', eventError.message)
   }
 
   return Response.json({ ok: true })

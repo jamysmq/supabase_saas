@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const url = new URL(request.url)
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const to = url.searchParams.get('to')
 
   if (!from || !to) {
-    return errorResponse('Periodo da agenda e obrigatorio.')
+    return errorResponse('Período da agenda é obrigatório.')
   }
 
   const { data, error } = await result.supabase.rpc('admin_list_appointments', {
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   })
 
   if (error) {
-    return errorResponse('Nao foi possivel listar agendamentos.', 500, error.message)
+    return errorResponse('Não foi possível listar agendamentos.', 500, error.message)
   }
 
   return Response.json({ appointments: data ?? [] })
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const body = await request.json().catch(() => null)
@@ -74,11 +74,11 @@ export async function POST(request: Request) {
   }
 
   if (cpf.length !== 11) {
-    return errorResponse('CPF invalido. Informe 11 digitos.')
+    return errorResponse('CPF inválido. Informe 11 dígitos.')
   }
 
   if (whatsapp.length < 12 || whatsapp.length > 13 || !whatsapp.startsWith('55')) {
-    return errorResponse('WhatsApp invalido. Informe DDD e numero, por exemplo 83999999999.')
+    return errorResponse('WhatsApp inválido. Informe DDD e número, por exemplo 83999999999.')
   }
 
   if (!birthDate) {
@@ -86,11 +86,11 @@ export async function POST(request: Request) {
   }
 
   if (!startsAt || !endsAt) {
-    return errorResponse('Informe inicio e fim do agendamento.')
+    return errorResponse('Informe início e fim do agendamento.')
   }
 
   if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
-    return errorResponse('O fim precisa ser depois do inicio.')
+    return errorResponse('O fim precisa ser depois do início.')
   }
 
   const { data, error } = await result.supabase.rpc('admin_create_external_appointment', {
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
   })
 
   if (error) {
-    return errorResponse('Nao foi possivel criar o agendamento.', 500, error.message)
+    return errorResponse('Não foi possível criar o agendamento.', 500, error.message)
   }
 
   return Response.json({ appointment_id: data })

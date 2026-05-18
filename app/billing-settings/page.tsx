@@ -6,6 +6,7 @@ import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseBilling } from '../../src/lib/plan-features'
+import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput, parseMoneyToCents } from '../../src/lib/money'
 
 type BillingProfileRow = {
   id: string
@@ -30,11 +31,6 @@ type BillingForm = {
 
 function firstRelation<T>(relation: T | T[] | null | undefined) {
   return Array.isArray(relation) ? relation[0] ?? null : relation ?? null
-}
-
-function formatAmount(amountCents: number | null) {
-  if (!amountCents) return ''
-  return String(amountCents / 100)
 }
 
 export default function BillingSettingsPage() {
@@ -96,7 +92,7 @@ export default function BillingSettingsPage() {
       })
 
     if (profilesError) {
-      setError('Nao foi possivel carregar as mensalidades.')
+      setError('Não foi possível carregar as mensalidades.')
       setLoading(false)
       return
     }
@@ -116,7 +112,7 @@ export default function BillingSettingsPage() {
   function startEdit(profile: BillingProfileRow) {
     setEditingProfileId(profile.id)
     setForm({
-      amount: formatAmount(profile.amount_cents),
+      amount: formatCentsAsMoneyInput(profile.amount_cents),
       due_day: profile.due_day ? String(profile.due_day) : '',
     })
     setError('')
@@ -128,7 +124,7 @@ export default function BillingSettingsPage() {
     setError('')
     setSuccess('')
 
-    const amountInCents = Math.round(Number(form.amount.replace(',', '.')) * 100)
+    const amountInCents = parseMoneyToCents(form.amount)
     const dueDay = Number(form.due_day)
 
     if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
@@ -155,7 +151,7 @@ export default function BillingSettingsPage() {
     setSaving(false)
 
     if (updateError) {
-      setError('Nao foi possivel salvar a mensalidade.')
+      setError('Não foi possível salvar a mensalidade.')
       return
     }
 
@@ -163,15 +159,6 @@ export default function BillingSettingsPage() {
     setForm({ amount: '', due_day: '' })
     setSuccess('Mensalidade atualizada.')
     await load()
-  }
-
-  function formatMoney(amountCents: number | null) {
-    if (!amountCents) return '-'
-
-    return (amountCents / 100).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    })
   }
 
   if (loading) {
@@ -249,11 +236,16 @@ export default function BillingSettingsPage() {
                               ...form,
                               amount: event.target.value,
                             })}
+                            onBlur={() => setForm({
+                              ...form,
+                              amount: formatMoneyInput(form.amount),
+                            })}
                             className="w-32 rounded-lg border border-gray-200 px-3 py-2"
                             inputMode="decimal"
+                            placeholder="R$ 0,00"
                           />
                         ) : (
-                          formatMoney(profile.amount_cents)
+                          formatCurrencyFromCents(profile.amount_cents)
                         )}
                       </td>
                       <td className="py-3 pr-4 text-gray-600">

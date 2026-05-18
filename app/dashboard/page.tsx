@@ -37,12 +37,12 @@ export default function DashboardPage() {
       ? [{
           href: '/pending-payments',
           title: 'Pagamentos pendentes',
-          description: 'Confirme mensalidades recebidas e acompanhe cobrancas.',
+          description: 'Confirme mensalidades recebidas e acompanhe cobranças.',
         },
         {
           href: '/payment-history?from=dashboard',
-          title: 'Historico de pagamentos',
-          description: 'Consulte pagamentos confirmados e alteracoes de cobranca.',
+          title: 'Histórico de pagamentos',
+          description: 'Consulte pagamentos confirmados e alterações de cobrança.',
         },
         {
           href: '/students',
@@ -64,24 +64,41 @@ export default function DashboardPage() {
       ? [{
           href: '/appointments',
           title: 'Agenda',
-          description: 'Gerencie atendimentos, consultas e horarios.',
+          description: 'Gerencie atendimentos, consultas e horários.',
         },
+        ...(businessType === 'salon'
+          ? [{
+              href: '/service-revenue',
+              title: 'Financeiro de atendimentos',
+              description: 'Veja os atendimentos confirmados e valores reconhecidos.',
+            }]
+          : []),
         {
           href: '/appointment-history?from=dashboard',
-          title: 'Historico de agendamentos',
-          description: 'Consulte atendimentos realizados, cancelados e excluidos.',
+          title: 'Histórico de agendamentos',
+          description: 'Consulte atendimentos realizados, cancelados e excluídos.',
         }]
       : []),
     ...(canUseRestaurant
       ? [{
-          href: '/settings',
-          title: 'Restaurante',
-          description: 'Cardapio e WhatsApp serao implementados no proximo modulo.',
+          href: '/restaurant-menu',
+          title: 'Cardápio',
+          description: 'Cadastre itens, descrições e valores para pedidos via WhatsApp.',
+        },
+        {
+          href: '/restaurant-orders',
+          title: 'Pedidos pendentes',
+          description: 'Confirme entregas e pagamentos de pedidos recebidos.',
+        },
+        {
+          href: '/restaurant-finance',
+          title: 'Financeiro de pedidos',
+          description: 'Consulte pedidos pagos, cancelados e totais reconhecidos.',
         }]
       : []),
     {
       href: '/settings',
-      title: 'Configuracoes da conta',
+      title: 'Configurações da conta',
       description: 'Atualize Pix, dados da conta e senha de acesso.',
     },
   ]

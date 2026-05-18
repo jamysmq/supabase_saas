@@ -17,7 +17,7 @@ export async function PATCH(
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const { staffMemberId } = await context.params
@@ -42,7 +42,7 @@ export async function PATCH(
     .single()
 
   if (error || !data) {
-    return errorResponse('Nao foi possivel atualizar o profissional.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
+    return errorResponse('Não foi possível atualizar o profissional.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
   }
 
   return Response.json({ ok: true })
@@ -57,7 +57,7 @@ export async function DELETE(
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const { staffMemberId } = await context.params
@@ -74,7 +74,7 @@ export async function DELETE(
     .single()
 
   if (error || !data) {
-    return errorResponse('Nao foi possivel excluir o profissional.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
+    return errorResponse('Não foi possível excluir o profissional.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
   }
 
   return Response.json({ ok: true })

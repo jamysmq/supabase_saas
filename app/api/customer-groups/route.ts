@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Clientes e grupos disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const { data: groups, error } = await result.supabase
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     .order('name', { ascending: true })
 
   if (error) {
-    return errorResponse('Could not list groups.', 500, error.message)
+    return errorResponse('Não foi possível listar os grupos.', 500, error.message)
   }
 
   const { data: customers, error: customersError } = await result.supabase
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     .not('group_id', 'is', null)
 
   if (customersError) {
-    return errorResponse('Could not count group members.', 500, customersError.message)
+    return errorResponse('Não foi possível contar os clientes dos grupos.', 500, customersError.message)
   }
 
   const counts = new Map<string, number>()
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Clientes e grupos disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const body = await request.json().catch(() => null)
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     : null
     
   if (!name) {
-    return errorResponse('Group name is required.')
+    return errorResponse('Informe o nome do grupo.')
   }
 
   const { data: group, error: groupError } = await result.supabase
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     .single()
 
   if (groupError) {
-    return errorResponse('Could not create group.', 500, groupError.message)
+    return errorResponse('Não foi possível criar o grupo.', 500, groupError.message)
   }
 
   return Response.json({ group })

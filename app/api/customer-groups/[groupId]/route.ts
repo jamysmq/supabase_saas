@@ -17,7 +17,7 @@ export async function PATCH(
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Clientes e grupos disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const { groupId } = await context.params
@@ -28,7 +28,7 @@ export async function PATCH(
     : null
 
   if (!name) {
-    return errorResponse('Group name is required.')
+    return errorResponse('Informe o nome do grupo.')
   }
 
   const { data: group, error } = await result.supabase
@@ -45,7 +45,7 @@ export async function PATCH(
     .single()
 
   if (error || !group) {
-    return errorResponse('Could not update group.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
+    return errorResponse('Não foi possível atualizar o grupo.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
   }
 
   return Response.json({ group })
@@ -60,7 +60,7 @@ export async function DELETE(
   if (result.error) return result.error
 
   if (!tenantCanUseBilling(result.tenant)) {
-    return errorResponse('Clientes e grupos disponiveis apenas em planos com cobranca mensal.', 403)
+    return errorResponse('Clientes e grupos disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
   const { groupId } = await context.params
@@ -75,7 +75,7 @@ export async function DELETE(
     .eq('group_id', groupId)
 
   if (unlinkError) {
-    return errorResponse('Could not unlink customers.', 500, unlinkError.message)
+    return errorResponse('Não foi possível desvincular os clientes do grupo.', 500, unlinkError.message)
   }
 
   const { error: groupError } = await result.supabase
@@ -88,7 +88,7 @@ export async function DELETE(
     .eq('tenant_id', result.tenantUser.tenant_id)
 
   if (groupError) {
-    return errorResponse('Could not delete group.', 500, groupError.message)
+    return errorResponse('Não foi possível excluir o grupo.', 500, groupError.message)
   }
 
   return Response.json({ ok: true })

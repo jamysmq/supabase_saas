@@ -110,7 +110,7 @@ function sourceLabel(source: string | null | undefined) {
     asaas_webhook: 'Asaas webhook',
   }
 
-  return labels[source || ''] ?? source ?? 'Origem nao informada'
+  return labels[source || ''] ?? source ?? 'Origem não informada'
 }
 
 function eventTenantName(event: BillingEvent) {
@@ -180,14 +180,14 @@ export default function PlatformPaymentHistoryPage() {
     }
 
     if (response.status === 403) {
-      setError('Seu usuario nao tem permissao de administrador da plataforma.')
+      setError('Seu usuário não tem permissão de administrador da plataforma.')
       setLoading(false)
       return
     }
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel carregar historico de pagamentos.')
+      setError(data?.message || 'Não foi possível carregar histórico de pagamentos.')
       setLoading(false)
       return
     }
@@ -270,7 +270,7 @@ export default function PlatformPaymentHistoryPage() {
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Historico de pagamentos</h1>
+              <h1 className="text-2xl font-bold">Histórico de pagamentos</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Consulte pagamentos da plataforma confirmados, pendentes e excluidos.
               </p>
@@ -426,14 +426,14 @@ export default function PlatformPaymentHistoryPage() {
                       {eventTenantContact(event)}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
-                      {event.note || 'Status de cobranca alterado.'}
+                      {event.note || 'Status de cobrança alterado.'}
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 lg:justify-end">
                     <span className="h-7 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
                       {event.event_type === 'tenant_deleted'
-                        ? 'Tenant excluido'
+                        ? 'Tenant excluído'
                         : `${statusLabel(event.old_status || '')} para ${statusLabel(event.new_status)}`}
                     </span>
                     <span className="h-7 rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500">

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const { data, error } = await result.supabase
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     .order('name', { ascending: true })
 
   if (error) {
-    return errorResponse('Nao foi possivel listar profissionais.', 500, error.message)
+    return errorResponse('Não foi possível listar profissionais.', 500, error.message)
   }
 
   return Response.json({ staff: data ?? [] })
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const body = await request.json().catch(() => null)
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     .single()
 
   if (error || !data) {
-    return errorResponse('Nao foi possivel criar o profissional.', 500, error?.message)
+    return errorResponse('Não foi possível criar o profissional.', 500, error?.message)
   }
 
   return Response.json({ staffMember: data })

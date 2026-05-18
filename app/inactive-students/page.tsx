@@ -77,7 +77,7 @@ export default function InactiveStudentsPage() {
       .order('full_name', { ascending: true })
 
     if (studentsError) {
-      setError(`Nao foi possivel carregar ${labels.customerPluralLower} inativos.`)
+      setError(`Não foi possível carregar ${labels.customerPluralLower} inativos.`)
       setLoading(false)
       return
     }
@@ -118,7 +118,7 @@ export default function InactiveStudentsPage() {
     )
 
     if (reactivateError) {
-      setError(`Nao foi possivel reativar o ${labels.customerSingular.toLowerCase()}.`)
+      setError(`Não foi possível reativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 

@@ -19,7 +19,7 @@ export async function PATCH(
   if (result.error) return result.error
 
   if (!tenantCanUseAppointments(result.tenant)) {
-    return errorResponse('Agenda disponivel apenas em planos com agenda.', 403)
+    return errorResponse('Agenda disponível apenas em planos com agenda.', 403)
   }
 
   const { appointmentId } = await context.params
@@ -27,7 +27,7 @@ export async function PATCH(
   const status = String(body?.status ?? '').trim()
 
   if (!allowedStatuses.has(status)) {
-    return errorResponse('Status de agendamento invalido.')
+    return errorResponse('Status de agendamento inválido.')
   }
 
   const { data: appointment, error: appointmentError } = await result.supabase
@@ -38,7 +38,7 @@ export async function PATCH(
     .maybeSingle()
 
   if (appointmentError || !appointment) {
-    return errorResponse('Agendamento nao encontrado.', 404, appointmentError?.message)
+    return errorResponse('Agendamento não encontrado.', 404, appointmentError?.message)
   }
 
   const { error } = await result.supabase
@@ -54,7 +54,7 @@ export async function PATCH(
     .single()
 
   if (error) {
-    return errorResponse('Nao foi possivel atualizar o status.', 500, error.message)
+    return errorResponse('Não foi possível atualizar o status.', 500, error.message)
   }
 
   if (appointment.status !== status) {
@@ -70,7 +70,19 @@ export async function PATCH(
       })
 
     if (eventError) {
-      console.error('Nao foi possivel registrar historico de status do agendamento.', eventError.message)
+      console.error('Não foi possível registrar histórico de status do agendamento.', eventError.message)
+    }
+
+    const { error: revenueError } = await result.supabase.rpc(
+      'admin_sync_appointment_service_revenue',
+      {
+        p_appointment_id: appointmentId,
+        p_source: 'panel',
+      }
+    )
+
+    if (revenueError) {
+      console.error('Não foi possível sincronizar financeiro do atendimento.', revenueError.message)
     }
   }
 

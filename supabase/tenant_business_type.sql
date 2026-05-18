@@ -6,7 +6,7 @@ drop constraint if exists tenants_business_type_check;
 
 alter table public.tenants
 add constraint tenants_business_type_check
-check (business_type in ('teacher', 'autonomous', 'clinic', 'salon'));
+check (business_type in ('teacher', 'autonomous', 'clinic', 'salon', 'restaurant'));
 
 update public.tenants
 set business_type = 'teacher'

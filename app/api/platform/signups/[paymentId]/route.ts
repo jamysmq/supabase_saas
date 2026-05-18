@@ -22,7 +22,7 @@ export async function GET(
 
   if (detailError) {
     return Response.json(
-      { error: 'Could not load signup detail.' },
+      { error: 'Não foi possível carregar os detalhes do cadastro.' },
       { status: 500 }
     )
   }
