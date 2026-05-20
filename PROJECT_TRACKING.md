@@ -148,6 +148,11 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - gerador mensal criou ciclo novo para perfil sem ciclo no mes;
   - listagem de vencidos ficou vazia apos a baixa do lembrete.
 - Provedor WhatsApp escolhido em 2026-05-20: WhatsApp Cloud API oficial da Meta.
+- Adaptador inicial para WhatsApp Cloud API oficial criado em 2026-05-20:
+  - biblioteca server-side em `src/lib/whatsapp-cloud.ts`;
+  - endpoint interno protegido em `app/api/internal/whatsapp/send/route.ts`;
+  - documentacao operacional em `docs/whatsapp-cloud-adapter.md`;
+  - envio inicial cobre mensagem de texto livre via `/{phone_number_id}/messages`; templates, midias, botoes/listas e webhooks de status ficam como evolucao.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
 - SQL incremental criado em `supabase/platform_plan5_restaurant_reservations.sql` para cadastrar `plan5`, liberar constraint de assinatura e fazer o RPC de cardapio aceitar `plan4` e `plan5`.
 - `supabase/platform_plan5_restaurant_reservations.sql` foi aplicado no Supabase em 2026-05-20.
@@ -302,8 +307,12 @@ Fluxo agenda:
 ## Proximos Passos de Produto
 
 1. Revisao final dos fluxos principais apos os ajustes recentes.
-2. Criar camada/adaptador de envio para WhatsApp Cloud API oficial da Meta, sem acoplar o produto diretamente ao provedor.
-3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
+2. Configurar credenciais reais da WhatsApp Cloud API no ambiente de deploy/app:
+   - `WHATSAPP_CLOUD_ACCESS_TOKEN`;
+   - `WHATSAPP_CLOUD_PHONE_NUMBER_ID`;
+   - `WHATSAPP_CLOUD_GRAPH_VERSION`;
+   - `WHATSAPP_INTERNAL_SEND_TOKEN`.
+3. Trocar os nos mock de envio WhatsApp pelo endpoint/adaptador interno.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
 6. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
