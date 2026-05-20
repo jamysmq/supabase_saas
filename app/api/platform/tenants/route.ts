@@ -1,5 +1,6 @@
 import { requirePlatformAdmin } from '../../../../src/lib/platform-admin'
 import { parseMoneyToCents } from '../../../../src/lib/money'
+import { isTenantPlanBusinessTypeCompatible } from '../../../../src/lib/plan-features'
 
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
 
@@ -206,6 +207,10 @@ export async function POST(request: Request) {
 
   if (!selectedPlan || !selectedPlan.is_active) {
     return errorResponse('Plano inválido ou inativo. Escolha um plano ativo.')
+  }
+
+  if (!isTenantPlanBusinessTypeCompatible(plan, businessType)) {
+    return errorResponse('Plano e tipo de negócio incompatíveis. Restaurantes devem usar o plano restaurante.')
   }
 
   const amountCents = parseMoneyToCents(body.monthly_amount)

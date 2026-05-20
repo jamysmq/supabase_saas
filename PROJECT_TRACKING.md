@@ -144,6 +144,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - ciclo recebeu `message_rendered` e `message_sent_at`;
   - gerador mensal criou ciclo novo para perfil sem ciclo no mes;
   - listagem de vencidos ficou vazia apos a baixa do lembrete.
+- Provedor WhatsApp escolhido em 2026-05-20: WhatsApp Cloud API oficial da Meta.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
@@ -290,7 +291,7 @@ Fluxo agenda:
 ## Proximos Passos de Produto
 
 1. Revisao final dos fluxos principais apos os ajustes recentes.
-2. Escolher provedor WhatsApp real e criar camada/adaptador de envio para nao acoplar o produto ao provedor.
+2. Criar camada/adaptador de envio para WhatsApp Cloud API oficial da Meta, sem acoplar o produto diretamente ao provedor.
 3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.

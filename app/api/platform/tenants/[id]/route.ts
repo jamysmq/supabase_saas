@@ -1,5 +1,6 @@
 import { requirePlatformAdmin } from '../../../../../src/lib/platform-admin'
 import { parseMoneyToCents } from '../../../../../src/lib/money'
+import { isTenantPlanBusinessTypeCompatible } from '../../../../../src/lib/plan-features'
 
 const allowedStatuses = new Set(['pending', 'active', 'suspended', 'cancelled'])
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
@@ -109,7 +110,7 @@ export async function PATCH(
 
   const { data: currentTenant, error: currentTenantError } = await result.supabase
     .from('tenants')
-    .select('id, plan')
+    .select('id, plan, business_type')
     .eq('id', id)
     .single()
 
@@ -128,6 +129,9 @@ export async function PATCH(
   const nextPlan = typeof body.plan === 'string'
     ? body.plan.trim()
     : currentTenant.plan
+  const nextBusinessType = typeof body.business_type === 'string'
+    ? body.business_type.trim()
+    : currentTenant.business_type
 
   if (nextPlan !== currentTenant.plan) {
     patch.plan = nextPlan
@@ -142,11 +146,11 @@ export async function PATCH(
   }
 
   if (typeof body.business_type === 'string') {
-    if (!allowedBusinessTypes.has(body.business_type)) {
+    if (!allowedBusinessTypes.has(nextBusinessType)) {
       return errorResponse('Tipo de negócio inválido.')
     }
 
-    patch.business_type = body.business_type
+    patch.business_type = nextBusinessType
   }
 
   const shouldUpdateBilling =
@@ -170,6 +174,10 @@ export async function PATCH(
 
   if (!selectedPlan || !selectedPlan.is_active) {
     return errorResponse('Plano inválido ou inativo. Escolha um plano ativo.')
+  }
+
+  if (!isTenantPlanBusinessTypeCompatible(nextPlan, nextBusinessType)) {
+    return errorResponse('Plano e tipo de negócio incompatíveis. Restaurantes devem usar o plano restaurante.')
   }
 
   const amountCents = body.monthly_amount !== undefined

@@ -10,6 +10,15 @@ export function tenantCanUseRestaurant(plan?: string | null) {
   return plan === 'plan4'
 }
 
+export function isTenantPlanBusinessTypeCompatible(
+  plan?: string | null,
+  businessType?: string | null
+) {
+  if (plan === 'plan4') return businessType === 'restaurant'
+  if (businessType === 'restaurant') return plan === 'plan4'
+  return true
+}
+
 export function tenantPlanLabel(plan?: string | null) {
   const labels: Record<string, string> = {
     plan1: 'Plano 1 - Cobranças',
