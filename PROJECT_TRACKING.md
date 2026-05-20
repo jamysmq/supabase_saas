@@ -151,6 +151,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - SQL incremental criado em `supabase/platform_plan5_restaurant_reservations.sql` para cadastrar `plan5`, liberar constraint de assinatura e fazer o RPC de cardapio aceitar `plan4` e `plan5`.
 - `supabase/platform_plan5_restaurant_reservations.sql` foi aplicado no Supabase em 2026-05-20.
 - Validacao controlada do `plan5` passou em 2026-05-20: plano aparece ativo no catalogo, tenant restaurante alternado temporariamente para `plan5` continuou acessando `wa_restaurant_menu_grouped`, e tenant foi restaurado para `plan4`.
+- Validacao controlada de tenant `plan5` passou em 2026-05-20: tenant restaurante temporario criou grupo/item de cardapio, RPC incluiu o item, pedido foi criado, baixa financeira reconheceu receita, cancelamento estornou a receita e o tenant de teste foi removido ao final.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
@@ -303,25 +304,23 @@ Fluxo agenda:
 3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-6. Testar criacao de tenant restaurante diretamente em `plan5`.
-7. Testar cardapio tenant-side em tenant `plan4`/`plan5`, incluindo grupos dinamicos.
-8. Testar pedidos tenant-side em tenant `plan4`/`plan5`, incluindo baixa manual e cancelamento.
-9. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
-10. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-11. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-12. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+6. Testar restaurante pelo front/API tenant-side autenticada em tenant `plan4`/`plan5`, incluindo grupos dinamicos, pedidos, baixa manual e cancelamento.
+7. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
+8. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+9. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+10. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-13. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-14. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-15. Transformar SQL solto em migrations ordenadas.
-16. Criar checklist de release/deploy.
-17. Definir provedor/deploy da aplicacao.
-18. Fazer teste multi-tenant com usuarios reais separados.
-19. Preparar backups e politica de retencao.
-20. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+11. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+12. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+13. Transformar SQL solto em migrations ordenadas.
+14. Criar checklist de release/deploy.
+15. Definir provedor/deploy da aplicacao.
+16. Fazer teste multi-tenant com usuarios reais separados.
+17. Preparar backups e politica de retencao.
+18. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
