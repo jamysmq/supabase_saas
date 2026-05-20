@@ -7,15 +7,19 @@ export function tenantCanUseAppointments(plan?: string | null) {
 }
 
 export function tenantCanUseRestaurant(plan?: string | null) {
-  return plan === 'plan4'
+  return plan === 'plan4' || plan === 'plan5'
+}
+
+export function tenantCanUseTableReservations(plan?: string | null) {
+  return plan === 'plan5'
 }
 
 export function isTenantPlanBusinessTypeCompatible(
   plan?: string | null,
   businessType?: string | null
 ) {
-  if (plan === 'plan4') return businessType === 'restaurant'
-  if (businessType === 'restaurant') return plan === 'plan4'
+  if (plan === 'plan4' || plan === 'plan5') return businessType === 'restaurant'
+  if (businessType === 'restaurant') return plan === 'plan4' || plan === 'plan5'
   return true
 }
 
@@ -25,6 +29,7 @@ export function tenantPlanLabel(plan?: string | null) {
     plan2: 'Plano 2 - Agenda',
     plan3: 'Plano 3 - Cobranças + agenda',
     plan4: 'Plano 4 - Restaurantes',
+    plan5: 'Plano 5 - Restaurantes + reservas',
   }
 
   return plan ? labels[plan] ?? plan : '-'

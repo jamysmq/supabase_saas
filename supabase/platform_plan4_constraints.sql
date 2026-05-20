@@ -31,7 +31,7 @@ end $$;
 
 alter table public.subscriptions
   add constraint subscriptions_plan_check
-  check (plan in ('plan1', 'plan2', 'plan3', 'plan4'));
+  check (plan in ('plan1', 'plan2', 'plan3', 'plan4', 'plan5'));
 
 alter table public.tenants
   add constraint tenants_business_type_check

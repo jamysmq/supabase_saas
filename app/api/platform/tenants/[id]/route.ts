@@ -177,7 +177,7 @@ export async function PATCH(
   }
 
   if (!isTenantPlanBusinessTypeCompatible(nextPlan, nextBusinessType)) {
-    return errorResponse('Plano e tipo de negócio incompatíveis. Restaurantes devem usar o plano restaurante.')
+    return errorResponse('Plano e tipo de negócio incompatíveis. Restaurantes devem usar um plano de restaurante.')
   }
 
   const amountCents = body.monthly_amount !== undefined

@@ -58,7 +58,7 @@ cross join (
     ('Aperitivos', 20),
     ('Pratos principais', 30)
 ) as defaults(name, sort_order)
-where t.plan = 'plan4'
+where t.plan in ('plan4', 'plan5')
   and not exists (
     select 1
     from public.tenant_menu_groups g
@@ -305,7 +305,7 @@ as $$
     where i.tenant_id = p_tenant_id
       and i.is_active = true
       and t.status = 'active'
-      and t.plan = 'plan4'
+      and t.plan in ('plan4', 'plan5')
   ),
   groups as (
     select

@@ -210,7 +210,7 @@ export async function POST(request: Request) {
   }
 
   if (!isTenantPlanBusinessTypeCompatible(plan, businessType)) {
-    return errorResponse('Plano e tipo de negócio incompatíveis. Restaurantes devem usar o plano restaurante.')
+    return errorResponse('Plano e tipo de negócio incompatíveis. Restaurantes devem usar um plano de restaurante.')
   }
 
   const amountCents = parseMoneyToCents(body.monthly_amount)

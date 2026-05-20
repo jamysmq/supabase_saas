@@ -50,13 +50,25 @@ values
   (
     'plan4',
     'Plano 4 - Restaurantes',
-    'Modulo futuro para restaurante com WhatsApp, mensagem inicial personalizavel e cardapio alimentado pelo tenant.',
+    'Restaurante com cardapio, pedidos, financeiro e workflow WhatsApp proprio.',
     0,
     'BRL',
     'monthly',
     0,
     true,
     40,
+    now()
+  ),
+  (
+    'plan5',
+    'Plano 5 - Restaurantes + reservas',
+    'Tudo do Plano 4, com agenda de mesas/reservas como feature planejada para restaurante.',
+    0,
+    'BRL',
+    'monthly',
+    0,
+    true,
+    50,
     now()
   )
 on conflict (code)

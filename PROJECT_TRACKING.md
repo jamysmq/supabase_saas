@@ -25,7 +25,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - `plan1`: cobrancas mensais via WhatsApp e controle de alunos/clientes no site.
 - `plan2`: agendamento via WhatsApp e controle de agendamentos no site.
 - `plan3`: soma do `plan1` e `plan2`; cobrancas, alunos/clientes e agenda.
-- `plan4`: restaurantes; modulo futuro com WhatsApp, mensagem inicial personalizavel e cardapio alimentado pelo tenant no site.
+- `plan4`: restaurantes; cardapio, pedidos, financeiro e workflow WhatsApp proprio.
+- `plan5`: soma do `plan4` com agenda de mesas/reservas como feature planejada.
 - Agenda fica disponivel para planos com capacidade de agenda: `plan2` e `plan3`.
 - Cobrancas, alunos/clientes e turmas/grupos ficam disponiveis para planos com capacidade de cobranca mensal: `plan1` e `plan3`.
 - Alterar plano deve atualizar imediatamente restricoes e valor base da mensalidade.
@@ -99,7 +100,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 ### Restaurante
 
 - Tipo de negocio `restaurant` foi liberado no front e nas APIs da plataforma.
-- Plano `plan4` aponta para o modulo restaurante.
+- Planos `plan4` e `plan5` apontam para o modulo restaurante.
+- `plan5` foi preparado como restaurante avancado em 2026-05-20: herda as funcionalidades do `plan4`, mas agenda de mesas/reservas fica como feature futura, sem expor tela incompleta.
 - Tela tenant-side `Cardapio` criada para cadastrar grupos dinamicos e itens com nome, descricao e valor.
 - Cardapio fica em `tenant_menu_groups` e `tenant_menu_items`, protegido por tenant e preparado para o workflow WhatsApp de pedidos.
 - RPC `wa_restaurant_menu_grouped` retorna cardapio agrupado e texto pronto para WhatsApp, com grupos em negrito.
@@ -146,6 +148,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - listagem de vencidos ficou vazia apos a baixa do lembrete.
 - Provedor WhatsApp escolhido em 2026-05-20: WhatsApp Cloud API oficial da Meta.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
+- SQL incremental criado em `supabase/platform_plan5_restaurant_reservations.sql` para cadastrar `plan5`, liberar constraint de assinatura e fazer o RPC de cardapio aceitar `plan4` e `plan5`.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
@@ -241,6 +244,7 @@ Premissa importante: ao excluir tenant, os historicos internos dele podem sumir.
 - `supabase/whatsapp_appointment_workflow_support.sql`
 - `supabase/whatsapp_billing_workflow_support.sql`
 - `supabase/platform_plan4_constraints.sql`
+- `supabase/platform_plan5_restaurant_reservations.sql`
 - `supabase/salon_service_revenue.sql`
 - `supabase/restaurant_menu.sql`
 - `supabase/restaurant_menu_groups_and_orders.sql`
@@ -271,13 +275,14 @@ Fluxo tenant:
 1. Entrar como tenant `plan1` e confirmar que cobrancas/alunos aparecem e agenda nao aparece.
 2. Entrar como tenant `plan2` e confirmar que agenda aparece e cobrancas/alunos nao aparecem.
 3. Entrar como tenant `plan3` e confirmar que cobrancas/alunos e agenda aparecem.
-4. Entrar como tenant `plan4` e confirmar que apenas configuracoes basicas aparecem ate o modulo restaurante ser implementado.
-5. Criar cliente/aluno em tenant com cobranca.
-6. Confirmar que ele aparece em pagamentos pendentes como `Pendente`.
-7. Confirmar pagamento.
-8. Verificar historico de pagamentos.
-9. Pausar e reativar cobranca.
-10. Confirmar eventos no historico.
+4. Entrar como tenant `plan4` e confirmar que restaurante aparece, mas cobrancas/alunos e agenda nao aparecem.
+5. Entrar como tenant `plan5` e confirmar que restaurante aparece como no `plan4`; agenda de mesas/reservas fica planejada para feature futura.
+6. Criar cliente/aluno em tenant com cobranca.
+7. Confirmar que ele aparece em pagamentos pendentes como `Pendente`.
+8. Confirmar pagamento.
+9. Verificar historico de pagamentos.
+10. Pausar e reativar cobranca.
+11. Confirmar eventos no historico.
 
 Fluxo agenda:
 
@@ -296,24 +301,26 @@ Fluxo agenda:
 3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-6. Testar troca de plano para `plan4` e criacao de tenant restaurante.
-7. Testar cardapio tenant-side em tenant `plan4`, incluindo grupos dinamicos.
-8. Testar pedidos tenant-side em tenant `plan4`, incluindo baixa manual e cancelamento.
-9. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
-10. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-11. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+6. Aplicar `supabase/platform_plan5_restaurant_reservations.sql` no Supabase alvo.
+7. Testar troca de plano para `plan4`/`plan5` e criacao de tenant restaurante.
+8. Testar cardapio tenant-side em tenant `plan4`/`plan5`, incluindo grupos dinamicos.
+9. Testar pedidos tenant-side em tenant `plan4`/`plan5`, incluindo baixa manual e cancelamento.
+10. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
+11. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+12. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+13. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-12. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-13. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-14. Transformar SQL solto em migrations ordenadas.
-15. Criar checklist de release/deploy.
-16. Definir provedor/deploy da aplicacao.
-17. Fazer teste multi-tenant com usuarios reais separados.
-18. Preparar backups e politica de retencao.
-19. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+14. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+15. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+16. Transformar SQL solto em migrations ordenadas.
+17. Criar checklist de release/deploy.
+18. Definir provedor/deploy da aplicacao.
+19. Fazer teste multi-tenant com usuarios reais separados.
+20. Preparar backups e politica de retencao.
+21. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
@@ -341,7 +348,8 @@ Contexto rapido:
   - plan1: cobrancas mensais via WhatsApp e controle de alunos/clientes no site.
   - plan2: agendamento via WhatsApp e controle de agendamentos no site.
   - plan3: soma do plan1 e plan2.
-  - plan4: restaurantes, modulo futuro com cardapio no site e workflow WhatsApp separado.
+  - plan4: restaurantes, cardapio, pedidos, financeiro e workflow WhatsApp separado.
+  - plan5: restaurantes com tudo do plan4 e agenda de mesas/reservas como feature futura.
 - Criacao de tenant gera pagamento pendente da plataforma.
 - Criacao de cliente/aluno gera ciclo pendente para o tenant.
 - Historicos ja existem para agendamentos, pagamentos da plataforma e pagamentos do tenant.
