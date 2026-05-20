@@ -29,6 +29,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - `plan5`: soma do `plan4` com agenda de mesas/reservas como feature planejada.
 - Agenda fica disponivel para planos com capacidade de agenda: `plan2` e `plan3`.
 - Cobrancas, alunos/clientes e turmas/grupos ficam disponiveis para planos com capacidade de cobranca mensal: `plan1` e `plan3`.
+- Modelo de dados, integracoes estruturais e plataforma de hospedagem devem ser tratados como decisoes definitivas de arquitetura: mudar feature e aceitavel, mas evitar escolhas temporarias que obriguem reescrita, migracao de plataforma ou troca de modelo central depois.
 - Alterar plano deve atualizar imediatamente restricoes e valor base da mensalidade.
 - Valor de mensalidade do tenant pode ser ajustado individualmente depois da selecao do plano.
 - Criacao de tenant deve gerar cobranca inicial pendente para a plataforma.
