@@ -96,6 +96,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Receita de atendimento fica registrada em `tenant_service_revenue_events`, com snapshot de cliente, servico, profissional, valor e origem.
 - Cancelamento/remarcacao para status diferente de `confirmed` estorna logicamente o evento financeiro reconhecido.
 - Tela tenant-side `Financeiro de atendimentos` lista valores reconhecidos e exporta via impressao/PDF do navegador.
+- Validacao autenticada tenant-side de financeiro de atendimentos passou em 2026-05-20: usuario temporario em tenant `plan2`/`salon` criou servico com valor, profissional e agendamento; confirmacao reconheceu receita de atendimento, cancelamento estornou logicamente a receita, e tenant/usuario de teste foram removidos ao final.
 
 ### Restaurante
 
@@ -305,22 +306,21 @@ Fluxo agenda:
 3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-6. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
-7. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-8. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-9. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+6. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+7. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+8. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-10. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-11. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-12. Transformar SQL solto em migrations ordenadas.
-13. Criar checklist de release/deploy.
-14. Definir provedor/deploy da aplicacao.
-15. Fazer teste multi-tenant com usuarios reais separados.
-16. Preparar backups e politica de retencao.
-17. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+9. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+10. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+11. Transformar SQL solto em migrations ordenadas.
+12. Criar checklist de release/deploy.
+13. Definir provedor/deploy da aplicacao.
+14. Fazer teste multi-tenant com usuarios reais separados.
+15. Preparar backups e politica de retencao.
+16. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
