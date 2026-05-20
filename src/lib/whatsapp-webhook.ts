@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 
 export type WhatsAppWebhookMessageEvent = {
   phoneNumberId: string | null
+  displayPhoneNumber: string | null
   from: string
   messageId: string
   timestamp: string | null
@@ -11,6 +12,7 @@ export type WhatsAppWebhookMessageEvent = {
 
 export type WhatsAppWebhookStatusEvent = {
   phoneNumberId: string | null
+  displayPhoneNumber: string | null
   recipientId: string | null
   messageId: string
   status: string
@@ -19,6 +21,7 @@ export type WhatsAppWebhookStatusEvent = {
 
 type WhatsAppWebhookChangeValue = {
   metadata?: {
+    display_phone_number?: string
     phone_number_id?: string
   }
   messages?: Array<{
@@ -74,12 +77,14 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
     for (const change of entry.changes ?? []) {
       const value = change.value
       const phoneNumberId = value?.metadata?.phone_number_id ?? null
+      const displayPhoneNumber = value?.metadata?.display_phone_number ?? null
 
       for (const message of value?.messages ?? []) {
         if (!message.from || !message.id) continue
 
         messages.push({
           phoneNumberId,
+          displayPhoneNumber,
           from: message.from,
           messageId: message.id,
           timestamp: message.timestamp ?? null,
@@ -93,6 +98,7 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
 
         statuses.push({
           phoneNumberId,
+          displayPhoneNumber,
           recipientId: status.recipient_id ?? null,
           messageId: status.id,
           status: status.status,
@@ -104,4 +110,3 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
 
   return { messages, statuses }
 }
-

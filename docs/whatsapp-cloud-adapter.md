@@ -10,6 +10,8 @@ O projeto usa um adaptador interno para envio pela WhatsApp Cloud API oficial da
 - `WHATSAPP_INTERNAL_SEND_TOKEN`: segredo interno para autorizar chamadas ao endpoint de envio.
 - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`: segredo informado tambem no painel da Meta para verificar a URL de callback.
 - `WHATSAPP_APP_SECRET`: App Secret da Meta, usado para validar `x-hub-signature-256` nos webhooks recebidos.
+- `WHATSAPP_INBOUND_N8N_WEBHOOK_URL`: URL do webhook n8n que recebe mensagens normalizadas da Meta.
+- `WHATSAPP_INBOUND_N8N_TOKEN`: segredo opcional enviado como Bearer token para o webhook n8n.
 
 ## Endpoint interno
 
@@ -56,6 +58,24 @@ Usado pela Meta para verificar a URL. A Meta chama a URL com `hub.mode`, `hub.ve
 `POST /api/whatsapp/webhook`
 
 Recebe mensagens e status enviados pela Meta. O app valida `x-hub-signature-256` usando `WHATSAPP_APP_SECRET`, normaliza eventos de mensagem/status e responde rapidamente. O encaminhamento desses eventos para n8n deve ser conectado na proxima etapa, depois que a URL publica do app e as envs finais estiverem prontas.
+
+Quando `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` estiver configurada, mensagens de texto recebidas sao encaminhadas para o n8n com um corpo normalizado:
+
+```json
+{
+  "provider": "whatsapp_cloud",
+  "phone_number_id": "123456789",
+  "tenant_phone_e164": "5583999999999",
+  "to": "5583999999999",
+  "from": "5583888888888",
+  "customer_phone_e164": "5583888888888",
+  "chat_id": "5583888888888",
+  "message_id": "wamid...",
+  "text": "Oi",
+  "message": "Oi",
+  "timestamp": "1770000000"
+}
+```
 
 URL para cadastrar na Meta, depois do deploy:
 

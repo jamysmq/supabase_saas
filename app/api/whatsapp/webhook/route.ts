@@ -1,10 +1,69 @@
 import {
+  type WhatsAppWebhookMessageEvent,
   normalizeWhatsAppWebhookPayload,
   verifyMetaWebhookSignature,
 } from '../../../../src/lib/whatsapp-webhook'
 
 function jsonResponse(message: string, status = 400) {
   return Response.json({ error: message, message }, { status })
+}
+
+async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[]) {
+  const webhookUrl = process.env.WHATSAPP_INBOUND_N8N_WEBHOOK_URL?.trim()
+
+  if (!webhookUrl || messages.length === 0) {
+    return { attempted: false, sent: 0, failed: 0 }
+  }
+
+  const token = process.env.WHATSAPP_INBOUND_N8N_TOKEN?.trim()
+  let sent = 0
+  let failed = 0
+
+  for (const message of messages) {
+    if (message.type !== 'text' || !message.text) continue
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          provider: 'whatsapp_cloud',
+          phone_number_id: message.phoneNumberId,
+          tenant_phone_e164: message.displayPhoneNumber,
+          to: message.displayPhoneNumber,
+          from: message.from,
+          customer_phone_e164: message.from,
+          chat_id: message.from,
+          message_id: message.messageId,
+          text: message.text,
+          message: message.text,
+          timestamp: message.timestamp,
+          raw_event: message,
+        }),
+      })
+
+      if (response.ok) {
+        sent += 1
+      } else {
+        failed += 1
+        console.error('WhatsApp inbound n8n forward failed.', {
+          status: response.status,
+          messageId: message.messageId,
+        })
+      }
+    } catch (error) {
+      failed += 1
+      console.error('WhatsApp inbound n8n forward errored.', {
+        messageId: message.messageId,
+        error,
+      })
+    }
+  }
+
+  return { attempted: true, sent, failed }
 }
 
 export async function GET(request: Request) {
@@ -54,16 +113,20 @@ export async function POST(request: Request) {
   }
 
   const events = normalizeWhatsAppWebhookPayload(payload)
+  const forward = await forwardMessagesToN8n(events.messages)
 
   console.info('WhatsApp webhook received.', {
     messages: events.messages.length,
     statuses: events.statuses.length,
+    forwarded: forward.sent,
+    forwardFailures: forward.failed,
   })
 
   return Response.json({
     ok: true,
     messages: events.messages.length,
     statuses: events.statuses.length,
+    forwarded: forward.sent,
+    forward_failed: forward.failed,
   })
 }
-

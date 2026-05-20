@@ -156,7 +156,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Webhook oficial da Meta preparado em 2026-05-20:
   - `GET /api/whatsapp/webhook` verifica `hub.challenge` com `WHATSAPP_WEBHOOK_VERIFY_TOKEN`;
   - `POST /api/whatsapp/webhook` valida `x-hub-signature-256` com `WHATSAPP_APP_SECRET` e normaliza mensagens/status;
-  - encaminhamento para n8n fica para a etapa seguinte, quando o app tiver URL publica.
+  - mensagens de texto podem ser encaminhadas ao n8n via `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` e token opcional `WHATSAPP_INBOUND_N8N_TOKEN`;
+  - ativacao real depende de URL publica do app, conta Meta liberada e webhook n8n final.
 - Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
 - SQL incremental criado em `supabase/platform_plan5_restaurant_reservations.sql` para cadastrar `plan5`, liberar constraint de assinatura e fazer o RPC de cardapio aceitar `plan4` e `plan5`.
@@ -318,7 +319,9 @@ Fluxo agenda:
    - `WHATSAPP_CLOUD_GRAPH_VERSION`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`;
    - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`;
-   - `WHATSAPP_APP_SECRET`.
+   - `WHATSAPP_APP_SECRET`;
+   - `WHATSAPP_INBOUND_N8N_WEBHOOK_URL`;
+   - `WHATSAPP_INBOUND_N8N_TOKEN`.
 3. Definir URL publica do app e configurar no n8n:
    - `APP_BASE_URL`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`.
