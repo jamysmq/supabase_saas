@@ -153,6 +153,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - endpoint interno protegido em `app/api/internal/whatsapp/send/route.ts`;
   - documentacao operacional em `docs/whatsapp-cloud-adapter.md`;
   - envio inicial cobre mensagem de texto livre via `/{phone_number_id}/messages`; templates, midias, botoes/listas e webhooks de status ficam como evolucao.
+- Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
 - SQL incremental criado em `supabase/platform_plan5_restaurant_reservations.sql` para cadastrar `plan5`, liberar constraint de assinatura e fazer o RPC de cardapio aceitar `plan4` e `plan5`.
 - `supabase/platform_plan5_restaurant_reservations.sql` foi aplicado no Supabase em 2026-05-20.
@@ -312,24 +313,27 @@ Fluxo agenda:
    - `WHATSAPP_CLOUD_PHONE_NUMBER_ID`;
    - `WHATSAPP_CLOUD_GRAPH_VERSION`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`.
-3. Trocar os nos mock de envio WhatsApp pelo endpoint/adaptador interno.
-4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
-5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-6. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-7. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-8. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+3. Definir URL publica do app e configurar no n8n:
+   - `APP_BASE_URL`;
+   - `WHATSAPP_INTERNAL_SEND_TOKEN`.
+4. Importar/atualizar no n8n remoto o rascunho versionado de lembrete D-1 que chama o endpoint interno de WhatsApp.
+5. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
+6. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
+7. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+8. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+9. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-9. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-10. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-11. Transformar SQL solto em migrations ordenadas.
-12. Criar checklist de release/deploy.
-13. Definir provedor/deploy da aplicacao.
-14. Fazer teste multi-tenant com usuarios reais separados.
-15. Preparar backups e politica de retencao.
-16. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+10. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+11. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+12. Transformar SQL solto em migrations ordenadas.
+13. Criar checklist de release/deploy.
+14. Definir provedor/deploy da aplicacao.
+15. Fazer teste multi-tenant com usuarios reais separados.
+16. Preparar backups e politica de retencao.
+17. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 

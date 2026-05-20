@@ -86,12 +86,44 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { ...$json, sent_ok: true } }];"
+        "method": "POST",
+        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{$json.wa_to}}"
+            },
+            {
+              "name": "body",
+              "value": "={{$json.rendered_message}}"
+            },
+            {
+              "name": "preview_url",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
       },
       "id": "c79c15c2-61f7-45db-8db9-e5626c91242d",
-      "name": "FN_mock_whatsapp_send",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "name": "HTTP_send_whatsapp_text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
       "position": [
         20,
         0
@@ -174,14 +206,14 @@
       "main": [
         [
           {
-            "node": "FN_mock_whatsapp_send",
+            "node": "HTTP_send_whatsapp_text",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "FN_mock_whatsapp_send": {
+    "HTTP_send_whatsapp_text": {
       "main": [
         [
           {
