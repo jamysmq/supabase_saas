@@ -15,6 +15,9 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 
 - Repositorio GitHub: `https://github.com/jamysmq/supabase_saas.git`
 - App local Next.js com rotas App Router e APIs server-side usando Supabase service role quando a operacao exige controle administrativo.
+- Plataforma de deploy recomendada/assumida para o app: Vercel Pro, com Supabase e n8n externos.
+- Checklist de deploy definitivo criado em `docs/vercel-deploy-checklist.md`; `.env.example` lista variaveis esperadas sem segredos reais.
+- Healthcheck publico criado em `GET /api/health` para validacao basica de deploy.
 - Supabase ja possui tenants, planos, usuarios de tenant, cobrancas de clientes, pagamentos da plataforma, agendamentos, historicos e tabelas/eventos auxiliares.
 - n8n ja possui workflows de onboarding/cadastro e lembretes; o fluxo tenant-side de agenda ainda sera derivado do `WA_TENANT_INBOUND_Assistant_v1`.
 - Hardening inicial de RLS e grants ja foi aplicado e validado superficialmente navegando pelas telas.
@@ -339,11 +342,10 @@ Fluxo agenda:
 10. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
 11. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
 12. Transformar SQL solto em migrations ordenadas.
-13. Criar checklist de release/deploy.
-14. Definir provedor/deploy da aplicacao.
-15. Fazer teste multi-tenant com usuarios reais separados.
-16. Preparar backups e politica de retencao.
-17. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+13. Executar checklist de release/deploy da Vercel em `docs/vercel-deploy-checklist.md`.
+14. Fazer teste multi-tenant com usuarios reais separados.
+15. Preparar backups e politica de retencao.
+16. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
