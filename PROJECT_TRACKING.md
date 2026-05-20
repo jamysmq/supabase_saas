@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-05-18
+Atualizado em: 2026-05-20
 
 ## Visao Geral
 
@@ -152,6 +152,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - `supabase/platform_plan5_restaurant_reservations.sql` foi aplicado no Supabase em 2026-05-20.
 - Validacao controlada do `plan5` passou em 2026-05-20: plano aparece ativo no catalogo, tenant restaurante alternado temporariamente para `plan5` continuou acessando `wa_restaurant_menu_grouped`, e tenant foi restaurado para `plan4`.
 - Validacao controlada de tenant `plan5` passou em 2026-05-20: tenant restaurante temporario criou grupo/item de cardapio, RPC incluiu o item, pedido foi criado, baixa financeira reconheceu receita, cancelamento estornou a receita e o tenant de teste foi removido ao final.
+- Validacao autenticada tenant-side de restaurante `plan5` passou em 2026-05-20: usuario temporario acessou APIs do app, criou grupo/item de cardapio, criou pedido com carrinho, listou pedido confirmado, confirmou pagamento Pix, gerou receita reconhecida e cancelou pedido com estorno logico da receita; tenant e usuario de teste foram removidos ao final.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
@@ -304,23 +305,22 @@ Fluxo agenda:
 3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-6. Testar restaurante pelo front/API tenant-side autenticada em tenant `plan4`/`plan5`, incluindo grupos dinamicos, pedidos, baixa manual e cancelamento.
-7. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
-8. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-9. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-10. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+6. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
+7. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+8. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+9. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-11. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-12. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-13. Transformar SQL solto em migrations ordenadas.
-14. Criar checklist de release/deploy.
-15. Definir provedor/deploy da aplicacao.
-16. Fazer teste multi-tenant com usuarios reais separados.
-17. Preparar backups e politica de retencao.
-18. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+10. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+11. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+12. Transformar SQL solto em migrations ordenadas.
+13. Criar checklist de release/deploy.
+14. Definir provedor/deploy da aplicacao.
+15. Fazer teste multi-tenant com usuarios reais separados.
+16. Preparar backups e politica de retencao.
+17. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
