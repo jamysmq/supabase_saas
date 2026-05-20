@@ -149,6 +149,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Provedor WhatsApp escolhido em 2026-05-20: WhatsApp Cloud API oficial da Meta.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
 - SQL incremental criado em `supabase/platform_plan5_restaurant_reservations.sql` para cadastrar `plan5`, liberar constraint de assinatura e fazer o RPC de cardapio aceitar `plan4` e `plan5`.
+- `supabase/platform_plan5_restaurant_reservations.sql` foi aplicado no Supabase em 2026-05-20.
+- Validacao controlada do `plan5` passou em 2026-05-20: plano aparece ativo no catalogo, tenant restaurante alternado temporariamente para `plan5` continuou acessando `wa_restaurant_menu_grouped`, e tenant foi restaurado para `plan4`.
 - Testes controlados sem WhatsApp real passaram em 2026-05-18:
   - inbound criou agendamento via webhook real do n8n usando envs do container;
   - lembrete D-1 listou agendamento de amanha e abriu conversa em `appointment_confirmation_action`;
@@ -301,26 +303,25 @@ Fluxo agenda:
 3. Trocar os nos mock de envio WhatsApp pelo adaptador/provedor real.
 4. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
 5. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-6. Aplicar `supabase/platform_plan5_restaurant_reservations.sql` no Supabase alvo.
-7. Testar troca de plano para `plan4`/`plan5` e criacao de tenant restaurante.
-8. Testar cardapio tenant-side em tenant `plan4`/`plan5`, incluindo grupos dinamicos.
-9. Testar pedidos tenant-side em tenant `plan4`/`plan5`, incluindo baixa manual e cancelamento.
-10. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
-11. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-12. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-13. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+6. Testar criacao de tenant restaurante diretamente em `plan5`.
+7. Testar cardapio tenant-side em tenant `plan4`/`plan5`, incluindo grupos dinamicos.
+8. Testar pedidos tenant-side em tenant `plan4`/`plan5`, incluindo baixa manual e cancelamento.
+9. Testar financeiro de atendimentos com tenant `salon` em plano com agenda.
+10. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+11. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+12. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-14. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-15. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-16. Transformar SQL solto em migrations ordenadas.
-17. Criar checklist de release/deploy.
-18. Definir provedor/deploy da aplicacao.
-19. Fazer teste multi-tenant com usuarios reais separados.
-20. Preparar backups e politica de retencao.
-21. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+13. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+14. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+15. Transformar SQL solto em migrations ordenadas.
+16. Criar checklist de release/deploy.
+17. Definir provedor/deploy da aplicacao.
+18. Fazer teste multi-tenant com usuarios reais separados.
+19. Preparar backups e politica de retencao.
+20. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
