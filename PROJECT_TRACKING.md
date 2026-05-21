@@ -17,6 +17,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - App local Next.js com rotas App Router e APIs server-side usando Supabase service role quando a operacao exige controle administrativo.
 - Plataforma de deploy recomendada/assumida para o app: Vercel Pro, com Supabase e n8n externos.
 - Checklist de deploy definitivo criado em `docs/vercel-deploy-checklist.md`; `.env.example` lista variaveis esperadas sem segredos reais.
+- Guia de configuracao Meta WhatsApp Cloud API criado em `docs/meta-whatsapp-cloud-setup.md`.
 - Healthcheck publico criado em `GET /api/health` para validacao basica de deploy.
 - Supabase ja possui tenants, planos, usuarios de tenant, cobrancas de clientes, pagamentos da plataforma, agendamentos, historicos e tabelas/eventos auxiliares.
 - n8n ja possui workflows de onboarding/cadastro e lembretes; o fluxo tenant-side de agenda ainda sera derivado do `WA_TENANT_INBOUND_Assistant_v1`.
@@ -250,6 +251,18 @@ Premissa importante: ao excluir tenant, os historicos internos dele podem sumir.
 
 ## Arquivos SQL Aplicados/Usados
 
+Migrations consolidadas criadas em 2026-05-21:
+
+- `supabase/migrations/001_platform_core.sql`
+- `supabase/migrations/002_billing_and_payment_history.sql`
+- `supabase/migrations/003_appointments_and_service_revenue.sql`
+- `supabase/migrations/004_message_templates_and_whatsapp_appointments.sql`
+- `supabase/migrations/005_restaurant_and_plan5.sql`
+- `supabase/migrations/006_security_and_grants.sql`
+- `supabase/migrations/README.md`
+
+Observacao: as migrations consolidam os SQLs incrementais existentes no repositorio. Elas ainda nao substituem um dump/baseline completo de banco novo, porque parte do schema base foi criada antes dos SQLs soltos atuais. Proximo passo seguro antes de producao: aplicar em staging e comparar schema/dados essenciais com o Supabase alvo.
+
 - `supabase/security_hardening_rls.sql`
 - `supabase/public_data_api_grants.sql`
 - `supabase/appointment_brazil_whatsapp_normalization.sql`
@@ -269,13 +282,9 @@ Premissa importante: ao excluir tenant, os historicos internos dele podem sumir.
 - `supabase/restaurant_menu.sql`
 - `supabase/restaurant_menu_groups_and_orders.sql`
 
-Antes de producao, consolidar em migrations numeradas, por exemplo:
+Arquivo diagnostico mantido fora da ordem de aplicacao:
 
-- `001_initial_schema.sql`
-- `002_security_hardening.sql`
-- `003_appointments.sql`
-- `004_payment_history.sql`
-- `005_initial_pending_cycles.sql`
+- `supabase/tenant_plan_feature_trigger_diagnostic.sql`
 
 ## Validacao Recomendada Agora
 
@@ -341,11 +350,12 @@ Fluxo agenda:
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
 10. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
 11. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-12. Transformar SQL solto em migrations ordenadas.
+12. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
 13. Executar checklist de release/deploy da Vercel em `docs/vercel-deploy-checklist.md`.
-14. Fazer teste multi-tenant com usuarios reais separados.
-15. Preparar backups e politica de retencao.
-16. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+14. Configurar WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
+15. Fazer teste multi-tenant com usuarios reais separados.
+16. Preparar backups e politica de retencao.
+17. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
@@ -364,28 +374,39 @@ Fluxo agenda:
 ```text
 Boa tarde, Codex. Estamos no projeto `c:\Users\Jamys\billing-app`.
 
-Contexto rapido:
-- Produto: SaaS multi-tenant de cobranca, clientes/alunos e agenda.
-- Plataforma gerencia tenants, planos, cobrancas e historico da plataforma.
-- Tenant gerencia clientes/alunos, grupos/turmas, cobrancas, agenda e historicos proprios.
-- Agenda deve existir para planos com capacidade de agenda (`plan2` e `plan3`).
-- Planos agora sao por capacidade:
-  - plan1: cobrancas mensais via WhatsApp e controle de alunos/clientes no site.
-  - plan2: agendamento via WhatsApp e controle de agendamentos no site.
-  - plan3: soma do plan1 e plan2.
-  - plan4: restaurantes, cardapio, pedidos, financeiro e workflow WhatsApp separado.
-  - plan5: restaurantes com tudo do plan4 e agenda de mesas/reservas como feature futura.
-- Criacao de tenant gera pagamento pendente da plataforma.
-- Criacao de cliente/aluno gera ciclo pendente para o tenant.
-- Historicos ja existem para agendamentos, pagamentos da plataforma e pagamentos do tenant.
-- Exclusao de tenant deve apagar dados internos dele, mas preservar snapshot/evento no historico da plataforma.
-- SQLs estao em `supabase/`, mas antes de producao precisamos consolidar em migrations ordenadas.
-- Leia `PROJECT_TRACKING.md` antes de mexer, porque ele registra decisoes, premissas e proximos passos.
+Antes de mexer, leia `PROJECT_TRACKING.md`.
+
+Estado atual:
+- Produto SaaS multi-tenant para cobrancas, clientes/alunos, agenda e restaurante.
+- Planos:
+  - plan1: cobrancas mensais via WhatsApp + alunos/clientes no site.
+  - plan2: agenda via WhatsApp + agendamentos no site.
+  - plan3: plan1 + plan2.
+  - plan4: restaurante com cardapio, pedidos e financeiro.
+  - plan5: plan4 + agenda de mesas/reservas como feature futura.
+- Regras de plano devem ser validadas no front e nas APIs, nunca so escondendo botao.
+- Modelo de dados, integracoes estruturais e plataforma de hospedagem devem ser tratados como decisoes definitivas de arquitetura.
+- Vercel Pro foi assumida como plataforma do app; Supabase e n8n seguem externos.
+- `.env.example`, `docs/vercel-deploy-checklist.md` e `GET /api/health` ja existem.
+- Adaptador WhatsApp Cloud API oficial ja existe:
+  - `src/lib/whatsapp-cloud.ts`;
+  - `app/api/internal/whatsapp/send/route.ts`;
+  - `app/api/whatsapp/webhook/route.ts`;
+  - `src/lib/whatsapp-webhook.ts`;
+  - `docs/whatsapp-cloud-adapter.md`.
+- Guia Meta criado em `docs/meta-whatsapp-cloud-setup.md`.
+- Migrations consolidadas foram criadas em `supabase/migrations/`, mas ainda precisam ser aplicadas em staging e comparadas com o Supabase alvo.
+- O arquivo `supabase/tenant_plan_feature_trigger_diagnostic.sql` e diagnostico e ficou fora da ordem de aplicacao.
+- Workflows n8n versionados continuam genericos; nao criar workflow por tenant.
 
 Proxima prioridade:
-1. Revisar os fluxos principais ponta a ponta, principalmente plano 1, 2, 3 e 4.
-2. Rodar/aplicar `supabase/platform_plan_catalog.sql` se ainda nao foi aplicado.
-3. Iniciar configuracoes de mensagens personalizaveis por tenant no front/banco.
-4. Depois iniciar o workflow n8n de WhatsApp para agendamento dos clientes do tenant, usando `WA_TENANT_INBOUND_Assistant_v1` como referencia.
+1. Criar/configurar app Meta WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
+2. Configurar envs reais na Vercel e no n8n somente via ambiente, sem colar segredos no chat.
+3. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
+4. Depois testar WhatsApp real:
+   - challenge do webhook Meta;
+   - mensagem inbound real;
+   - envio pelo endpoint interno;
+   - fluxo de agendamento em tenant plan2 ou plan3.
 5. Manter tudo idempotente, auditavel, seguro por tenant e sem depender apenas do front para regra de negocio.
 ```
