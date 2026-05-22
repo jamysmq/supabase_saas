@@ -145,7 +145,7 @@ begin
     t.business_type,
     v_step,
     coalesce(v_payload, '{}'::jsonb),
-    coalesce(mt.content, 'Ola! Eu sou o assistente de agendamento de {{tenant_name}}. Me diga o servico e o melhor dia para voce.'),
+    coalesce(mt.content, 'Ola! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga o servico e o melhor dia para voce.'),
     coalesce((
       select jsonb_agg(
         jsonb_build_object(
@@ -365,7 +365,7 @@ select
   t.id,
   'appointment_confirmation_reminder',
   'whatsapp',
-  'Ola, {{customer_name}}! Confirmando seu horario em {{appointment_date}} as {{appointment_time}} com {{tenant_name}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
+  'Ola, {{customer_name}}! Aqui e o Assistente Jack, de {{tenant_name}}. Confirmando seu horario em {{appointment_date}} as {{appointment_time}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
   true
 from public.tenants t
 where t.plan in ('plan2', 'plan3')
@@ -412,7 +412,7 @@ as $$
     to_char(a.starts_at at time zone p_timezone, 'HH24:MI') as appointment_time,
     coalesce(
       mt.content,
-      'Ola, {{customer_name}}! Confirmando seu horario em {{appointment_date}} as {{appointment_time}} com {{tenant_name}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.'
+      'Ola, {{customer_name}}! Aqui e o Assistente Jack, de {{tenant_name}}. Confirmando seu horario em {{appointment_date}} as {{appointment_time}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.'
     ) as message_template
   from public.appointments a
   join public.tenants t on t.id = a.tenant_id

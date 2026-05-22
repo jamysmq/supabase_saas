@@ -43,19 +43,19 @@ cross join (
   values
     (
       'billing_reminder_due_today',
-      'Ola, {{customer_name}}! Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.'
+      'Ola, {{customer_name}}! Aqui e o Assistente Jack, de {{tenant_name}}. Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.'
     ),
     (
       'appointment_welcome',
-      'Ola! Eu sou o assistente de agendamento de {{tenant_name}}. Me diga o servico e o melhor dia para voce.'
+      'Ola! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga o servico e o melhor dia para voce.'
     ),
     (
       'appointment_confirmation_reminder',
-      'Ola, {{customer_name}}! Confirmando seu horario em {{appointment_date}} as {{appointment_time}} com {{tenant_name}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.'
+      'Ola, {{customer_name}}! Aqui e o Assistente Jack, de {{tenant_name}}. Confirmando seu horario em {{appointment_date}} as {{appointment_time}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.'
     ),
     (
       'restaurant_welcome',
-      'Ola! Bem-vindo ao {{tenant_name}}. Me diga se voce quer ver o cardapio ou fazer um pedido.'
+      'Ola! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga se voce quer ver o cardapio ou fazer um pedido.'
     )
 ) as defaults(template_key, content)
 where not exists (

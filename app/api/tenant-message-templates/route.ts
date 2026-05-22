@@ -26,7 +26,7 @@ const templateDefinitions: TemplateDefinition[] = [
     description: 'Mensagem usada para avisar clientes sobre mensalidades pendentes.',
     capability: 'billing',
     defaultContent:
-      'Olá, {{customer_name}}! Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.',
+      'Olá, {{customer_name}}! Aqui é o Assistente Jack, de {{tenant_name}}. Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.',
   },
   {
     key: 'appointment_welcome',
@@ -34,7 +34,7 @@ const templateDefinitions: TemplateDefinition[] = [
     description: 'Mensagem inicial para clientes que vão marcar horários pelo WhatsApp.',
     capability: 'appointments',
     defaultContent:
-      'Olá! Eu sou o assistente de agendamento de {{tenant_name}}. Me diga o serviço e o melhor dia para você.',
+      'Olá! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga o serviço e o melhor dia para você.',
   },
   {
     key: 'appointment_confirmation_reminder',
@@ -42,7 +42,7 @@ const templateDefinitions: TemplateDefinition[] = [
     description: 'Mensagem enviada um dia antes do agendamento para confirmar, remarcar ou cancelar.',
     capability: 'appointments',
     defaultContent:
-      'Olá, {{customer_name}}! Confirmando seu horário em {{appointment_date}} às {{appointment_time}} com {{tenant_name}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
+      'Olá, {{customer_name}}! Aqui é o Assistente Jack, de {{tenant_name}}. Confirmando seu horário em {{appointment_date}} às {{appointment_time}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
   },
   {
     key: 'restaurant_welcome',
@@ -50,7 +50,7 @@ const templateDefinitions: TemplateDefinition[] = [
     description: 'Mensagem futura para iniciar pedidos e consulta de cardápio pelo WhatsApp.',
     capability: 'restaurant',
     defaultContent:
-      'Olá! Bem-vindo ao {{tenant_name}}. Me diga se você quer ver o cardápio ou fazer um pedido.',
+      'Olá! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga se você quer ver o cardápio ou fazer um pedido.',
   },
 ]
 
