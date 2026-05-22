@@ -22,6 +22,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Projeto Vercel criado com as 3 envs Supabase minimas configuradas em Production em 2026-05-21.
 - Dominio `meuassistentevirtual.com.br` registrado; subdominio planejado para o SaaS: `app.meuassistentevirtual.com.br`.
 - Home publica substituiu o template padrao do Next.js com pagina institucional minima, politicas em `/privacidade` e termos em `/termos`.
+- DNS de `app.meuassistentevirtual.com.br` validado em 2026-05-22; `GET /api/health`, `/privacidade` e `/termos` responderam publicamente pela Vercel.
 - Supabase ja possui tenants, planos, usuarios de tenant, cobrancas de clientes, pagamentos da plataforma, agendamentos, historicos e tabelas/eventos auxiliares.
 - n8n ja possui workflows de onboarding/cadastro e lembretes; o fluxo tenant-side de agenda ainda sera derivado do `WA_TENANT_INBOUND_Assistant_v1`.
 - Hardening inicial de RLS e grants ja foi aplicado e validado superficialmente navegando pelas telas.
@@ -342,25 +343,28 @@ Fluxo agenda:
 3. Definir URL publica do app e configurar no n8n:
    - `APP_BASE_URL`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`.
-4. Aguardar DNS do Registro.br liberar a zona e apontar `app.meuassistentevirtual.com.br` para o CNAME informado pela Vercel.
-5. Conectar tambem `meuassistentevirtual.com.br`/`www` na Vercel para site institucional e verificacao Meta.
-6. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
-7. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-8. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-9. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-10. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+4. Conectar tambem `meuassistentevirtual.com.br`/`www` na Vercel se quiser separar site institucional do subdominio do app.
+5. Voltar para verificacao/configuracao Meta usando `https://app.meuassistentevirtual.com.br` como URL publica ja validada.
+6. Configurar no container n8n:
+   - `APP_BASE_URL=https://app.meuassistentevirtual.com.br`;
+   - `WHATSAPP_INTERNAL_SEND_TOKEN`.
+7. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
+8. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
+9. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+10. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+11. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-11. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-12. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-13. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
-14. Executar checklist de release/deploy da Vercel em `docs/vercel-deploy-checklist.md`.
-15. Configurar WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
-16. Fazer teste multi-tenant com usuarios reais separados.
-17. Preparar backups e politica de retencao.
-18. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+12. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+13. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+14. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
+15. Executar checklist de release/deploy da Vercel em `docs/vercel-deploy-checklist.md`.
+16. Configurar WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
+17. Fazer teste multi-tenant com usuarios reais separados.
+18. Preparar backups e politica de retencao.
+19. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 
 ## Decisoes para Evitar Gambiarra
 
