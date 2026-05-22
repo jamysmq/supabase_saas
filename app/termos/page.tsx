@@ -9,10 +9,10 @@ export default function TermsPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Termos de Uso</h1>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          O Meu Assistente Virtual e uma plataforma SaaS para gestao de
-          clientes, cobrancas, agenda, pedidos e comunicacoes operacionais. O
-          uso do sistema depende de acesso autorizado e do plano contratado por
-          cada negocio.
+          O Assistente Jack e um produto da Meu Assistente Virtual para gestao
+          de clientes, cobrancas, agenda, pedidos e comunicacoes operacionais.
+          O uso do sistema depende de acesso autorizado e do plano contratado
+          por cada negocio.
         </p>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
           Cada contratante e responsavel pela veracidade dos dados cadastrados,

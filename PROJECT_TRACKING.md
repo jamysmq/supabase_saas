@@ -170,6 +170,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Decisao de produto em 2026-05-22: handoff humano sera feito por inbox tenant-side no painel. O cliente responde ao numero oficial da plataforma; o tenant visualiza e responde pelo SaaS, com envio saindo pelo adaptador WhatsApp Cloud API.
 - Decisao de produto em 2026-05-22: a inbox de WhatsApp fica disponivel para todos os tenants; as automacoes podem variar por plano, mas atendimento humano centralizado e funcionalidade transversal.
 - Persona das mensagens WhatsApp definida em 2026-05-22 como `Assistente Jack`; o nome publico do numero na Meta tambem deve ser configurado como `Assistente Jack` para evitar aparecer `Meu Assistente Virtual` no WhatsApp.
+- Site publico passou a apresentar `Assistente Jack` como produto da Meu Assistente Virtual em 2026-05-22, para alinhar dominio/site com o display name desejado do WhatsApp na Meta.
 - Primeira camada da inbox tenant-side criada em 2026-05-22:
   - SQL versionado em `supabase/tenant_whatsapp_inbox.sql`;
   - migration `supabase/migrations/007_tenant_whatsapp_inbox.sql`;

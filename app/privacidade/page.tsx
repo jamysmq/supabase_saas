@@ -9,11 +9,11 @@ export default function PrivacyPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Politica de Privacidade</h1>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          O Meu Assistente Virtual trata dados de contato, cadastro, cobranca,
-          agenda, pedidos e mensagens operacionais para prestar o servico aos
-          negocios contratantes. Os dados sao usados para autenticar usuarios,
-          operar os paineis, registrar historicos e executar comunicacoes
-          autorizadas pelos clientes da plataforma.
+          O Assistente Jack, produto da Meu Assistente Virtual, trata dados de
+          contato, cadastro, cobranca, agenda, pedidos e mensagens operacionais
+          para prestar o servico aos negocios contratantes. Os dados sao usados
+          para autenticar usuarios, operar os paineis, registrar historicos e
+          executar comunicacoes autorizadas pelos clientes da plataforma.
         </p>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
           Informacoes sensiveis de integracao, como chaves de API e tokens, sao

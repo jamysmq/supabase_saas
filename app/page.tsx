@@ -7,7 +7,7 @@ export default function Home() {
         <div className="mx-auto flex min-h-[92vh] w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
           <header className="flex items-center justify-between gap-6">
             <Link className="text-sm font-semibold uppercase tracking-[0.16em]" href="/">
-              Meu Assistente Virtual
+              Assistente Jack
             </Link>
             <nav className="flex items-center gap-4 text-sm text-[#4a463f]">
               <Link className="hover:text-[#171717]" href="/privacidade">
@@ -28,15 +28,15 @@ export default function Home() {
           <div className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[1.04fr_0.96fr]">
             <div className="max-w-2xl">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-[#806d34]">
-                SaaS para atendimento, cobranca e agenda
+                Um produto Meu Assistente Virtual
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-[#171717] sm:text-5xl lg:text-6xl">
-                Meu Assistente Virtual
+                Assistente Jack
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#4a463f]">
-                Uma plataforma multi-tenant para pequenos negocios organizarem
-                clientes, pagamentos, agendamentos, pedidos e conversas via
-                WhatsApp com mais controle operacional.
+                O gerente virtual para pequenos negocios organizarem clientes,
+                pagamentos, agendamentos, pedidos e conversas via WhatsApp com
+                mais controle operacional.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
