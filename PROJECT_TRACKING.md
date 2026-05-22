@@ -167,6 +167,14 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - `POST /api/whatsapp/webhook` valida `x-hub-signature-256` com `WHATSAPP_APP_SECRET` e normaliza mensagens/status;
   - mensagens de texto podem ser encaminhadas ao n8n via `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` e token opcional `WHATSAPP_INBOUND_N8N_TOKEN`;
   - ativacao real depende de URL publica do app, conta Meta liberada e webhook n8n final.
+- Decisao de produto em 2026-05-22: handoff humano sera feito por inbox tenant-side no painel. O cliente responde ao numero oficial da plataforma; o tenant visualiza e responde pelo SaaS, com envio saindo pelo adaptador WhatsApp Cloud API.
+- Primeira camada da inbox tenant-side criada em 2026-05-22:
+  - SQL versionado em `supabase/tenant_whatsapp_inbox.sql`;
+  - migration `supabase/migrations/007_tenant_whatsapp_inbox.sql`;
+  - webhook Meta passa a tentar registrar inbound via RPC `admin_record_whatsapp_inbound`;
+  - APIs tenant-side em `app/api/tenant-whatsapp/threads`;
+  - tela tenant-side `Atendimento WhatsApp` em `/whatsapp-inbox`.
+  - Aplicacao no Supabase alvo ainda pendente porque a CLI Supabase/psql nao estava disponivel neste ambiente.
 - Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Workflow remoto `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi atualizado via API n8n em 2026-05-21 com o JSON versionado que usa `HTTP_send_whatsapp_text` e `$env.APP_BASE_URL`; permaneceu inativo. Ativacao ainda depende de URL publica validada, envs no container n8n e WhatsApp real liberado.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
@@ -264,6 +272,7 @@ Migrations consolidadas criadas em 2026-05-21:
 - `supabase/migrations/004_message_templates_and_whatsapp_appointments.sql`
 - `supabase/migrations/005_restaurant_and_plan5.sql`
 - `supabase/migrations/006_security_and_grants.sql`
+- `supabase/migrations/007_tenant_whatsapp_inbox.sql`
 - `supabase/migrations/README.md`
 
 Observacao: as migrations consolidam os SQLs incrementais existentes no repositorio. Elas ainda nao substituem um dump/baseline completo de banco novo, porque parte do schema base foi criada antes dos SQLs soltos atuais. Proximo passo seguro antes de producao: aplicar em staging e comparar schema/dados essenciais com o Supabase alvo.
@@ -281,6 +290,7 @@ Observacao: as migrations consolidam os SQLs incrementais existentes no reposito
 - `supabase/tenant_message_templates.sql`
 - `supabase/whatsapp_appointment_workflow_support.sql`
 - `supabase/whatsapp_billing_workflow_support.sql`
+- `supabase/tenant_whatsapp_inbox.sql`
 - `supabase/platform_plan4_constraints.sql`
 - `supabase/platform_plan5_restaurant_reservations.sql`
 - `supabase/salon_service_revenue.sql`

@@ -97,6 +97,11 @@ export default function DashboardPage() {
         }]
       : []),
     {
+      href: '/whatsapp-inbox',
+      title: 'Atendimento WhatsApp',
+      description: 'Responda clientes que pediram ajuda humana pelo WhatsApp.',
+    },
+    {
       href: '/settings',
       title: 'Configurações da conta',
       description: 'Atualize Pix, dados da conta e senha de acesso.',

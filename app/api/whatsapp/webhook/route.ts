@@ -1,3 +1,4 @@
+import { createTenantAdminClient } from '../../../../src/lib/tenant-admin'
 import {
   type WhatsAppWebhookMessageEvent,
   normalizeWhatsAppWebhookPayload,
@@ -6,6 +7,50 @@ import {
 
 function jsonResponse(message: string, status = 400) {
   return Response.json({ error: message, message }, { status })
+}
+
+async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
+  if (messages.length === 0) {
+    return { attempted: false, recorded: 0, failed: 0 }
+  }
+
+  let supabase
+
+  try {
+    supabase = createTenantAdminClient()
+  } catch (error) {
+    console.error('WhatsApp inbox recording skipped: Supabase admin client is not configured.', error)
+    return { attempted: false, recorded: 0, failed: messages.length }
+  }
+
+  let recorded = 0
+  let failed = 0
+
+  for (const message of messages) {
+    if (message.type !== 'text' || !message.text) continue
+
+    const { data, error } = await supabase.rpc('admin_record_whatsapp_inbound', {
+      p_phone_number_id: message.phoneNumberId,
+      p_platform_phone_e164: message.displayPhoneNumber,
+      p_customer_phone_e164: message.from,
+      p_message_id: message.messageId,
+      p_body: message.text,
+      p_timestamp: message.timestamp,
+      p_raw_event: message,
+    })
+
+    if (error) {
+      failed += 1
+      console.error('WhatsApp inbox recording failed.', {
+        messageId: message.messageId,
+        error: error.message,
+      })
+    } else if (data) {
+      recorded += 1
+    }
+  }
+
+  return { attempted: true, recorded, failed }
 }
 
 async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[]) {
@@ -113,11 +158,14 @@ export async function POST(request: Request) {
   }
 
   const events = normalizeWhatsAppWebhookPayload(payload)
+  const inbox = await recordMessagesInInbox(events.messages)
   const forward = await forwardMessagesToN8n(events.messages)
 
   console.info('WhatsApp webhook received.', {
     messages: events.messages.length,
     statuses: events.statuses.length,
+    inboxRecorded: inbox.recorded,
+    inboxFailures: inbox.failed,
     forwarded: forward.sent,
     forwardFailures: forward.failed,
   })
@@ -126,6 +174,8 @@ export async function POST(request: Request) {
     ok: true,
     messages: events.messages.length,
     statuses: events.statuses.length,
+    inbox_recorded: inbox.recorded,
+    inbox_failed: inbox.failed,
     forwarded: forward.sent,
     forward_failed: forward.failed,
   })
