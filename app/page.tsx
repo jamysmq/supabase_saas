@@ -1,65 +1,117 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-[#f6f4ef] text-[#171717]">
+      <section className="border-b border-[#d8d2c4] bg-[#fbfaf7]">
+        <div className="mx-auto flex min-h-[92vh] w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
+          <header className="flex items-center justify-between gap-6">
+            <Link className="text-sm font-semibold uppercase tracking-[0.16em]" href="/">
+              Meu Assistente Virtual
+            </Link>
+            <nav className="flex items-center gap-4 text-sm text-[#4a463f]">
+              <Link className="hover:text-[#171717]" href="/privacidade">
+                Privacidade
+              </Link>
+              <Link className="hover:text-[#171717]" href="/termos">
+                Termos
+              </Link>
+              <Link
+                className="rounded-md bg-[#1f3d36] px-4 py-2 font-medium text-white hover:bg-[#172d28]"
+                href="/login"
+              >
+                Entrar
+              </Link>
+            </nav>
+          </header>
+
+          <div className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[1.04fr_0.96fr]">
+            <div className="max-w-2xl">
+              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-[#806d34]">
+                SaaS para atendimento, cobranca e agenda
+              </p>
+              <h1 className="text-4xl font-semibold leading-tight text-[#171717] sm:text-5xl lg:text-6xl">
+                Meu Assistente Virtual
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-[#4a463f]">
+                Uma plataforma multi-tenant para pequenos negocios organizarem
+                clientes, pagamentos, agendamentos, pedidos e conversas via
+                WhatsApp com mais controle operacional.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  className="rounded-md bg-[#1f3d36] px-5 py-3 text-center text-sm font-semibold text-white hover:bg-[#172d28]"
+                  href="/login"
+                >
+                  Acessar painel
+                </Link>
+                <a
+                  className="rounded-md border border-[#b8ad98] px-5 py-3 text-center text-sm font-semibold text-[#1f3d36] hover:border-[#1f3d36] hover:bg-white"
+                  href="mailto:contato@meuassistentevirtual.com.br"
+                >
+                  Falar com atendimento
+                </a>
+              </div>
+            </div>
+
+            <div className="relative min-h-[420px] overflow-hidden rounded-md border border-[#d8d2c4] bg-[#e9e2d4] p-5 shadow-sm">
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(31,61,54,0.12),rgba(128,109,52,0.08))]" />
+              <div className="relative grid h-full grid-rows-[auto_1fr_auto] gap-5">
+                <div className="flex items-center justify-between rounded-md bg-white/85 p-4 shadow-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-[#806d34]">
+                      Operacao
+                    </p>
+                    <p className="mt-1 text-lg font-semibold">Resumo do dia</p>
+                  </div>
+                  <div className="h-3 w-3 rounded-full bg-[#1f8a5b]" />
+                </div>
+
+                <div className="grid content-center gap-4">
+                  {[
+                    ["Cobrancas", "Clientes com ciclos pendentes e historico de baixa."],
+                    ["Agenda", "Servicos, profissionais e confirmacoes por WhatsApp."],
+                    ["Restaurante", "Cardapio, pedidos e financeiro em um so painel."],
+                  ].map(([title, description]) => (
+                    <div
+                      className="rounded-md border border-white/70 bg-white/80 p-4 shadow-sm"
+                      key={title}
+                    >
+                      <p className="font-semibold text-[#1f3d36]">{title}</p>
+                      <p className="mt-1 text-sm leading-6 text-[#4a463f]">
+                        {description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-md bg-[#1f3d36] p-4 text-white">
+                  <p className="text-sm font-medium">
+                    Regras por plano validadas no painel, APIs e banco.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section className="bg-white">
+        <div className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-14 sm:px-8 lg:grid-cols-3 lg:px-10">
+          {[
+            ["Multi-tenant", "Cada cliente opera seus proprios dados, com separacao por tenant e controles administrativos."],
+            ["WhatsApp oficial", "Integracao preparada para WhatsApp Cloud API, webhook seguro e workflows genericos no n8n."],
+            ["Historico auditavel", "Pagamentos, agendamentos e exclusoes preservam eventos importantes para consulta futura."],
+          ].map(([title, description]) => (
+            <article className="border-l-2 border-[#b89a44] pl-5" key={title}>
+              <h2 className="text-lg font-semibold">{title}</h2>
+              <p className="mt-3 text-sm leading-6 text-[#4a463f]">
+                {description}
+              </p>
+            </article>
+          ))}
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
