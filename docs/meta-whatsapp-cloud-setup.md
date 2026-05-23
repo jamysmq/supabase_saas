@@ -122,6 +122,7 @@ Na Vercel, configure:
 WHATSAPP_CLOUD_ACCESS_TOKEN=
 WHATSAPP_CLOUD_PHONE_NUMBER_ID=
 WHATSAPP_CLOUD_GRAPH_VERSION=v23.0
+WHATSAPP_PUBLIC_PHONE_E164=
 WHATSAPP_INTERNAL_SEND_TOKEN=
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=
 WHATSAPP_APP_SECRET=
@@ -154,4 +155,3 @@ WHATSAPP_INTERNAL_SEND_TOKEN=
 - Meta for Developers: `https://developers.facebook.com/`
 - WhatsApp Cloud API: `https://developers.facebook.com/docs/whatsapp/cloud-api`
 - Webhooks Meta: `https://developers.facebook.com/docs/graph-api/webhooks/`
-

@@ -14,6 +14,7 @@ Apply order:
 6. `006_security_and_grants.sql`
 7. `007_tenant_whatsapp_inbox.sql`
 8. `008_assistente_jack_message_persona.sql`
+9. `009_tenant_whatsapp_entry_links.sql`
 
 Keep the original loose SQL files until these migrations are applied in a staging database and the resulting schema is compared with production.
 

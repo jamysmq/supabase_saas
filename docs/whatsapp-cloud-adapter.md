@@ -7,6 +7,7 @@ O projeto usa um adaptador interno para envio pela WhatsApp Cloud API oficial da
 - `WHATSAPP_CLOUD_ACCESS_TOKEN`: token da Meta com permissao de envio.
 - `WHATSAPP_CLOUD_PHONE_NUMBER_ID`: ID do numero remetente no WhatsApp Business Account.
 - `WHATSAPP_CLOUD_GRAPH_VERSION`: versao da Graph API, opcional. Padrao atual do app: `v23.0`.
+- `WHATSAPP_PUBLIC_PHONE_E164`: numero publico do Assistente Jack em formato E.164/digitos, usado para gerar os links `wa.me` dos tenants.
 - `WHATSAPP_INTERNAL_SEND_TOKEN`: segredo interno para autorizar chamadas ao endpoint de envio.
 - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`: segredo informado tambem no painel da Meta para verificar a URL de callback.
 - `WHATSAPP_APP_SECRET`: App Secret da Meta, usado para validar `x-hub-signature-256` nos webhooks recebidos.
@@ -48,6 +49,16 @@ Resposta esperada:
 Os workflows devem chamar esse endpoint interno quando o app estiver publicado e acessivel pelo n8n. Ate la, os mocks de envio continuam uteis para validar a logica sem consumir a API real.
 
 Esse endpoint envia apenas texto livre. Templates aprovados, midias, botoes/listas e webhooks de status devem entrar como proximas evolucoes do adaptador, mantendo o mesmo principio: workflow generico, tenant/template/dados vindos do Supabase, provedor isolado em uma camada unica.
+
+## Links de atendimento por tenant
+
+Cada tenant recebe um codigo publico no formato `jack-xxxxxxxx`. A tela `Atendimento WhatsApp` usa `WHATSAPP_PUBLIC_PHONE_E164` para gerar um link:
+
+```text
+https://wa.me/SEU_NUMERO?text=Ola%2C%20Assistente%20Jack%21%20Quero%20atendimento.%20Codigo%3A%20jack-xxxxxxxx
+```
+
+Quando o cliente chega por esse link, o webhook detecta o codigo na primeira mensagem e cria a conversa na inbox do tenant correto. Conversas iniciadas por lembretes/cobrancas continuam sendo resolvidas pelo historico em `wa_conversations`.
 
 ## Webhook oficial da Meta
 

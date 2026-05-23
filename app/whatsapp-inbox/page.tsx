@@ -24,6 +24,13 @@ type Message = {
   created_at: string
 }
 
+type EntryLink = {
+  code: string
+  prefilled_text: string
+  whatsapp_url: string | null
+  platform_phone_configured: boolean
+}
+
 function formatPhone(value: string) {
   const digits = String(value ?? '').replace(/\D/g, '')
 
@@ -57,6 +64,7 @@ export default function WhatsAppInboxPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [entryLink, setEntryLink] = useState<EntryLink | null>(null)
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -124,6 +132,24 @@ export default function WhatsAppInboxPage() {
     }
   }, [loadMessages, loadThreads])
 
+  const loadEntryLink = useCallback(async function loadEntryLink(token = accessToken) {
+    if (!token) return
+
+    const response = await fetch('/api/tenant-whatsapp/link', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Nao foi possivel carregar o link de atendimento.')
+      return
+    }
+
+    setEntryLink(await response.json())
+  }, [accessToken])
+
   useEffect(() => {
     async function load() {
       const result = await getCurrentTenantUser()
@@ -148,12 +174,29 @@ export default function WhatsAppInboxPage() {
       }
 
       setAccessToken(session.access_token)
-      await loadInitialThreads(session.access_token)
+      await Promise.all([
+        loadEntryLink(session.access_token),
+        loadInitialThreads(session.access_token),
+      ])
       setLoading(false)
     }
 
     void load()
-  }, [loadInitialThreads, router])
+  }, [loadEntryLink, loadInitialThreads, router])
+
+  async function copyEntryLink() {
+    if (!entryLink) return
+
+    const value = entryLink.whatsapp_url ?? entryLink.prefilled_text
+
+    try {
+      await navigator.clipboard.writeText(value)
+      setSuccess(entryLink.whatsapp_url ? 'Link copiado.' : 'Texto de entrada copiado.')
+      setError('')
+    } catch {
+      setError('Nao foi possivel copiar automaticamente.')
+    }
+  }
 
   async function selectThread(threadId: string) {
     setSelectedThreadId(threadId)
@@ -255,6 +298,36 @@ export default function WhatsAppInboxPage() {
             </button>
           </div>
         </section>
+
+        {entryLink && (
+          <section className="rounded-2xl bg-white p-5 shadow">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="font-bold">Link de atendimento do negocio</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Compartilhe este link nos canais do negocio para abrir conversas ja roteadas para este tenant.
+                </p>
+                <p className="mt-3 break-all rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  {entryLink.whatsapp_url ?? entryLink.prefilled_text}
+                </p>
+                <p className="mt-2 text-xs text-gray-400">
+                  Codigo de roteamento: {entryLink.code}
+                </p>
+                {!entryLink.platform_phone_configured && (
+                  <p className="mt-2 text-xs text-amber-700">
+                    Configure WHATSAPP_PUBLIC_PHONE_E164 para gerar o link wa.me automaticamente.
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={copyEntryLink}
+                className="h-10 shrink-0 rounded-lg bg-gray-950 px-4 text-sm font-medium text-white"
+              >
+                Copiar
+              </button>
+            </div>
+          </section>
+        )}
 
         {error && (
           <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">

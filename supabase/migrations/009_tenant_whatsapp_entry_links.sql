@@ -1,47 +1,5 @@
--- Tenant WhatsApp inbox for human handoff.
--- Stores customer conversations separately from bot state in wa_conversations.
-
-create table if not exists public.tenant_whatsapp_threads (
-  id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references public.tenants(id) on delete cascade,
-  customer_phone_e164 text not null,
-  customer_name_snapshot text,
-  status text not null default 'open' check (status in ('open', 'closed')),
-  assigned_tenant_user_id uuid references public.tenant_users(id) on delete set null,
-  last_message_preview text,
-  last_message_at timestamptz,
-  last_inbound_at timestamptz,
-  last_outbound_at timestamptz,
-  unread_count integer not null default 0 check (unread_count >= 0),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (tenant_id, customer_phone_e164)
-);
-
-create table if not exists public.tenant_whatsapp_messages (
-  id uuid primary key default gen_random_uuid(),
-  thread_id uuid not null references public.tenant_whatsapp_threads(id) on delete cascade,
-  tenant_id uuid not null references public.tenants(id) on delete cascade,
-  direction text not null check (direction in ('inbound', 'outbound', 'system')),
-  sender_type text not null check (sender_type in ('customer', 'tenant_user', 'bot', 'system')),
-  sender_tenant_user_id uuid references public.tenant_users(id) on delete set null,
-  provider text not null default 'whatsapp_cloud',
-  provider_message_id text,
-  status text not null default 'received' check (status in ('received', 'sent', 'failed')),
-  body text not null,
-  raw_payload jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-create unique index if not exists tenant_whatsapp_messages_provider_message_idx
-on public.tenant_whatsapp_messages(provider_message_id)
-where provider_message_id is not null;
-
-create index if not exists tenant_whatsapp_threads_tenant_status_idx
-on public.tenant_whatsapp_threads(tenant_id, status, last_message_at desc);
-
-create index if not exists tenant_whatsapp_messages_thread_created_idx
-on public.tenant_whatsapp_messages(thread_id, created_at);
+-- Migration: 009_tenant_whatsapp_entry_links.sql
+-- Tenant-specific WhatsApp links for routing new inbound conversations.
 
 create table if not exists public.tenant_whatsapp_entry_links (
   id uuid primary key default gen_random_uuid(),
@@ -59,42 +17,7 @@ create index if not exists tenant_whatsapp_entry_links_code_active_idx
 on public.tenant_whatsapp_entry_links(code)
 where is_active = true;
 
-alter table public.tenant_whatsapp_threads enable row level security;
-alter table public.tenant_whatsapp_messages enable row level security;
 alter table public.tenant_whatsapp_entry_links enable row level security;
-
-drop policy if exists "tenant_whatsapp_threads_read_own_tenant" on public.tenant_whatsapp_threads;
-create policy "tenant_whatsapp_threads_read_own_tenant"
-on public.tenant_whatsapp_threads
-for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.tenant_users tu
-    where tu.tenant_id = tenant_whatsapp_threads.tenant_id
-      and tu.auth_user_id = auth.uid()
-  )
-);
-
-drop policy if exists "tenant_whatsapp_messages_read_own_tenant" on public.tenant_whatsapp_messages;
-create policy "tenant_whatsapp_messages_read_own_tenant"
-on public.tenant_whatsapp_messages
-for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.tenant_users tu
-    where tu.tenant_id = tenant_whatsapp_messages.tenant_id
-      and tu.auth_user_id = auth.uid()
-  )
-);
-
-grant select on public.tenant_whatsapp_threads, public.tenant_whatsapp_messages to authenticated;
-grant select, insert, update, delete on public.tenant_whatsapp_threads, public.tenant_whatsapp_messages to service_role;
-grant select on public.tenant_whatsapp_entry_links to authenticated;
-grant select, insert, update, delete on public.tenant_whatsapp_entry_links to service_role;
 
 drop policy if exists "tenant_whatsapp_entry_links_read_own_tenant" on public.tenant_whatsapp_entry_links;
 create policy "tenant_whatsapp_entry_links_read_own_tenant"
@@ -109,6 +32,9 @@ using (
       and tu.auth_user_id = auth.uid()
   )
 );
+
+grant select on public.tenant_whatsapp_entry_links to authenticated;
+grant select, insert, update, delete on public.tenant_whatsapp_entry_links to service_role;
 
 create or replace function public.admin_ensure_tenant_whatsapp_entry_link(
   p_tenant_id uuid
@@ -317,7 +243,8 @@ begin
     v_body,
     coalesce(p_raw_event, '{}'::jsonb) || jsonb_build_object(
       'phone_number_id', p_phone_number_id,
-      'platform_phone_e164', v_platform_phone
+      'platform_phone_e164', v_platform_phone,
+      'entry_link_code', v_link_code
     ),
     v_created_at
   )

@@ -178,6 +178,11 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - APIs tenant-side em `app/api/tenant-whatsapp/threads`;
   - tela tenant-side `Atendimento WhatsApp` em `/whatsapp-inbox`.
   - Aplicacao no Supabase alvo ainda pendente porque a CLI Supabase/psql nao estava disponivel neste ambiente.
+- Link publico de atendimento por tenant criado em 2026-05-23:
+  - tabela `tenant_whatsapp_entry_links` guarda um codigo unico no formato `jack-xxxxxxxx`;
+  - API tenant-side `GET /api/tenant-whatsapp/link` cria/reaproveita o codigo e retorna o link `wa.me`;
+  - tela `/whatsapp-inbox` exibe o link para copiar;
+  - webhook Meta passa a resolver o tenant pelo codigo na primeira mensagem antes de consultar historico/conversas existentes.
 - Templates padrao de WhatsApp atualizados para a persona `Assistente Jack`; SQL incremental criado em `supabase/tenant_message_templates_assistente_jack.sql` e migration `supabase/migrations/008_assistente_jack_message_persona.sql`.
 - Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Workflow remoto `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi atualizado via API n8n em 2026-05-21 com o JSON versionado que usa `HTTP_send_whatsapp_text` e `$env.APP_BASE_URL`; permaneceu inativo. Ativacao ainda depende de URL publica validada, envs no container n8n e WhatsApp real liberado.
@@ -278,6 +283,7 @@ Migrations consolidadas criadas em 2026-05-21:
 - `supabase/migrations/006_security_and_grants.sql`
 - `supabase/migrations/007_tenant_whatsapp_inbox.sql`
 - `supabase/migrations/008_assistente_jack_message_persona.sql`
+- `supabase/migrations/009_tenant_whatsapp_entry_links.sql`
 - `supabase/migrations/README.md`
 
 Observacao: as migrations consolidam os SQLs incrementais existentes no repositorio. Elas ainda nao substituem um dump/baseline completo de banco novo, porque parte do schema base foi criada antes dos SQLs soltos atuais. Proximo passo seguro antes de producao: aplicar em staging e comparar schema/dados essenciais com o Supabase alvo.
@@ -296,6 +302,7 @@ Observacao: as migrations consolidam os SQLs incrementais existentes no reposito
 - `supabase/whatsapp_appointment_workflow_support.sql`
 - `supabase/whatsapp_billing_workflow_support.sql`
 - `supabase/tenant_whatsapp_inbox.sql`
+- `supabase/tenant_whatsapp_entry_links.sql`
 - `supabase/tenant_message_templates_assistente_jack.sql`
 - `supabase/platform_plan4_constraints.sql`
 - `supabase/platform_plan5_restaurant_reservations.sql`
