@@ -37,7 +37,7 @@ export async function GET(request: Request) {
   }
 
   const platformPhone = onlyDigits(process.env.WHATSAPP_PUBLIC_PHONE_E164)
-  const prefilledText = `Ola, Assistente Jack! Quero atendimento. Codigo: ${entryLink.code}`
+  const prefilledText = `Olá, Assistente Jack! Quero atendimento. Código: ${entryLink.code}`
 
   return Response.json({
     code: entryLink.code,

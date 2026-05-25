@@ -9,20 +9,20 @@ export default function TermsPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Termos de Uso</h1>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          O Assistente Jack e um produto da Meu Assistente Virtual para gestao
-          de clientes, cobrancas, agenda, pedidos e comunicacoes operacionais.
+          O Assistente Jack é um produto da Meu Assistente Virtual para gestão
+          de clientes, cobranças, agenda, pedidos e comunicações operacionais.
           O uso do sistema depende de acesso autorizado e do plano contratado
-          por cada negocio.
+          por cada negócio.
         </p>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          Cada contratante e responsavel pela veracidade dos dados cadastrados,
-          pela autorizacao de comunicacoes com seus clientes e pelo cumprimento
-          das regras aplicaveis ao seu segmento de atuacao.
+          Cada contratante é responsável pela veracidade dos dados cadastrados,
+          pela autorização de comunicações com seus clientes e pelo cumprimento
+          das regras aplicáveis ao seu segmento de atuação.
         </p>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          A plataforma pode registrar eventos operacionais, historicos e logs
-          necessarios para seguranca, auditoria, suporte e continuidade do
-          servico.
+          A plataforma pode registrar eventos operacionais, históricos e logs
+          necessários para segurança, auditoria, suporte e continuidade do
+          serviço.
         </p>
       </article>
     </main>

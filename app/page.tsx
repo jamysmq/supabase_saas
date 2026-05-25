@@ -34,7 +34,7 @@ export default function Home() {
                 Assistente Jack
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#4a463f]">
-                O gerente virtual para pequenos negocios organizarem clientes,
+                O gerente virtual para pequenos negócios organizarem clientes,
                 pagamentos, agendamentos, pedidos e conversas via WhatsApp com
                 mais controle operacional.
               </p>
@@ -60,7 +60,7 @@ export default function Home() {
                 <div className="flex items-center justify-between rounded-md bg-white/85 p-4 shadow-sm">
                   <div>
                     <p className="text-xs uppercase tracking-[0.16em] text-[#806d34]">
-                      Operacao
+                      Operação
                     </p>
                     <p className="mt-1 text-lg font-semibold">Resumo do dia</p>
                   </div>
@@ -69,9 +69,9 @@ export default function Home() {
 
                 <div className="grid content-center gap-4">
                   {[
-                    ["Cobrancas", "Clientes com ciclos pendentes e historico de baixa."],
-                    ["Agenda", "Servicos, profissionais e confirmacoes por WhatsApp."],
-                    ["Restaurante", "Cardapio, pedidos e financeiro em um so painel."],
+                    ["Cobranças", "Clientes com ciclos pendentes e histórico de baixa."],
+                    ["Agenda", "Serviços, profissionais e confirmações por WhatsApp."],
+                    ["Restaurante", "Cardápio, pedidos e financeiro em um só painel."],
                   ].map(([title, description]) => (
                     <div
                       className="rounded-md border border-white/70 bg-white/80 p-4 shadow-sm"
@@ -99,9 +99,9 @@ export default function Home() {
       <section className="bg-white">
         <div className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-14 sm:px-8 lg:grid-cols-3 lg:px-10">
           {[
-            ["Multi-tenant", "Cada cliente opera seus proprios dados, com separacao por tenant e controles administrativos."],
-            ["WhatsApp oficial", "Integracao preparada para WhatsApp Cloud API, webhook seguro e workflows genericos no n8n."],
-            ["Historico auditavel", "Pagamentos, agendamentos e exclusoes preservam eventos importantes para consulta futura."],
+            ["Multi-tenant", "Cada cliente opera seus próprios dados, com separação por tenant e controles administrativos."],
+            ["WhatsApp oficial", "Integração preparada para WhatsApp Cloud API, webhook seguro e workflows genéricos no n8n."],
+            ["Histórico auditável", "Pagamentos, agendamentos e exclusões preservam eventos importantes para consulta futura."],
           ].map(([title, description]) => (
             <article className="border-l-2 border-[#b89a44] pl-5" key={title}>
               <h2 className="text-lg font-semibold">{title}</h2>

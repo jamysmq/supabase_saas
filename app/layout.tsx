@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Assistente Jack",
   description:
-    "Gerente virtual da Meu Assistente Virtual para cobrancas, agenda, pedidos e atendimento via WhatsApp.",
+    "Gerente virtual da Meu Assistente Virtual para cobranças, agenda, pedidos e atendimento via WhatsApp.",
 };
 
 export default function RootLayout({
