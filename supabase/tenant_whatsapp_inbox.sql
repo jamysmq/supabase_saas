@@ -110,6 +110,8 @@ using (
   )
 );
 
+drop function if exists public.admin_ensure_tenant_whatsapp_entry_link(uuid);
+
 create or replace function public.admin_ensure_tenant_whatsapp_entry_link(
   p_tenant_id uuid
 )

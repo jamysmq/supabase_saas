@@ -36,6 +36,8 @@ using (
 grant select on public.tenant_whatsapp_entry_links to authenticated;
 grant select, insert, update, delete on public.tenant_whatsapp_entry_links to service_role;
 
+drop function if exists public.admin_ensure_tenant_whatsapp_entry_link(uuid);
+
 create or replace function public.admin_ensure_tenant_whatsapp_entry_link(
   p_tenant_id uuid
 )
