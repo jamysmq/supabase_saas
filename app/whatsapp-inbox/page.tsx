@@ -147,13 +147,47 @@ function serializeTemplateEditor(element: HTMLElement) {
 
 function createVariableChip(variable: TemplateVariable) {
   const chip = document.createElement('span')
-  chip.className = 'inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800'
+  chip.className = 'inline-flex cursor-grab items-center rounded-md border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800'
   chip.contentEditable = 'false'
   chip.draggable = true
   chip.dataset.token = variable.token
   chip.title = variable.description
   chip.textContent = variable.label
   return chip
+}
+
+function getDropRange(event: DragEvent<HTMLElement>, editor: HTMLElement) {
+  const documentWithCaret = document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => {
+      offsetNode: Node
+      offset: number
+    } | null
+    caretRangeFromPoint?: (x: number, y: number) => Range | null
+  }
+
+  if (documentWithCaret.caretPositionFromPoint) {
+    const position = documentWithCaret.caretPositionFromPoint(event.clientX, event.clientY)
+
+    if (position && editor.contains(position.offsetNode)) {
+      const range = document.createRange()
+      range.setStart(position.offsetNode, position.offset)
+      range.collapse(true)
+      return range
+    }
+  }
+
+  if (documentWithCaret.caretRangeFromPoint) {
+    const range = documentWithCaret.caretRangeFromPoint(event.clientX, event.clientY)
+
+    if (range && editor.contains(range.startContainer)) {
+      return range
+    }
+  }
+
+  const range = document.createRange()
+  range.selectNodeContents(editor)
+  range.collapse(false)
+  return range
 }
 
 function formatPhone(value: string) {
@@ -211,14 +245,17 @@ function TemplateEditor({
 
     if (!variable) return
 
+    const editor = editorRef.current
     const selection = window.getSelection()
-    const range = selection?.rangeCount ? selection.getRangeAt(0) : null
 
-    if (!selection || !range) return
+    if (!editor || !selection) return
 
+    const range = getDropRange(event, editor)
     range.deleteContents()
-    range.insertNode(document.createTextNode(' '))
+    const trailingSpace = document.createTextNode(' ')
+    range.insertNode(trailingSpace)
     range.insertNode(createVariableChip(variable))
+    range.setStartAfter(trailingSpace)
     range.collapse(false)
     selection.removeAllRanges()
     selection.addRange(range)
@@ -247,7 +284,7 @@ function TemplateEditor({
       onDragOver={(event) => event.preventDefault()}
       onDragStart={handleDragStart}
       onDrop={handleDrop}
-      className="mt-2 min-h-36 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal leading-6 outline-none focus:border-gray-400"
+      className="mt-2 min-h-36 w-full cursor-text overflow-y-auto rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal leading-6 outline-none focus:border-gray-400"
     />
   )
 }
