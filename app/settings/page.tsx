@@ -5,11 +5,6 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
-import {
-  tenantCanUseAppointments,
-  tenantCanUseBilling,
-  tenantCanUseRestaurant,
-} from '../../src/lib/plan-features'
 
 type Tenant = {
   id: string
@@ -35,17 +30,6 @@ type TenantUser = {
   must_change_password: boolean
 }
 
-type MessageTemplate = {
-  id: string | null
-  template_key: string
-  title: string
-  description: string
-  channel: string
-  content: string
-  is_active: boolean
-  updated_at: string | null
-}
-
 export default function SettingsPage() {
   const router = useRouter()
 
@@ -53,7 +37,6 @@ export default function SettingsPage() {
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [billingSettings, setBillingSettings] = useState<BillingSettings | null>(null)
-  const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([])
   const [pixForm, setPixForm] = useState({
     pix_key: '',
     pix_key_type: 'cpf',
@@ -65,15 +48,10 @@ export default function SettingsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [savingPix, setSavingPix] = useState(false)
-  const [savingMessages, setSavingMessages] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const labels = getBusinessLabels(businessType)
-  const canUseBilling = tenantCanUseBilling(tenant?.plan)
-  const canUseAppointments = tenantCanUseAppointments(tenant?.plan)
-  const canUseRestaurant = tenantCanUseRestaurant(tenant?.plan)
-  const hasMessageTemplates = canUseBilling || canUseAppointments || canUseRestaurant
 
   const load = useCallback(async function load() {
     setLoading(true)
@@ -104,7 +82,7 @@ export default function SettingsPage() {
       return
     }
 
-    const [tenantResult, settingsResult, templatesResponse] = await Promise.all([
+    const [tenantResult, settingsResult] = await Promise.all([
       supabase
         .from('tenants')
         .select('id, legal_name, email, whatsapp_e164, plan, status')
@@ -115,11 +93,6 @@ export default function SettingsPage() {
         .select('pix_key, pix_key_type, pix_beneficiary_name, timezone, max_customer_groups')
         .eq('tenant_id', result.tenantUser.tenant_id)
         .maybeSingle(),
-      fetch('/api/tenant-message-templates', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      }),
     ])
 
     if (tenantResult.error) {
@@ -128,17 +101,8 @@ export default function SettingsPage() {
       return
     }
 
-    if (!templatesResponse.ok) {
-      setError('Não foi possível carregar as mensagens.')
-      setLoading(false)
-      return
-    }
-
-    const templatesPayload = await templatesResponse.json()
-
     setTenant(tenantResult.data)
     setBillingSettings(settingsResult.data ?? null)
-    setMessageTemplates(templatesPayload.templates ?? [])
     setPixForm({
       pix_key: settingsResult.data?.pix_key ?? '',
       pix_key_type: settingsResult.data?.pix_key_type ?? 'cpf',
@@ -164,78 +128,38 @@ export default function SettingsPage() {
     setError('')
     setSuccess('')
 
-    const { error: rpcError } = await supabase.rpc(
-      'admin_upsert_billing_settings',
-      {
-        p_tenant_id: tenantUser.tenant_id,
-        p_pix_key: pixForm.pix_key.trim(),
-        p_pix_key_type: pixForm.pix_key_type.trim(),
-        p_pix_name: pixForm.pix_beneficiary_name.trim(),
-      }
-    )
-
-    setSavingPix(false)
-
-    if (rpcError) {
-      setError('Não foi possível salvar os dados de Pix.')
-      return
-    }
-
-    setSuccess('Dados de Pix atualizados.')
-    await load()
-  }
-
-  function updateMessageTemplate(templateKey: string, content: string) {
-    setMessageTemplates((current) =>
-      current.map((template) =>
-        template.template_key === templateKey
-          ? { ...template, content }
-          : template
-      )
-    )
-  }
-
-  async function saveMessages(event: React.FormEvent) {
-    event.preventDefault()
-
-    setSavingMessages(true)
-    setError('')
-    setSuccess('')
-
     const {
       data: { session },
     } = await supabase.auth.getSession()
 
     if (!session) {
-      setSavingMessages(false)
+      setSavingPix(false)
       router.push('/login')
       return
     }
 
-    const response = await fetch('/api/tenant-message-templates', {
-      method: 'PUT',
+    const response = await fetch('/api/tenant-billing-settings', {
+      method: 'PATCH',
       headers: {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        templates: messageTemplates.map((template) => ({
-          template_key: template.template_key,
-          content: template.content,
-          is_active: template.is_active,
-        })),
+        pix_key: pixForm.pix_key,
+        pix_key_type: pixForm.pix_key_type,
+        pix_beneficiary_name: pixForm.pix_beneficiary_name,
       }),
     })
 
-    setSavingMessages(false)
+    setSavingPix(false)
 
     if (!response.ok) {
       const payload = await response.json().catch(() => null)
-      setError(payload?.message ?? 'Não foi possível salvar as mensagens.')
+      setError(payload?.message ?? 'Não foi possível salvar os dados de Pix.')
       return
     }
 
-    setSuccess('Mensagens atualizadas.')
+    setSuccess('Dados de Pix atualizados.')
     await load()
   }
 
@@ -414,54 +338,6 @@ export default function SettingsPage() {
               </button>
             </form>
 
-            <form onSubmit={saveMessages} className="bg-white rounded-2xl shadow p-5 space-y-4">
-              <div>
-                <h2 className="font-bold">Mensagens do WhatsApp</h2>
-                <p className="text-sm text-gray-500">
-                  Textos usados pelos fluxos automatizados do tenant.
-                </p>
-              </div>
-
-              {!hasMessageTemplates || messageTemplates.length === 0 ? (
-                <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500">
-                  Nenhuma mensagem disponivel para o plano atual.
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    {messageTemplates.map((template) => (
-                      <label key={template.template_key} className="block text-sm font-medium">
-                        {template.title}
-                        <span className="mt-1 block text-xs font-normal text-gray-500">
-                          {template.description}
-                        </span>
-                        <textarea
-                          value={template.content}
-                          onChange={(event) =>
-                            updateMessageTemplate(template.template_key, event.target.value)
-                          }
-                          className="mt-2 min-h-32 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 font-normal"
-                          maxLength={2000}
-                          required
-                        />
-                      </label>
-                    ))}
-                  </div>
-
-                  <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-500">
-                    Variaveis disponiveis: {'{{tenant_name}}'}, {'{{customer_name}}'}, {'{{amount}}'}, {'{{due_date}}'}, {'{{pix_key}}'}.
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={savingMessages}
-                    className="w-full rounded-lg bg-gray-950 py-2 font-medium text-white disabled:opacity-50"
-                  >
-                    {savingMessages ? 'Salvando...' : 'Salvar mensagens'}
-                  </button>
-                </>
-              )}
-            </form>
           </div>
 
           <aside className="space-y-4">

@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { DragEvent, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
@@ -31,6 +32,130 @@ type EntryLink = {
   platform_phone_configured: boolean
 }
 
+type MessageTemplate = {
+  id: string | null
+  template_key: string
+  title: string
+  description: string
+  channel: string
+  content: string
+  is_active: boolean
+  updated_at: string | null
+}
+
+type TemplateVariable = {
+  token: string
+  label: string
+  description: string
+}
+
+const templateVariables: TemplateVariable[] = [
+  {
+    token: '{{tenant_name}}',
+    label: 'Nome do negócio',
+    description: 'Nome público do tenant na mensagem.',
+  },
+  {
+    token: '{{customer_name}}',
+    label: 'Nome do cliente',
+    description: 'Nome do cliente, aluno ou contato atendido.',
+  },
+  {
+    token: '{{amount}}',
+    label: 'Valor',
+    description: 'Valor da cobrança já formatado em reais.',
+  },
+  {
+    token: '{{due_date}}',
+    label: 'Vencimento',
+    description: 'Data de vencimento da cobrança.',
+  },
+  {
+    token: '{{pix_key}}',
+    label: 'Chave Pix',
+    description: 'Chave Pix configurada em Configurações.',
+  },
+  {
+    token: '{{appointment_date}}',
+    label: 'Data do horário',
+    description: 'Data do agendamento.',
+  },
+  {
+    token: '{{appointment_time}}',
+    label: 'Hora do horário',
+    description: 'Horário do agendamento.',
+  },
+]
+
+const variablesByToken = new Map(
+  templateVariables.map((variable) => [variable.token, variable])
+)
+
+const variablePattern = /({{[a-z_]+}})/g
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function renderTemplateHtml(value: string) {
+  return String(value ?? '')
+    .split(variablePattern)
+    .map((part) => {
+      const variable = variablesByToken.get(part)
+
+      if (!variable) return escapeHtml(part).replace(/\n/g, '<br>')
+
+      return `<span class="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800" contenteditable="false" draggable="true" data-token="${variable.token}" title="${escapeHtml(variable.description)}">${escapeHtml(variable.label)}</span>`
+    })
+    .join('')
+}
+
+function serializeTemplateNode(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
+
+  if (node instanceof HTMLBRElement) return '\n'
+
+  if (node instanceof HTMLElement) {
+    const token = node.dataset.token
+
+    if (token) return token
+
+    const value = Array.from(node.childNodes).map(serializeTemplateNode).join('')
+
+    if (node instanceof HTMLDivElement || node instanceof HTMLParagraphElement) {
+      return `${value}\n`
+    }
+
+    return value
+  }
+
+  return ''
+}
+
+function serializeTemplateEditor(element: HTMLElement) {
+  return Array.from(element.childNodes)
+    .map(serializeTemplateNode)
+    .join('')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function createVariableChip(variable: TemplateVariable) {
+  const chip = document.createElement('span')
+  chip.className = 'inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800'
+  chip.contentEditable = 'false'
+  chip.draggable = true
+  chip.dataset.token = variable.token
+  chip.title = variable.description
+  chip.textContent = variable.label
+  return chip
+}
+
 function formatPhone(value: string) {
   const digits = String(value ?? '').replace(/\D/g, '')
 
@@ -41,6 +166,90 @@ function formatPhone(value: string) {
   }
 
   return digits || '-'
+}
+
+function TemplateEditor({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  const editorRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const editor = editorRef.current
+
+    if (!editor || document.activeElement === editor) return
+
+    editor.innerHTML = renderTemplateHtml(value)
+  }, [value])
+
+  function sync() {
+    if (!editorRef.current) return
+    return serializeTemplateEditor(editorRef.current)
+  }
+
+  function handleDragStart(event: DragEvent<HTMLElement>) {
+    const target = event.target as HTMLElement
+    const token = target.dataset.token
+
+    if (!token) return
+
+    event.dataTransfer.setData('text/plain', token)
+    event.dataTransfer.setData('application/x-template-token', token)
+    event.dataTransfer.effectAllowed = 'copy'
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+
+    const token =
+      event.dataTransfer.getData('application/x-template-token') ||
+      event.dataTransfer.getData('text/plain')
+    const variable = variablesByToken.get(token)
+
+    if (!variable) return
+
+    const selection = window.getSelection()
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null
+
+    if (!selection || !range) return
+
+    range.deleteContents()
+    range.insertNode(document.createTextNode(' '))
+    range.insertNode(createVariableChip(variable))
+    range.collapse(false)
+    selection.removeAllRanges()
+    selection.addRange(range)
+    const nextValue = sync()
+    if (typeof nextValue === 'string') onChange(nextValue)
+  }
+
+  return (
+    <div
+      ref={editorRef}
+      contentEditable
+      suppressContentEditableWarning
+      onInput={() => {
+        const nextValue = sync()
+        if (typeof nextValue === 'string') onChange(nextValue)
+      }}
+      onBlur={() => {
+        const nextValue = sync()
+        if (typeof nextValue === 'string') {
+          onChange(nextValue)
+          if (editorRef.current) {
+            editorRef.current.innerHTML = renderTemplateHtml(nextValue)
+          }
+        }
+      }}
+      onDragOver={(event) => event.preventDefault()}
+      onDragStart={handleDragStart}
+      onDrop={handleDrop}
+      className="mt-2 min-h-36 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal leading-6 outline-none focus:border-gray-400"
+    />
+  )
 }
 
 function formatDateTime(value: string | null) {
@@ -65,6 +274,10 @@ export default function WhatsAppInboxPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [entryLink, setEntryLink] = useState<EntryLink | null>(null)
+  const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([])
+  const [showSettings, setShowSettings] = useState(false)
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [savingTemplates, setSavingTemplates] = useState(false)
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -150,6 +363,30 @@ export default function WhatsAppInboxPage() {
     setEntryLink(await response.json())
   }, [accessToken])
 
+  const loadMessageTemplates = useCallback(async function loadMessageTemplates(token = accessToken) {
+    if (!token) return
+
+    setLoadingTemplates(true)
+    setError('')
+
+    const response = await fetch('/api/tenant-message-templates', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    setLoadingTemplates(false)
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Não foi possível carregar as configurações de mensagens.')
+      return
+    }
+
+    const payload = await response.json()
+    setMessageTemplates(payload.templates ?? [])
+  }, [accessToken])
+
   useEffect(() => {
     async function load() {
       const result = await getCurrentTenantUser()
@@ -177,12 +414,23 @@ export default function WhatsAppInboxPage() {
       await Promise.all([
         loadEntryLink(session.access_token),
         loadInitialThreads(session.access_token),
+        loadMessageTemplates(session.access_token),
       ])
       setLoading(false)
     }
 
     void load()
-  }, [loadEntryLink, loadInitialThreads, router])
+  }, [loadEntryLink, loadInitialThreads, loadMessageTemplates, router])
+
+  function updateMessageTemplate(templateKey: string, content: string) {
+    setMessageTemplates((current) =>
+      current.map((template) =>
+        template.template_key === templateKey
+          ? { ...template, content }
+          : template
+      )
+    )
+  }
 
   async function copyEntryLink() {
     if (!entryLink) return
@@ -204,7 +452,44 @@ export default function WhatsAppInboxPage() {
     await loadMessages(threadId)
   }
 
-  async function sendReply(event: React.FormEvent) {
+  async function saveMessageTemplates(event: FormEvent) {
+    event.preventDefault()
+
+    if (!accessToken) return
+
+    setSavingTemplates(true)
+    setError('')
+    setSuccess('')
+
+    const response = await fetch('/api/tenant-message-templates', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        templates: messageTemplates.map((template) => ({
+          template_key: template.template_key,
+          content: template.content,
+          is_active: template.is_active,
+        })),
+      }),
+    })
+
+    setSavingTemplates(false)
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Não foi possível salvar as mensagens.')
+      return
+    }
+
+    setSuccess('Configurações de mensagens atualizadas.')
+    setShowSettings(false)
+    await loadMessageTemplates()
+  }
+
+  async function sendReply(event: FormEvent) {
     event.preventDefault()
 
     if (!selectedThread || !reply.trim() || !accessToken) return
@@ -290,12 +575,20 @@ export default function WhatsAppInboxPage() {
                 Responda clientes que pediram ajuda humana pelo WhatsApp.
               </p>
             </div>
-            <button
-              onClick={() => loadThreads()}
-              className="h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium"
-            >
-              Atualizar
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setShowSettings(true)}
+                className="h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium"
+              >
+                Configurações
+              </button>
+              <button
+                onClick={() => loadThreads()}
+                className="h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium"
+              >
+                Atualizar
+              </button>
+            </div>
           </div>
         </section>
 
@@ -467,6 +760,97 @@ export default function WhatsAppInboxPage() {
             )}
           </section>
         </section>
+
+        {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+            <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-gray-100 bg-white p-5">
+                <div>
+                  <h2 className="text-lg font-bold">Configurações do WhatsApp</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Ajuste as mensagens automáticas usadas pelos fluxos do tenant.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(false)}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <form onSubmit={saveMessageTemplates} className="space-y-5 p-5">
+                {loadingTemplates ? (
+                  <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500">
+                    Carregando mensagens...
+                  </div>
+                ) : messageTemplates.length === 0 ? (
+                  <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500">
+                    Nenhuma mensagem disponível para o plano atual.
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-lg border border-gray-200 p-4">
+                      <h3 className="text-sm font-semibold">Campos dinâmicos</h3>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Arraste um campo para dentro da mensagem. No editor ele fica travado para evitar alteração acidental do código.
+                      </p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {templateVariables.map((variable) => (
+                          <button
+                            key={variable.token}
+                            type="button"
+                            draggable
+                            onDragStart={(event) => {
+                              event.dataTransfer.setData('text/plain', variable.token)
+                              event.dataTransfer.setData('application/x-template-token', variable.token)
+                              event.dataTransfer.effectAllowed = 'copy'
+                            }}
+                            className="cursor-grab rounded-lg border border-gray-200 bg-gray-50 p-3 text-left active:cursor-grabbing"
+                            title={variable.token}
+                          >
+                            <span className="block text-sm font-semibold text-gray-900">
+                              {variable.label}
+                            </span>
+                            <span className="mt-1 block text-xs text-gray-500">
+                              {variable.description}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {messageTemplates.map((template) => (
+                        <label key={template.template_key} className="block text-sm font-medium">
+                          {template.title}
+                          <span className="mt-1 block text-xs font-normal text-gray-500">
+                            {template.description}
+                          </span>
+                          <TemplateEditor
+                            value={template.content}
+                            onChange={(content) =>
+                              updateMessageTemplate(template.template_key, content)
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={savingTemplates}
+                      className="w-full rounded-lg bg-gray-950 py-2 font-medium text-white disabled:opacity-50"
+                    >
+                      {savingTemplates ? 'Salvando...' : 'Salvar mensagens'}
+                    </button>
+                  </>
+                )}
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   )
