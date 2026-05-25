@@ -23,22 +23,22 @@ function buildPrefilledText(tenant: TenantInfo | null, code: string) {
   const ticket = `Atendimento ${code}`
 
   if (tenant?.business_type === 'salon') {
-    return `Olá! Vim pelo link do ${businessName} e gostaria de falar sobre um atendimento ou horário. ${ticket}`
+    return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
   }
 
   if (tenant?.business_type === 'clinic') {
-    return `Olá! Vim pelo link da ${businessName} e gostaria de falar sobre uma consulta ou agendamento. ${ticket}`
+    return `Olá, Assistente Jack. Gostaria de atendimento da ${businessName}. ${ticket}`
   }
 
   if (tenant?.business_type === 'teacher') {
-    return `Olá! Vim pelo link do ${businessName} e gostaria de falar sobre aulas ou mensalidade. ${ticket}`
+    return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
   }
 
   if (tenant?.business_type === 'restaurant') {
-    return `Olá! Vim pelo link do ${businessName} e gostaria de falar sobre pedidos ou atendimento. ${ticket}`
+    return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
   }
 
-  return `Olá! Vim pelo link do ${businessName} e gostaria de atendimento. ${ticket}`
+  return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
 }
 
 export async function GET(request: Request) {
