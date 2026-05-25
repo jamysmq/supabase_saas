@@ -1,0 +1,553 @@
+{
+  "name": "WA_TENANT_BILLING_SIGNUP_INBOUND_v1",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wa-tenant-billing-signup-inbound-v1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4f4a826a-e037-48cc-bc8e-38e87ea7e1f0",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "6a3c35c5-e1c8-48c7-a09b-6d7e65d10158",
+      "position": [
+        -900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body ?? {};\nconst onlyDigits = (value) => String(value ?? '').replace(/\\D/g, '');\nconst normalizeBrazilPhone = (value) => {\n  const digits = onlyDigits(value);\n  if (digits.length === 10 || digits.length === 11) return `55${digits}`;\n  return digits;\n};\nconst msg = String(body.text ?? body.message ?? '').replace(/\\s+/g, ' ').trim();\nconst chatId = normalizeBrazilPhone(body.chat_id ?? body.from ?? body.customer_phone_e164 ?? '');\nreturn {\n  tenant_id: body.tenant_id || null,\n  tenant_phone_e164: normalizeBrazilPhone(body.tenant_phone_e164 ?? body.to ?? body.receiver ?? ''),\n  customer_phone_e164: normalizeBrazilPhone(body.customer_phone_e164 ?? body.from ?? body.chat_id ?? ''),\n  chat_id: chatId,\n  msg,\n  raw_body: body\n};"
+      },
+      "id": "7fba5a0d-1f2e-457a-8fd4-f8dfd1d4977a",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_billing_signup_load_or_create_context'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_tenant_id",
+              "value": "={{$json.tenant_id}}"
+            },
+            {
+              "name": "p_tenant_phone_e164",
+              "value": "={{$json.tenant_phone_e164}}"
+            },
+            {
+              "name": "p_chat_id",
+              "value": "={{$json.chat_id}}"
+            },
+            {
+              "name": "p_message_body",
+              "value": "={{$json.msg}}"
+            },
+            {
+              "name": "p_init_payload",
+              "value": "={{ { signup: { customer_whatsapp: $json.customer_phone_e164 } } }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cd4be029-a36b-4efe-bb42-93d474272281",
+      "name": "RPC_load_signup_context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = Array.isArray($json) ? $json[0] : $json;\nconst msg = String($node.Normalize.json.msg ?? '').trim();\nconst customerPhone = String($node.Normalize.json.customer_phone_e164 ?? '').trim();\nconst payload = row.payload_draft ?? {};\nconst draft = payload.signup ?? {};\nconst groups = Array.isArray(row.groups) ? row.groups : [];\nconst step = row.step || 'billing_signup_welcome';\nconst tenantName = row.tenant_name || 'nossa equipe';\n\nfunction reply(text, nextStep, patch = {}, close = false) {\n  return [{ json: {\n    action: 'patch',\n    to: customerPhone || draft.customer_whatsapp,\n    reply: text,\n    conversation_id: row.conversation_id,\n    next_step: nextStep,\n    p_close: close,\n    data_patch: {\n      signup: { ...patch, customer_whatsapp: customerPhone || draft.customer_whatsapp || null },\n      metadata: { last_step: nextStep, updated_at: new Date().toISOString() }\n    }\n  }}];\n}\n\nfunction createSignup() {\n  const notes = draft.group_name ? `Grupo/turma informado no WhatsApp: ${draft.group_name}` : 'Cadastro criado via WhatsApp.';\n  return [{ json: {\n    action: 'create',\n    to: customerPhone || draft.customer_whatsapp,\n    conversation_id: row.conversation_id,\n    next_step: 'billing_signup_done',\n    p_close: true,\n    create_body: {\n      p_tenant_id: row.tenant_id,\n      p_full_name: draft.full_name,\n      p_whatsapp_e164: customerPhone || draft.customer_whatsapp,\n      p_amount_cents: draft.amount_cents,\n      p_due_day: draft.due_day,\n      p_group_id: draft.group_id || null,\n      p_notes: notes\n    },\n    data_patch: {\n      signup: { ...draft, customer_whatsapp: customerPhone || draft.customer_whatsapp || null },\n      metadata: { completed_at: new Date().toISOString() }\n    }\n  }}];\n}\n\nfunction normalize(value) {\n  return String(value ?? '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();\n}\n\nfunction parseAmountCents(value) {\n  const raw = String(value ?? '').trim();\n  const numeric = raw.replace(/[^\\d,.-]/g, '').replace(/\\.(?=\\d{3}(\\D|$))/g, '').replace(',', '.');\n  const amount = Number(numeric);\n  if (!Number.isFinite(amount) || amount <= 0) return null;\n  return Math.round(amount * 100);\n}\n\nfunction formatMoney(cents) {\n  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(cents || 0) / 100);\n}\n\nfunction renderGroupPrompt() {\n  if (!groups.length) return 'Se houver grupo, turma ou categoria, envie o nome. Se nao houver, responda *nenhum*.';\n  return 'Escolha o grupo, turma ou categoria:\\n' + groups.map((group, index) => `${index + 1}) ${group.name}`).join('\\n') + '\\n0) Nenhum ou nao sei';\n}\n\nfunction parseGroup(value) {\n  const normalized = normalize(value);\n  if (['0', 'nenhum', 'nenhuma', 'nao sei', 'não sei', 'sem grupo', 'sem turma'].includes(normalized)) {\n    return { group_id: null, group_name: null };\n  }\n  const selected = groups[Number(value) - 1];\n  if (selected) return { group_id: selected.id, group_name: selected.name };\n  if (!groups.length && String(value ?? '').trim()) return { group_id: null, group_name: String(value).trim() };\n  return null;\n}\n\nif (['menu', 'inicio', 'iniciar', '0'].includes(normalize(msg)) || step === 'billing_signup_welcome') {\n  const welcome = String(row.welcome_message || '').replaceAll('{{tenant_name}}', tenantName);\n  return reply(welcome, 'collect_full_name', {});\n}\n\nif (!msg) return reply('Nao recebi nenhuma mensagem. Pode enviar novamente?', step, draft);\n\nif (step === 'collect_full_name') {\n  const name = msg.replace(/\\s+/g, ' ').trim();\n  if (name.split(' ').filter(Boolean).length < 2) return reply('Me informe seu nome completo, por favor. Ex: Maria Silva.', step, draft);\n  return reply(renderGroupPrompt(), 'collect_group', { ...draft, full_name: name });\n}\n\nif (step === 'collect_group') {\n  const group = parseGroup(msg);\n  if (!group) return reply(renderGroupPrompt(), step, draft);\n  return reply('Qual e o valor da mensalidade? Ex: 120,00', 'collect_amount', { ...draft, ...group });\n}\n\nif (step === 'collect_amount') {\n  const amountCents = parseAmountCents(msg);\n  if (!amountCents) return reply('Nao consegui entender o valor. Envie assim: 120,00', step, draft);\n  return reply('Qual e o dia de vencimento da mensalidade? Envie um numero de 1 a 31.', 'collect_due_day', { ...draft, amount_cents: amountCents });\n}\n\nif (step === 'collect_due_day') {\n  const dueDay = Number(String(msg).replace(/\\D/g, ''));\n  if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) return reply('Envie um dia de vencimento valido, de 1 a 31.', step, draft);\n  const merged = { ...draft, due_day: dueDay };\n  const summary = 'Confira o cadastro:\\n\\nNome: ' + merged.full_name + '\\nWhatsApp: ' + (customerPhone || merged.customer_whatsapp) + '\\nGrupo/turma: ' + (merged.group_name || 'Nenhum') + '\\nMensalidade: ' + formatMoney(merged.amount_cents) + '\\nVencimento: dia ' + dueDay + '\\n\\nResponda *sim* para confirmar ou *0* para recomecar.';\n  return reply(summary, 'confirm_signup', merged);\n}\n\nif (step === 'confirm_signup') {\n  if (!['sim', 's', 'confirmar', 'confirmo'].includes(normalize(msg))) return reply('Tudo bem. Responda *sim* para confirmar ou envie *0* para recomecar.', step, draft);\n  return createSignup();\n}\n\nreturn reply('Vamos recomecar. Me informe seu nome completo.', 'collect_full_name', {});"
+      },
+      "id": "bf013072-ec9b-4d7c-a2da-dde099f73e93",
+      "name": "FN_signup_state_machine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "dd1bec83-baa9-4c79-8d7f-ece0df0ecfae",
+      "name": "Switch_action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_billing_signup_create_customer'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.create_body}}",
+        "options": {}
+      },
+      "id": "cb43f142-86fc-41db-86fb-16b0c7d30f36",
+      "name": "RPC_create_signup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $node.FN_signup_state_machine.json;\nconst data = Array.isArray($json) ? $json[0] : $json;\nreturn [{ json: {\n  to: original.to,\n  reply: 'Cadastro confirmado! Ja deixei tudo registrado no painel, com a mensalidade pendente inicial criada.',\n  conversation_id: original.conversation_id,\n  next_step: 'billing_signup_done',\n  p_close: true,\n  data_patch: {\n    ...original.data_patch,\n    signup: {\n      ...original.data_patch.signup,\n      customer_id: data.customer_id,\n      billing_cycle_id: data.billing_cycle_id\n    },\n    metadata: { completed_at: new Date().toISOString() }\n  }\n}}];"
+      },
+      "id": "01573ef2-a55b-4a47-8a46-312efbdab95c",
+      "name": "FN_render_success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_billing_signup_conversation_patch'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{$json.conversation_id}}"
+            },
+            {
+              "name": "p_step",
+              "value": "={{$json.next_step}}"
+            },
+            {
+              "name": "p_patch",
+              "value": "={{$json.data_patch}}"
+            },
+            {
+              "name": "p_close",
+              "value": "={{$json.p_close || false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8bb0b68a-50aa-4337-bbf9-465ab97bcd8a",
+      "name": "RPC_patch_success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        820,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{$node.FN_render_success.json.to}}"
+            },
+            {
+              "name": "body",
+              "value": "={{$node.FN_render_success.json.reply}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fbdaeeef-6a7e-4e29-ac6e-fb7e82cc6e8b",
+      "name": "HTTP_send_success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1060,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{$node.FN_render_success.json.reply}}",
+        "options": {}
+      },
+      "id": "a7d6cf23-9116-46f8-9567-fc59e8d6875d",
+      "name": "Respond_success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1300,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_billing_signup_conversation_patch'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{$json.conversation_id}}"
+            },
+            {
+              "name": "p_step",
+              "value": "={{$json.next_step}}"
+            },
+            {
+              "name": "p_patch",
+              "value": "={{$json.data_patch}}"
+            },
+            {
+              "name": "p_close",
+              "value": "={{$json.p_close || false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "01c4d48f-73ad-466b-a823-5d1c17588772",
+      "name": "RPC_patch_reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{$node.FN_signup_state_machine.json.to}}"
+            },
+            {
+              "name": "body",
+              "value": "={{$node.FN_signup_state_machine.json.reply}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3045a3c9-81e3-406b-920d-52988360065e",
+      "name": "HTTP_send_reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        560,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{$node.FN_signup_state_machine.json.reply}}",
+        "options": {}
+      },
+      "id": "f3c0ef21-d802-4996-b6ca-9d1717e6a59e",
+      "name": "Respond_reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        820,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "RPC_load_signup_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_load_signup_context": {
+      "main": [
+        [
+          {
+            "node": "FN_signup_state_machine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_signup_state_machine": {
+      "main": [
+        [
+          {
+            "node": "Switch_action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_action": {
+      "main": [
+        [
+          {
+            "node": "RPC_create_signup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RPC_patch_reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_create_signup": {
+      "main": [
+        [
+          {
+            "node": "FN_render_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN_render_success": {
+      "main": [
+        [
+          {
+            "node": "RPC_patch_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_patch_success": {
+      "main": [
+        [
+          {
+            "node": "HTTP_send_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP_send_success": {
+      "main": [
+        [
+          {
+            "node": "Respond_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RPC_patch_reply": {
+      "main": [
+        [
+          {
+            "node": "HTTP_send_reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP_send_reply": {
+      "main": [
+        [
+          {
+            "node": "Respond_reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

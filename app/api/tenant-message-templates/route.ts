@@ -7,6 +7,7 @@ import {
 
 type TemplateKey =
   | 'billing_reminder_due_today'
+  | 'billing_signup_welcome'
   | 'appointment_welcome'
   | 'appointment_confirmation_reminder'
   | 'restaurant_welcome'
@@ -27,6 +28,14 @@ const templateDefinitions: TemplateDefinition[] = [
     capability: 'billing',
     defaultContent:
       'Olá, {{customer_name}}! Aqui é o Assistente Jack, de {{tenant_name}}. Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.',
+  },
+  {
+    key: 'billing_signup_welcome',
+    title: 'Cadastro pelo WhatsApp',
+    description: 'Mensagem inicial para cadastrar novos clientes pelo WhatsApp.',
+    capability: 'billing',
+    defaultContent:
+      'Olá! Eu sou o Assistente Jack, de {{tenant_name}}. Vou fazer seu cadastro. Para começar, envie seu nome completo.',
   },
   {
     key: 'appointment_welcome',

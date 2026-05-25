@@ -193,6 +193,13 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - thread fake foi removida ao final, preservando apenas o codigo de entrada do tenant.
 - Correcao SQL pendente em 2026-05-25: `admin_ensure_tenant_whatsapp_entry_link` foi ajustada no repositorio para trocar o nome de retorno `tenant_id` por `link_tenant_id` e evitar ambiguidade no Postgres. O ambiente local nao possui `psql`/Supabase CLI instalado; reexecutar `supabase/tenant_whatsapp_entry_links.sql` no SQL Editor para substituir a funcao aplicada caso a correcao ainda nao tenha sido aplicada no Supabase alvo.
 - Templates padrao de WhatsApp atualizados para a persona `Assistente Jack`; SQL incremental criado em `supabase/tenant_message_templates_assistente_jack.sql` e migration `supabase/migrations/008_assistente_jack_message_persona.sql`.
+- Inbound generico de cadastro por WhatsApp para tenants com cobranca mensal foi versionado em 2026-05-25:
+  - SQL incremental `supabase/whatsapp_billing_signup_workflow_support.sql`;
+  - migration `supabase/migrations/010_whatsapp_billing_signup_workflow.sql`;
+  - workflow n8n inativo `n8n/WA_TENANT_BILLING_SIGNUP_INBOUND_v1.workflow.json`;
+  - template editavel `billing_signup_welcome`;
+  - fluxo coleta nome completo, grupo/turma opcional, valor da mensalidade e dia de vencimento;
+  - cria ou reativa cliente pelo WhatsApp, cria/atualiza perfil de cobranca e gera ciclo inicial pendente.
 - Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Workflow remoto `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi atualizado via API n8n em 2026-05-21 com o JSON versionado que usa `HTTP_send_whatsapp_text` e `$env.APP_BASE_URL`; permaneceu inativo. Ativacao ainda depende de URL publica validada, envs no container n8n e WhatsApp real liberado.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
@@ -293,6 +300,7 @@ Migrations consolidadas criadas em 2026-05-21:
 - `supabase/migrations/007_tenant_whatsapp_inbox.sql`
 - `supabase/migrations/008_assistente_jack_message_persona.sql`
 - `supabase/migrations/009_tenant_whatsapp_entry_links.sql`
+- `supabase/migrations/010_whatsapp_billing_signup_workflow.sql`
 - `supabase/migrations/README.md`
 
 Observacao: as migrations consolidam os SQLs incrementais existentes no repositorio. Elas ainda nao substituem um dump/baseline completo de banco novo, porque parte do schema base foi criada antes dos SQLs soltos atuais. Proximo passo seguro antes de producao: aplicar em staging e comparar schema/dados essenciais com o Supabase alvo.
@@ -313,6 +321,7 @@ Observacao: as migrations consolidam os SQLs incrementais existentes no reposito
 - `supabase/tenant_whatsapp_inbox.sql`
 - `supabase/tenant_whatsapp_entry_links.sql`
 - `supabase/tenant_message_templates_assistente_jack.sql`
+- `supabase/whatsapp_billing_signup_workflow_support.sql`
 - `supabase/platform_plan4_constraints.sql`
 - `supabase/platform_plan5_restaurant_reservations.sql`
 - `supabase/salon_service_revenue.sql`
