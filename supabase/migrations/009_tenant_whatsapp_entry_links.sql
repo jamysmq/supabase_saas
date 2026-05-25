@@ -40,7 +40,7 @@ create or replace function public.admin_ensure_tenant_whatsapp_entry_link(
   p_tenant_id uuid
 )
 returns table (
-  tenant_id uuid,
+  link_tenant_id uuid,
   code text
 )
 language plpgsql
@@ -82,7 +82,7 @@ begin
         set is_active = true,
             updated_at = now()
       returning public.tenant_whatsapp_entry_links.tenant_id, public.tenant_whatsapp_entry_links.code
-      into tenant_id, code;
+      into link_tenant_id, code;
 
       return next;
       return;

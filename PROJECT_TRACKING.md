@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-05-21
+Atualizado em: 2026-05-25
 
 ## Visao Geral
 
@@ -22,7 +22,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Projeto Vercel criado com as 3 envs Supabase minimas configuradas em Production em 2026-05-21.
 - Dominio `meuassistentevirtual.com.br` registrado; subdominio planejado para o SaaS: `app.meuassistentevirtual.com.br`.
 - Home publica substituiu o template padrao do Next.js com pagina institucional minima, politicas em `/privacidade` e termos em `/termos`.
-- DNS de `app.meuassistentevirtual.com.br` validado em 2026-05-22; `GET /api/health`, `/privacidade` e `/termos` responderam publicamente pela Vercel.
+- DNS de `app.meuassistentevirtual.com.br` validado em 2026-05-22; `GET /api/health`, `/privacidade` e `/termos` responderam publicamente pela Vercel. Nova checagem em 2026-05-25 confirmou 200 nesses endpoints.
 - Supabase ja possui tenants, planos, usuarios de tenant, cobrancas de clientes, pagamentos da plataforma, agendamentos, historicos e tabelas/eventos auxiliares.
 - n8n ja possui workflows de onboarding/cadastro e lembretes; o fluxo tenant-side de agenda ainda sera derivado do `WA_TENANT_INBOUND_Assistant_v1`.
 - Hardening inicial de RLS e grants ja foi aplicado e validado superficialmente navegando pelas telas.
@@ -183,6 +183,14 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - API tenant-side `GET /api/tenant-whatsapp/link` cria/reaproveita o codigo e retorna o link `wa.me`;
   - tela `/whatsapp-inbox` exibe o link para copiar;
   - webhook Meta passa a resolver o tenant pelo codigo na primeira mensagem antes de consultar historico/conversas existentes.
+- SQLs `supabase/tenant_whatsapp_inbox.sql` e `supabase/tenant_whatsapp_entry_links.sql` foram aplicados pelo usuario no Supabase alvo antes da rodada de testes de 2026-05-25.
+- Validacao controlada do roteamento por link em 2026-05-25 passou no Supabase:
+  - tenant ativo foi localizado;
+  - codigo `jack-xxxxxxxx` existente/criado em `tenant_whatsapp_entry_links`;
+  - `admin_record_whatsapp_inbound` recebeu uma mensagem fake com o codigo;
+  - thread foi criada para o tenant correto;
+  - thread fake foi removida ao final, preservando apenas o codigo de entrada do tenant.
+- Correcao SQL pendente em 2026-05-25: `admin_ensure_tenant_whatsapp_entry_link` foi ajustada no repositorio para trocar o nome de retorno `tenant_id` por `link_tenant_id` e evitar ambiguidade no Postgres. Reexecutar `supabase/tenant_whatsapp_entry_links.sql` no SQL Editor para substituir a funcao aplicada.
 - Templates padrao de WhatsApp atualizados para a persona `Assistente Jack`; SQL incremental criado em `supabase/tenant_message_templates_assistente_jack.sql` e migration `supabase/migrations/008_assistente_jack_message_persona.sql`.
 - Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Workflow remoto `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi atualizado via API n8n em 2026-05-21 com o JSON versionado que usa `HTTP_send_whatsapp_text` e `$env.APP_BASE_URL`; permaneceu inativo. Ativacao ainda depende de URL publica validada, envs no container n8n e WhatsApp real liberado.
@@ -358,6 +366,7 @@ Fluxo agenda:
    - `WHATSAPP_CLOUD_ACCESS_TOKEN`;
    - `WHATSAPP_CLOUD_PHONE_NUMBER_ID`;
    - `WHATSAPP_CLOUD_GRAPH_VERSION`;
+   - `WHATSAPP_PUBLIC_PHONE_E164`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`;
    - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`;
    - `WHATSAPP_APP_SECRET`;
@@ -388,6 +397,7 @@ Fluxo agenda:
 17. Fazer teste multi-tenant com usuarios reais separados.
 18. Preparar backups e politica de retencao.
 19. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+20. Corrigir `.env.local` local para usar `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem o sufixo `/rest/v1/`; o teste de 2026-05-25 normalizou isso temporariamente no script, mas o arquivo local deve ficar no formato esperado pelo Supabase client.
 
 ## Decisoes para Evitar Gambiarra
 
@@ -428,14 +438,17 @@ Estado atual:
   - `docs/whatsapp-cloud-adapter.md`.
 - Guia Meta criado em `docs/meta-whatsapp-cloud-setup.md`.
 - Migrations consolidadas foram criadas em `supabase/migrations/`, mas ainda precisam ser aplicadas em staging e comparadas com o Supabase alvo.
+- SQLs de inbox/link WhatsApp foram aplicados no Supabase alvo pelo usuario em 2026-05-25, mas `supabase/tenant_whatsapp_entry_links.sql` precisa ser reexecutado apos a correcao da funcao `admin_ensure_tenant_whatsapp_entry_link`.
 - O arquivo `supabase/tenant_plan_feature_trigger_diagnostic.sql` e diagnostico e ficou fora da ordem de aplicacao.
 - Workflows n8n versionados continuam genericos; nao criar workflow por tenant.
 
 Proxima prioridade:
-1. Criar/configurar app Meta WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
-2. Configurar envs reais na Vercel e no n8n somente via ambiente, sem colar segredos no chat.
-3. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
-4. Depois testar WhatsApp real:
+1. Reexecutar `supabase/tenant_whatsapp_entry_links.sql` no Supabase para aplicar a correcao da funcao `admin_ensure_tenant_whatsapp_entry_link`.
+2. Corrigir `.env.local` local para `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem `/rest/v1/`.
+3. Criar/configurar app Meta WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
+4. Configurar envs reais na Vercel e no n8n somente via ambiente, sem colar segredos no chat.
+5. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
+6. Depois testar WhatsApp real:
    - challenge do webhook Meta;
    - mensagem inbound real;
    - envio pelo endpoint interno;

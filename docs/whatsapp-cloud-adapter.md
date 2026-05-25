@@ -60,6 +60,14 @@ https://wa.me/SEU_NUMERO?text=Ola%2C%20Assistente%20Jack%21%20Quero%20atendiment
 
 Quando o cliente chega por esse link, o webhook detecta o codigo na primeira mensagem e cria a conversa na inbox do tenant correto. Conversas iniciadas por lembretes/cobrancas continuam sendo resolvidas pelo historico em `wa_conversations`.
 
+Validacao de 2026-05-25:
+
+- `GET /api/health`, `/privacidade` e `/termos` responderam 200 em `https://app.meuassistentevirtual.com.br`.
+- `GET /api/tenant-whatsapp/link` respondeu 401 sem token, como esperado para endpoint tenant-side protegido.
+- Roteamento por codigo foi testado diretamente no Supabase com mensagem fake contendo `jack-xxxxxxxx`; a thread foi criada para o tenant correto e removida ao final.
+
+Se `admin_ensure_tenant_whatsapp_entry_link` retornar erro de coluna ambigua, reexecute `supabase/tenant_whatsapp_entry_links.sql` no SQL Editor para aplicar a versao corrigida da funcao.
+
 ## Webhook oficial da Meta
 
 `GET /api/whatsapp/webhook`

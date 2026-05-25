@@ -98,18 +98,19 @@ WHATSAPP_INTERNAL_SEND_TOKEN=
 
 1. Publicar app na Vercel com envs Supabase.
 2. Validar `/api/health`.
-3. Validar login plataforma e tenant.
-4. Configurar dominio final e HTTPS.
-5. Configurar envs WhatsApp na Vercel, exceto token real se a Meta ainda nao liberou.
-6. Configurar `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no n8n.
-7. Importar/atualizar workflows n8n versionados somente depois que `APP_BASE_URL` estiver respondendo.
-8. Quando a Meta liberar:
+3. Validar que `WHATSAPP_PUBLIC_PHONE_E164` esta configurada em Production para gerar os links `wa.me` dos tenants.
+4. Validar login plataforma e tenant.
+5. Configurar dominio final e HTTPS.
+6. Configurar envs WhatsApp na Vercel, exceto token real se a Meta ainda nao liberou.
+7. Configurar `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no n8n.
+8. Importar/atualizar workflows n8n versionados somente depois que `APP_BASE_URL` estiver respondendo.
+9. Quando a Meta liberar:
    - configurar token/phone number id/app secret;
    - cadastrar webhook `https://app.seudominio.com/api/whatsapp/webhook`;
    - testar challenge da Meta;
    - testar uma mensagem real de entrada;
    - testar envio real pelo endpoint interno.
-9. Fazer primeiro go-live controlado com um tenant `plan2` ou `plan3`.
+10. Fazer primeiro go-live controlado com um tenant `plan2` ou `plan3`.
 
 ## Decisoes Para Nao Reverter Depois
 
@@ -118,4 +119,3 @@ WHATSAPP_INTERNAL_SEND_TOKEN=
 - Manter app Next.js como camada publica, API segura e receptor oficial dos webhooks Meta.
 - Manter Vercel como plataforma do app enquanto o produto cresce; evitar VPS temporario para o app principal.
 - Nao gravar tokens no codigo, workflow JSON ou chat; usar somente envs.
-
