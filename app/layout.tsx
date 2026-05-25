@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "Assistente Jack",
   description:
     "Gerente virtual da Meu Assistente Virtual para cobranças, agenda, pedidos e atendimento via WhatsApp.",
+  other: {
+    "facebook-domain-verification": "lz33kutsdum6rvful80368do81pyk4",
+  },
 };
 
 export default function RootLayout({
