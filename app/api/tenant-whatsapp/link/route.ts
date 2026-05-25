@@ -5,12 +5,40 @@ type EntryLinkRow = {
   code: string
 }
 
+type TenantInfo = {
+  legal_name?: string | null
+  business_type?: string | null
+}
+
 function onlyDigits(value: string | undefined) {
   return String(value ?? '').replace(/\D/g, '')
 }
 
 function buildWaMeUrl(phone: string, text: string) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+}
+
+function buildPrefilledText(tenant: TenantInfo | null, code: string) {
+  const businessName = tenant?.legal_name?.trim() || 'o negócio'
+  const ticket = `Atendimento ${code}`
+
+  if (tenant?.business_type === 'salon') {
+    return `Olá! Vim pelo link do ${businessName} e gostaria de falar sobre um atendimento ou horário. ${ticket}`
+  }
+
+  if (tenant?.business_type === 'clinic') {
+    return `Olá! Vim pelo link da ${businessName} e gostaria de falar sobre uma consulta ou agendamento. ${ticket}`
+  }
+
+  if (tenant?.business_type === 'teacher') {
+    return `Olá! Vim pelo link do ${businessName} e gostaria de falar sobre aulas ou mensalidade. ${ticket}`
+  }
+
+  if (tenant?.business_type === 'restaurant') {
+    return `Olá! Vim pelo link do ${businessName} e gostaria de falar sobre pedidos ou atendimento. ${ticket}`
+  }
+
+  return `Olá! Vim pelo link do ${businessName} e gostaria de atendimento. ${ticket}`
 }
 
 export async function GET(request: Request) {
@@ -37,7 +65,7 @@ export async function GET(request: Request) {
   }
 
   const platformPhone = onlyDigits(process.env.WHATSAPP_PUBLIC_PHONE_E164)
-  const prefilledText = `Olá, Assistente Jack! Quero atendimento. Código: ${entryLink.code}`
+  const prefilledText = buildPrefilledText(result.tenant as TenantInfo, entryLink.code)
 
   return Response.json({
     code: entryLink.code,
