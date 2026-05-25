@@ -145,6 +145,18 @@ function serializeTemplateEditor(element: HTMLElement) {
     .trim()
 }
 
+function snapshotTemplates(templates: MessageTemplate[]) {
+  return JSON.stringify(
+    templates
+      .map((template) => ({
+        template_key: template.template_key,
+        content: template.content,
+        is_active: template.is_active,
+      }))
+      .sort((left, right) => left.template_key.localeCompare(right.template_key))
+  )
+}
+
 function createVariableChip(variable: TemplateVariable) {
   const chip = document.createElement('span')
   chip.className = 'inline-flex cursor-grab items-center rounded-md border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800'
@@ -313,12 +325,18 @@ export default function WhatsAppInboxPage() {
   const [entryLink, setEntryLink] = useState<EntryLink | null>(null)
   const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([])
   const [showSettings, setShowSettings] = useState(false)
+  const [confirmCloseSettings, setConfirmCloseSettings] = useState(false)
+  const [savedTemplatesSnapshot, setSavedTemplatesSnapshot] = useState('')
   const [loadingTemplates, setLoadingTemplates] = useState(false)
   const [savingTemplates, setSavingTemplates] = useState(false)
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
     [selectedThreadId, threads]
+  )
+  const hasUnsavedTemplateChanges = useMemo(
+    () => snapshotTemplates(messageTemplates) !== savedTemplatesSnapshot,
+    [messageTemplates, savedTemplatesSnapshot]
   )
 
   const loadMessages = useCallback(async function loadMessages(threadId: string, token = accessToken) {
@@ -421,7 +439,9 @@ export default function WhatsAppInboxPage() {
     }
 
     const payload = await response.json()
-    setMessageTemplates(payload.templates ?? [])
+    const templates = payload.templates ?? []
+    setMessageTemplates(templates)
+    setSavedTemplatesSnapshot(snapshotTemplates(templates))
   }, [accessToken])
 
   useEffect(() => {
@@ -460,6 +480,7 @@ export default function WhatsAppInboxPage() {
   }, [loadEntryLink, loadInitialThreads, loadMessageTemplates, router])
 
   function updateMessageTemplate(templateKey: string, content: string) {
+    setConfirmCloseSettings(false)
     setMessageTemplates((current) =>
       current.map((template) =>
         template.template_key === templateKey
@@ -467,6 +488,28 @@ export default function WhatsAppInboxPage() {
           : template
       )
     )
+  }
+
+  function openSettings() {
+    setConfirmCloseSettings(false)
+    setShowSettings(true)
+  }
+
+  function requestCloseSettings() {
+    if (savingTemplates) return
+
+    if (hasUnsavedTemplateChanges) {
+      setConfirmCloseSettings(true)
+      return
+    }
+
+    setShowSettings(false)
+  }
+
+  async function discardTemplateChanges() {
+    setConfirmCloseSettings(false)
+    setShowSettings(false)
+    await loadMessageTemplates()
   }
 
   async function copyEntryLink() {
@@ -522,6 +565,8 @@ export default function WhatsAppInboxPage() {
     }
 
     setSuccess('Configurações de mensagens atualizadas.')
+    setSavedTemplatesSnapshot(snapshotTemplates(messageTemplates))
+    setConfirmCloseSettings(false)
     setShowSettings(false)
     await loadMessageTemplates()
   }
@@ -614,7 +659,7 @@ export default function WhatsAppInboxPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setShowSettings(true)}
+                onClick={openSettings}
                 className="h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium"
               >
                 Configurações
@@ -810,7 +855,7 @@ export default function WhatsAppInboxPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowSettings(false)}
+                  onClick={requestCloseSettings}
                   className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
                 >
                   Fechar
@@ -818,6 +863,39 @@ export default function WhatsAppInboxPage() {
               </div>
 
               <form onSubmit={saveMessageTemplates} className="space-y-5 p-5">
+                {confirmCloseSettings && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <p className="font-semibold">Existem alterações não salvas.</p>
+                    <p className="mt-1">
+                      Salve as mensagens antes de fechar ou descarte as alterações feitas nesta janela.
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="submit"
+                        disabled={savingTemplates}
+                        className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      >
+                        {savingTemplates ? 'Salvando...' : 'Salvar alterações'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={discardTemplateChanges}
+                        disabled={savingTemplates}
+                        className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 disabled:opacity-50"
+                      >
+                        Sair sem salvar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmCloseSettings(false)}
+                        className="rounded-lg px-4 py-2 text-sm font-medium text-amber-900"
+                      >
+                        Continuar editando
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {loadingTemplates ? (
                   <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500">
                     Carregando mensagens...
