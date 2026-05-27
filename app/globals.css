@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7fbff;
+  --foreground: #07111f;
+  --jack-page: #eef8ff;
+  --jack-surface: #ffffff;
+  --jack-surface-soft: #f8fbff;
+  --jack-border: #d7e6f5;
+  --jack-border-soft: #e6f2fb;
+  --jack-primary: #073a86;
+  --jack-primary-hover: #052a61;
+  --jack-accent: #68e5ff;
+  --jack-text: #07111f;
+  --jack-muted: #44546a;
+  --jack-subtle: #64748b;
+  --jack-shadow: 0 12px 30px rgb(7 58 134 / 8%);
+  --jack-shadow-sm: 0 6px 18px rgb(7 58 134 / 7%);
 }
 
 @theme inline {
@@ -13,11 +26,86 @@
 }
 
 body {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--jack-page);
+  color: var(--jack-text);
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Jack light theme overrides for the existing Tailwind utility-heavy UI. */
+.bg-gray-100 {
+  background-color: var(--jack-page) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--jack-surface-soft) !important;
+}
+
+.hover\:bg-gray-50:hover {
+  background-color: #eef8ff !important;
+}
+
+.bg-white {
+  background-color: var(--jack-surface) !important;
+}
+
+.bg-gray-950 {
+  background-color: var(--jack-primary) !important;
+}
+
+.hover\:bg-gray-950:hover {
+  background-color: var(--jack-primary-hover) !important;
+}
+
+.text-gray-950 {
+  color: var(--jack-text) !important;
+}
+
+.text-gray-700,
+.text-gray-600 {
+  color: var(--jack-muted) !important;
+}
+
+.text-gray-500,
+.text-gray-400 {
+  color: var(--jack-subtle) !important;
+}
+
+.border-gray-300,
+.border-gray-200 {
+  border-color: var(--jack-border) !important;
+}
+
+.border-gray-100 {
+  border-color: var(--jack-border-soft) !important;
+}
+
+.focus\:ring-gray-300:focus,
+.focus\:ring-gray-300:focus-visible {
+  --tw-ring-color: rgb(104 229 255 / 45%) !important;
+}
+
+.shadow,
+.shadow-md,
+.shadow-xl {
+  box-shadow: var(--jack-shadow) !important;
+}
+
+.shadow-sm {
+  box-shadow: var(--jack-shadow-sm) !important;
+}
+
+.bg-red-50 {
+  background-color: #fff1f2 !important;
+}
+
+.bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+}
+
+.bg-amber-50 {
+  background-color: #fffbeb !important;
 }
 
 button:not(:disabled),
@@ -39,14 +127,14 @@ select,
 textarea {
   min-height: 40px;
   background-color: #ffffff;
-  color: #111827;
-  border-color: #d1d5db;
+  color: var(--jack-text);
+  border-color: var(--jack-border);
   line-height: 1.25rem;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280;
+  color: var(--jack-subtle);
   opacity: 1;
 }
 
@@ -54,8 +142,8 @@ input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #9ca3af;
-  box-shadow: 0 0 0 3px rgb(17 24 39 / 8%);
+  border-color: #68e5ff;
+  box-shadow: 0 0 0 3px rgb(104 229 255 / 24%);
 }
 
 button,
@@ -78,5 +166,5 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgb(17 24 39 / 12%);
+  box-shadow: 0 0 0 3px rgb(104 229 255 / 26%);
 }
