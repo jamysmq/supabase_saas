@@ -180,7 +180,7 @@ export default function DashboardPage() {
               href={item.href}
             >
               <div className="flex items-start gap-3">
-                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.14)]" />
+                <span className="mt-[0.35rem] h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.14)]" />
                 <div>
                   <div className="font-bold text-slate-950 group-hover:text-sky-900">{item.title}</div>
                   <p className="mt-1 text-sm leading-5 text-slate-600">
