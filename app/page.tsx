@@ -40,6 +40,12 @@ export default function Home() {
                 Termos
               </Link>
               <Link
+                className="rounded-md border border-white/35 px-4 py-2 font-semibold text-white hover:border-white hover:bg-white/10"
+                href="/cadastro"
+              >
+                Se cadastre!
+              </Link>
+              <Link
                 className="rounded-md bg-white px-4 py-2 font-semibold text-[#073a86] shadow-sm hover:bg-[#dff7ff]"
                 href="https://app.meuassistentevirtual.com.br/login"
               >

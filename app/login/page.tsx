@@ -115,6 +115,13 @@ export default function LoginPage() {
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
+
+          <a
+            href="https://www.meuassistentevirtual.com.br/cadastro"
+            className="block w-full rounded-lg border border-sky-200 px-4 py-2 text-center text-sm font-bold text-sky-800 hover:bg-sky-50"
+          >
+            Se cadastre!
+          </a>
         </form>
 
       </div>
