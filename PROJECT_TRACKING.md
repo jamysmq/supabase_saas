@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-05-25
+Atualizado em: 2026-05-27
 
 ## Visao Geral
 
@@ -23,6 +23,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Dominio `meuassistentevirtual.com.br` registrado; subdominio planejado para o SaaS: `app.meuassistentevirtual.com.br`.
 - Home publica substituiu o template padrao do Next.js com pagina institucional minima, politicas em `/privacidade` e termos em `/termos`.
 - DNS de `app.meuassistentevirtual.com.br` validado em 2026-05-22; `GET /api/health`, `/privacidade` e `/termos` responderam publicamente pela Vercel. Nova checagem em 2026-05-25 confirmou 200 nesses endpoints.
+- Em 2026-05-27, `https://www.meuassistentevirtual.com.br` respondeu 200 com a home institucional do Assistente Jack, `https://meuassistentevirtual.com.br` redirecionou para `www`, e `https://app.meuassistentevirtual.com.br` redirecionou a raiz para `/login`.
 - Em 2026-05-25, nova validacao local confirmou `NEXT_PUBLIC_SUPABASE_URL` em `.env.local` no formato esperado `https://<project-ref>.supabase.co`, sem sufixo `/rest/v1/`.
 - Supabase ja possui tenants, planos, usuarios de tenant, cobrancas de clientes, pagamentos da plataforma, agendamentos, historicos e tabelas/eventos auxiliares.
 - n8n ja possui workflows de onboarding/cadastro e lembretes; o fluxo tenant-side de agenda ainda sera derivado do `WA_TENANT_INBOUND_Assistant_v1`.
@@ -200,6 +201,12 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - template editavel `billing_signup_welcome`;
   - fluxo coleta nome completo, grupo/turma opcional, valor da mensalidade e dia de vencimento;
   - cria ou reativa cliente pelo WhatsApp, cria/atualiza perfil de cobranca e gera ciclo inicial pendente.
+- Front da inbox WhatsApp recebeu ajustes de configuracao de mensagens em 2026-05-27:
+  - configuracao abre em modal dentro de `/whatsapp-inbox`;
+  - editor usa variaveis travadas para evitar alteracao acidental do codigo;
+  - variaveis continuam arrastaveis no desktop;
+  - variaveis podem ser inseridas por toque no mobile no editor ativo;
+  - fechar a modal com alteracoes nao salvas pede confirmacao para salvar ou sair sem salvar.
 - Rascunho versionado `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json` foi preparado para trocar o mock de envio por chamada ao endpoint interno `POST /api/internal/whatsapp/send`; importacao no n8n remoto deve aguardar deploy/app publico e envs `APP_BASE_URL` e `WHATSAPP_INTERNAL_SEND_TOKEN` no container.
 - Workflow remoto `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi atualizado via API n8n em 2026-05-21 com o JSON versionado que usa `HTTP_send_whatsapp_text` e `$env.APP_BASE_URL`; permaneceu inativo. Ativacao ainda depende de URL publica validada, envs no container n8n e WhatsApp real liberado.
 - Em 2026-05-20 foi confirmado no Supabase alvo que `plan4`, tabelas de restaurante, historico financeiro de pedidos, tabela de receita de atendimentos e RPC `wa_restaurant_menu_grouped` estao aplicados.
@@ -342,6 +349,27 @@ Validacao tecnica local executada em 2026-05-25:
 - `GET https://app.meuassistentevirtual.com.br/api/health` respondeu 200.
 - `.env.local` local usa `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem `/rest/v1/`.
 
+Validacao tecnica local/publica executada em 2026-05-27:
+
+- `npm run lint` passou.
+- `npm run build` passou.
+- JSONs versionados do n8n em `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json`, `n8n/WA_TENANT_APPOINTMENTS_INBOUND_v1.workflow.json` e `n8n/WA_TENANT_BILLING_SIGNUP_INBOUND_v1.workflow.json` foram parseados com sucesso.
+- `GET https://app.meuassistentevirtual.com.br/api/health` respondeu 200.
+- `HEAD https://app.meuassistentevirtual.com.br/privacidade` respondeu 200.
+- `HEAD https://app.meuassistentevirtual.com.br/termos` respondeu 200.
+- `HEAD https://www.meuassistentevirtual.com.br` respondeu 200.
+- `HEAD https://meuassistentevirtual.com.br` respondeu 307 para `https://www.meuassistentevirtual.com.br/`.
+- `GET -L https://meuassistentevirtual.com.br/` entregou a home institucional com `Assistente Jack`, `jack-hero.svg` e meta tag de verificacao do Facebook.
+- `HEAD https://app.meuassistentevirtual.com.br/` respondeu 307 para `/login`.
+- `HEAD https://app.meuassistentevirtual.com.br/login` respondeu 200.
+- Endpoints protegidos sem credenciais responderam como esperado:
+  - `HEAD /api/tenant-whatsapp/link`: 401;
+  - `GET /api/whatsapp/webhook` sem token valido: 403;
+  - `POST /api/internal/whatsapp/send` sem token interno: 401.
+- `npm audit --audit-level=moderate` encontrou 4 vulnerabilidades: `next` high, `postcss` moderate, `brace-expansion` moderate e `ws` moderate. Tratar em tarefa separada com update controlado.
+- Supabase CLI local instalada via pacote do projeto travou em timeout tanto via `npx supabase --version` quanto via binario direto. Para aplicacoes SQL imediatas, seguir usando SQL Editor do Supabase ou investigar a CLI antes de depender dela.
+- Relatorio completo salvo em `docs/validation-2026-05-27.md`.
+
 Fluxo plataforma:
 
 1. Criar tenant novo.
@@ -416,6 +444,7 @@ Fluxo agenda:
 18. Preparar backups e politica de retencao.
 19. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 20. `.env.local` local ja foi conferido em 2026-05-25 e usa `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem o sufixo `/rest/v1/`.
+21. Tratar vulnerabilidades apontadas pelo `npm audit` de 2026-05-27 com atualizacao controlada de dependencias e nova rodada de lint/build.
 
 ## Decisoes para Evitar Gambiarra
 
