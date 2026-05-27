@@ -1,0 +1,33 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Assistente Jack</title>
+  <desc id="desc">Mascote robo sorridente do Assistente Jack em fundo azul.</desc>
+  <rect width="1200" height="900" fill="#03142f"/>
+  <rect x="165" y="72" width="870" height="760" rx="155" fill="#064fb8"/>
+  <path d="M165 640C315 760 506 832 760 832H875C963 832 1035 760 1035 672V485C930 600 770 675 555 710C405 735 275 710 165 640Z" fill="#032965"/>
+  <ellipse cx="610" cy="342" rx="290" ry="245" fill="#f8fbff"/>
+  <rect x="408" y="264" width="408" height="235" rx="72" fill="#061224"/>
+  <rect x="535" y="102" width="165" height="78" rx="28" fill="#1684df" stroke="#09204a" stroke-width="8"/>
+  <circle cx="500" cy="382" r="78" fill="#111827" stroke="#6b7c96" stroke-width="8"/>
+  <circle cx="720" cy="382" r="78" fill="#111827" stroke="#6b7c96" stroke-width="8"/>
+  <path d="M459 382C471 346 499 346 511 382" stroke="#68e5ff" stroke-width="23" stroke-linecap="round"/>
+  <path d="M679 382C691 346 719 346 731 382" stroke="#68e5ff" stroke-width="23" stroke-linecap="round"/>
+  <path d="M575 447C598 472 628 472 651 447" stroke="#68e5ff" stroke-width="20" stroke-linecap="round"/>
+  <path d="M580 382H640" stroke="#6b7c96" stroke-width="8" stroke-linecap="round"/>
+  <rect x="304" y="310" width="82" height="148" rx="41" fill="#dbeafe" stroke="#31435f" stroke-width="8"/>
+  <rect x="840" y="310" width="82" height="148" rx="41" fill="#dbeafe" stroke="#31435f" stroke-width="8"/>
+  <path d="M325 465C270 500 244 548 235 621" stroke="#eef6ff" stroke-width="58" stroke-linecap="round"/>
+  <path d="M890 462C946 502 972 552 980 625" stroke="#eef6ff" stroke-width="58" stroke-linecap="round"/>
+  <path d="M358 572C318 572 286 604 286 644V748C286 790 320 824 362 824H500C542 824 576 790 576 748V690C576 625 523 572 458 572H358Z" fill="#f8fbff"/>
+  <rect x="307" y="564" width="120" height="50" rx="25" fill="white" stroke="#1f2937" stroke-width="5"/>
+  <rect x="292" y="620" width="142" height="52" rx="26" fill="white" stroke="#1f2937" stroke-width="5"/>
+  <rect x="292" y="680" width="142" height="52" rx="26" fill="white" stroke="#1f2937" stroke-width="5"/>
+  <rect x="310" y="740" width="118" height="50" rx="25" fill="white" stroke="#1f2937" stroke-width="5"/>
+  <path d="M452 570V430C452 400 428 376 398 376C368 376 344 400 344 430V565" fill="white"/>
+  <path d="M452 570V430C452 400 428 376 398 376C368 376 344 400 344 430V565" stroke="#1f2937" stroke-width="5"/>
+  <path d="M500 635C570 675 650 675 722 635L788 835H432L500 635Z" fill="#08245a"/>
+  <path d="M558 622L612 735L674 622" stroke="#dbeafe" stroke-width="8" stroke-linecap="round"/>
+  <path d="M585 622L548 660L594 690L615 648L585 622Z" fill="#0b3d91"/>
+  <path d="M646 622L682 660L638 690L615 648L646 622Z" fill="#0b3d91"/>
+  <text x="548" y="795" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="118" font-weight="800">Jack</text>
+  <text x="552" y="845" fill="#68e5ff" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">o assistente virtual</text>
+</svg>
