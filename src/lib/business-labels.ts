@@ -12,8 +12,6 @@ export type BusinessLabels = {
   groupPluralLower: string
   dashboardCustomersDescription: string
   dashboardInactiveDescription: string
-  billingTitle: string
-  billingDescription: string
 }
 
 const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
@@ -29,8 +27,6 @@ const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
     groupPluralLower: 'turmas',
     dashboardCustomersDescription: 'Cadastre, edite, mova entre turmas e gerencie cobranças.',
     dashboardInactiveDescription: 'Consulte cadastros pausados e reative quando necessário.',
-    billingTitle: 'Mensalidades',
-    billingDescription: 'Ajuste valor e vencimento por aluno.',
   },
   autonomous: {
     customerSingular: 'Cliente',
@@ -44,8 +40,6 @@ const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
     groupPluralLower: 'grupos',
     dashboardCustomersDescription: 'Cadastre, edite, organize em grupos e gerencie cobranças.',
     dashboardInactiveDescription: 'Consulte clientes pausados e reative quando necessário.',
-    billingTitle: 'Mensalidades',
-    billingDescription: 'Ajuste valor e vencimento por cliente.',
   },
   clinic: {
     customerSingular: 'Paciente',
@@ -59,8 +53,6 @@ const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
     groupPluralLower: 'grupos',
     dashboardCustomersDescription: 'Cadastre, edite, organize em grupos e gerencie cobranças.',
     dashboardInactiveDescription: 'Consulte pacientes pausados e reative quando necessário.',
-    billingTitle: 'Mensalidades',
-    billingDescription: 'Ajuste valor e vencimento por paciente.',
   },
   salon: {
     customerSingular: 'Cliente',
@@ -74,8 +66,6 @@ const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
     groupPluralLower: 'grupos',
     dashboardCustomersDescription: 'Cadastre, edite, organize em grupos e gerencie cobranças.',
     dashboardInactiveDescription: 'Consulte clientes pausados e reative quando necessário.',
-    billingTitle: 'Mensalidades',
-    billingDescription: 'Ajuste valor e vencimento por cliente.',
   },
   restaurant: {
     customerSingular: 'Cliente',
@@ -89,8 +79,6 @@ const labelsByBusinessType: Record<BusinessType, BusinessLabels> = {
     groupPluralLower: 'grupos',
     dashboardCustomersDescription: 'Cadastre clientes e mantenha dados de contato organizados.',
     dashboardInactiveDescription: 'Consulte clientes pausados e reative quando necessário.',
-    billingTitle: 'Cobranças',
-    billingDescription: 'Acompanhe valores e vencimentos quando o módulo financeiro estiver ativo.',
   },
 }
 

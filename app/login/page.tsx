@@ -50,8 +50,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4 text-gray-950">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow p-6">
+    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#dff4ff_0%,#f7fbff_52%,#eef8ff_100%)] px-4 text-slate-950">
+      <div className="w-full max-w-sm rounded-lg border border-sky-100 bg-white p-6 shadow">
+        <a
+          href="https://www.meuassistentevirtual.com.br/"
+          className="mb-5 block rounded-lg bg-sky-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-sky-800"
+        >
+          Página inicial
+        </a>
+
         <h1 className="text-2xl font-bold mb-2 text-gray-950">Entrar</h1>
         <p className="text-sm text-gray-600 mb-6">
           Acesse sua conta para gerenciar clientes e cobranças.
@@ -89,11 +96,12 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-gray-950 text-white py-2 font-medium disabled:opacity-50"
+            className="w-full rounded-lg bg-sky-700 py-2 font-medium text-white hover:bg-sky-800 disabled:opacity-50"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
       </div>
     </main>
   )

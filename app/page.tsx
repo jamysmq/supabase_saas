@@ -41,7 +41,7 @@ export default function Home() {
               </Link>
               <Link
                 className="rounded-md bg-white px-4 py-2 font-semibold text-[#073a86] shadow-sm hover:bg-[#dff7ff]"
-                href="/login"
+                href="https://app.meuassistentevirtual.com.br/login"
               >
                 Entrar
               </Link>
@@ -64,7 +64,7 @@ export default function Home() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   className="rounded-md bg-[#68e5ff] px-5 py-3 text-center text-sm font-bold text-[#03142f] shadow-lg shadow-cyan-950/30 hover:bg-white"
-                  href="/login"
+                  href="https://app.meuassistentevirtual.com.br/login"
                 >
                   Acessar painel
                 </Link>
@@ -119,7 +119,7 @@ export default function Home() {
           </div>
           <Link
             className="w-full rounded-md bg-[#073a86] px-5 py-3 text-center text-sm font-bold text-white shadow-sm hover:bg-[#052a61] sm:w-auto"
-            href="/login"
+            href="https://app.meuassistentevirtual.com.br/login"
           >
             Entrar no painel
           </Link>

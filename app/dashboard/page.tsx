@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getBusinessLabels } from '../../src/lib/business-labels'
@@ -53,11 +54,6 @@ export default function DashboardPage() {
           href: '/inactive-students',
           title: labels.inactiveCustomers,
           description: labels.dashboardInactiveDescription,
-        },
-        {
-          href: '/billing-settings',
-          title: labels.billingTitle,
-          description: labels.billingDescription,
         }]
       : []),
     ...(canUseAppointments
@@ -133,39 +129,43 @@ export default function DashboardPage() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    router.push('/login')
+    window.location.assign('https://www.meuassistentevirtual.com.br/')
   }
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-950">
+      <main className="flex min-h-screen items-center justify-center bg-sky-50 text-slate-950">
         Carregando...
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#dff4ff_0%,#f4fbff_42%,#eef8ff_100%)] px-4 py-6 text-slate-950">
       <div className="mx-auto max-w-5xl space-y-4">
-        <div className="bg-white rounded-2xl shadow p-5">
+        <div className="rounded-lg border border-sky-100 bg-white p-5 shadow">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-950">
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Painel do tenant
+              </p>
+
+              <h1 className="mt-1 text-2xl font-bold text-slate-950">
                 Dashboard
               </h1>
 
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-slate-600">
                 {tenantUser?.email}
               </p>
 
-              <p className="mt-2 break-all text-xs text-gray-500">
+              <p className="mt-2 break-all text-xs text-slate-500">
                 Tenant: {tenantUser?.tenant_id}
               </p>
             </div>
 
             <button
               onClick={handleLogout}
-              className="h-10 rounded-lg bg-gray-950 px-4 text-sm font-medium text-white"
+              className="h-10 rounded-lg bg-sky-700 px-4 text-sm font-medium text-white hover:bg-sky-800"
             >
               Sair
             </button>
@@ -174,16 +174,21 @@ export default function DashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           {navigationItems.map((item) => (
-            <a
+            <Link
               key={item.href}
-              className="block rounded-2xl bg-white p-5 text-gray-950 shadow hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="group block rounded-lg border border-sky-100 bg-white p-5 text-slate-950 shadow hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-200"
               href={item.href}
             >
-              <div className="font-bold">{item.title}</div>
-              <p className="mt-1 text-sm leading-5 text-gray-600">
-                {item.description}
-              </p>
-            </a>
+              <div className="flex items-start gap-3">
+                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.14)]" />
+                <div>
+                  <div className="font-bold text-slate-950 group-hover:text-sky-900">{item.title}</div>
+                  <p className="mt-1 text-sm leading-5 text-slate-600">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       </div>

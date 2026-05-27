@@ -3,13 +3,13 @@
 :root {
   --background: #f7fbff;
   --foreground: #07111f;
-  --jack-page: #eef8ff;
+  --jack-page: #e3f4ff;
   --jack-surface: #ffffff;
-  --jack-surface-soft: #f8fbff;
-  --jack-border: #d7e6f5;
-  --jack-border-soft: #e6f2fb;
-  --jack-primary: #073a86;
-  --jack-primary-hover: #052a61;
+  --jack-surface-soft: #eff8ff;
+  --jack-border: #b8dbf3;
+  --jack-border-soft: #d8edfb;
+  --jack-primary: #0369a1;
+  --jack-primary-hover: #075985;
   --jack-accent: #68e5ff;
   --jack-text: #07111f;
   --jack-muted: #44546a;
@@ -36,6 +36,10 @@ body {
 /* Jack light theme overrides for the existing Tailwind utility-heavy UI. */
 .bg-gray-100 {
   background-color: var(--jack-page) !important;
+}
+
+.bg-sky-50 {
+  background-color: #eff8ff !important;
 }
 
 .bg-gray-50 {

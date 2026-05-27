@@ -201,7 +201,7 @@ export default function SettingsPage() {
 
   async function logout() {
     await supabase.auth.signOut()
-    router.push('/login')
+    window.location.assign('https://www.meuassistentevirtual.com.br/')
   }
 
   if (loading) {
