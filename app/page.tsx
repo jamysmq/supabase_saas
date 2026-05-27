@@ -28,25 +28,25 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,20,47,0.98)_0%,rgba(3,20,47,0.9)_38%,rgba(3,20,47,0.38)_74%,rgba(3,20,47,0.08)_100%)]" />
 
         <div className="mx-auto flex min-h-[92vh] w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
-          <header className="flex items-center justify-between gap-5">
+          <header className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Link className="text-sm font-bold uppercase tracking-[0.14em]" href="/">
               Assistente Jack
             </Link>
-            <nav className="flex items-center gap-3 text-sm text-white/82 sm:gap-5">
-              <Link className="hover:text-white" href="/privacidade">
+            <nav className="grid w-full grid-cols-2 gap-2 text-sm text-white/82 sm:flex sm:w-auto sm:items-center sm:gap-5">
+              <Link className="self-center hover:text-white" href="/privacidade">
                 Privacidade
               </Link>
-              <Link className="hover:text-white" href="/termos">
+              <Link className="self-center text-right hover:text-white sm:text-left" href="/termos">
                 Termos
               </Link>
               <Link
-                className="rounded-md border border-white/35 px-4 py-2 font-semibold text-white hover:border-white hover:bg-white/10"
+                className="rounded-md border border-white/35 px-3 py-2 text-center font-semibold text-white hover:border-white hover:bg-white/10 sm:px-4"
                 href="/cadastro"
               >
                 Se cadastre!
               </Link>
               <Link
-                className="rounded-md bg-white px-4 py-2 font-semibold text-[#073a86] shadow-sm hover:bg-[#dff7ff]"
+                className="rounded-md bg-white px-3 py-2 text-center font-semibold text-[#073a86] shadow-sm hover:bg-[#dff7ff] sm:px-4"
                 href="https://app.meuassistentevirtual.com.br/login"
               >
                 Entrar
