@@ -49,6 +49,10 @@ type TemplateVariable = {
   description: string
 }
 
+type TemplateEditorHandle = {
+  insertVariable: (variable: TemplateVariable) => void
+}
+
 const templateVariables: TemplateVariable[] = [
   {
     token: '{{tenant_name}}',
@@ -217,11 +221,37 @@ function formatPhone(value: string) {
 function TemplateEditor({
   value,
   onChange,
+  onFocusEditor,
+  registerEditor,
 }: {
   value: string
   onChange: (value: string) => void
+  onFocusEditor: () => void
+  registerEditor: (handle: TemplateEditorHandle | null) => void
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null)
+  const savedRangeRef = useRef<Range | null>(null)
+
+  const rememberSelection = useCallback(() => {
+    const editor = editorRef.current
+    const selection = window.getSelection()
+
+    if (!editor || !selection || selection.rangeCount === 0) return
+
+    const range = selection.getRangeAt(0)
+
+    if (
+      editor.contains(range.startContainer) &&
+      editor.contains(range.endContainer)
+    ) {
+      savedRangeRef.current = range.cloneRange()
+    }
+  }, [])
+
+  const sync = useCallback(() => {
+    if (!editorRef.current) return
+    return serializeTemplateEditor(editorRef.current)
+  }, [])
 
   useEffect(() => {
     const editor = editorRef.current
@@ -231,10 +261,42 @@ function TemplateEditor({
     editor.innerHTML = renderTemplateHtml(value)
   }, [value])
 
-  function sync() {
-    if (!editorRef.current) return
-    return serializeTemplateEditor(editorRef.current)
-  }
+  const insertVariable = useCallback((variable: TemplateVariable) => {
+    const editor = editorRef.current
+    const selection = window.getSelection()
+
+    if (!editor || !selection) return
+
+    editor.focus()
+
+    let range = savedRangeRef.current
+
+    if (!range || !editor.contains(range.startContainer)) {
+      range = document.createRange()
+      range.selectNodeContents(editor)
+      range.collapse(false)
+    }
+
+    range.deleteContents()
+
+    const chip = createVariableChip(variable)
+    const trailingSpace = document.createTextNode(' ')
+    range.insertNode(trailingSpace)
+    range.insertNode(chip)
+    range.setStartAfter(trailingSpace)
+    range.collapse(false)
+    selection.removeAllRanges()
+    selection.addRange(range)
+    savedRangeRef.current = range.cloneRange()
+
+    const nextValue = sync()
+    if (typeof nextValue === 'string') onChange(nextValue)
+  }, [onChange, sync])
+
+  useEffect(() => {
+    registerEditor({ insertVariable })
+    return () => registerEditor(null)
+  }, [insertVariable, registerEditor])
 
   function handleDragStart(event: DragEvent<HTMLElement>) {
     const target = event.target as HTMLElement
@@ -283,7 +345,15 @@ function TemplateEditor({
       onInput={() => {
         const nextValue = sync()
         if (typeof nextValue === 'string') onChange(nextValue)
+        rememberSelection()
       }}
+      onFocus={() => {
+        onFocusEditor()
+        rememberSelection()
+      }}
+      onKeyUp={rememberSelection}
+      onMouseUp={rememberSelection}
+      onTouchEnd={rememberSelection}
       onBlur={() => {
         const nextValue = sync()
         if (typeof nextValue === 'string') {
@@ -292,6 +362,7 @@ function TemplateEditor({
             editorRef.current.innerHTML = renderTemplateHtml(nextValue)
           }
         }
+        rememberSelection()
       }}
       onDragOver={(event) => event.preventDefault()}
       onDragStart={handleDragStart}
@@ -329,6 +400,8 @@ export default function WhatsAppInboxPage() {
   const [savedTemplatesSnapshot, setSavedTemplatesSnapshot] = useState('')
   const [loadingTemplates, setLoadingTemplates] = useState(false)
   const [savingTemplates, setSavingTemplates] = useState(false)
+  const [activeTemplateKey, setActiveTemplateKey] = useState<string | null>(null)
+  const templateEditorRefs = useRef(new Map<string, TemplateEditorHandle>())
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -488,6 +561,36 @@ export default function WhatsAppInboxPage() {
           : template
       )
     )
+  }
+
+  const registerTemplateEditor = useCallback((
+    templateKey: string,
+    handle: TemplateEditorHandle | null
+  ) => {
+    if (handle) {
+      templateEditorRefs.current.set(templateKey, handle)
+      return
+    }
+
+    templateEditorRefs.current.delete(templateKey)
+  }, [])
+
+  function insertVariableIntoActiveTemplate(variable: TemplateVariable) {
+    const targetKey = activeTemplateKey ?? messageTemplates[0]?.template_key ?? null
+
+    if (!targetKey) return
+
+    const editor = templateEditorRefs.current.get(targetKey)
+
+    if (editor) {
+      editor.insertVariable(variable)
+      setActiveTemplateKey(targetKey)
+      return
+    }
+
+    const currentContent =
+      messageTemplates.find((template) => template.template_key === targetKey)?.content ?? ''
+    updateMessageTemplate(targetKey, `${currentContent} ${variable.token}`.trim())
   }
 
   function openSettings() {
@@ -909,7 +1012,7 @@ export default function WhatsAppInboxPage() {
                     <div className="rounded-lg border border-gray-200 p-4">
                       <h3 className="text-sm font-semibold">Campos dinâmicos</h3>
                       <p className="mt-1 text-xs text-gray-500">
-                        Arraste um campo para dentro da mensagem. No editor ele fica travado para evitar alteração acidental do código.
+                        Toque ou arraste um campo para dentro da mensagem. No editor ele fica travado para evitar alteração acidental do código.
                       </p>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {templateVariables.map((variable) => (
@@ -917,12 +1020,17 @@ export default function WhatsAppInboxPage() {
                             key={variable.token}
                             type="button"
                             draggable
+                            onClick={() => insertVariableIntoActiveTemplate(variable)}
+                            onTouchStart={(event) => {
+                              event.preventDefault()
+                              insertVariableIntoActiveTemplate(variable)
+                            }}
                             onDragStart={(event) => {
                               event.dataTransfer.setData('text/plain', variable.token)
                               event.dataTransfer.setData('application/x-template-token', variable.token)
                               event.dataTransfer.effectAllowed = 'copy'
                             }}
-                            className="cursor-grab rounded-lg border border-gray-200 bg-gray-50 p-3 text-left active:cursor-grabbing"
+                            className="cursor-pointer rounded-lg border border-gray-200 bg-gray-50 p-3 text-left active:cursor-grabbing sm:cursor-grab"
                             title={variable.token}
                           >
                             <span className="block text-sm font-semibold text-gray-900">
@@ -947,6 +1055,10 @@ export default function WhatsAppInboxPage() {
                             value={template.content}
                             onChange={(content) =>
                               updateMessageTemplate(template.template_key, content)
+                            }
+                            onFocusEditor={() => setActiveTemplateKey(template.template_key)}
+                            registerEditor={(handle) =>
+                              registerTemplateEditor(template.template_key, handle)
                             }
                           />
                         </label>
