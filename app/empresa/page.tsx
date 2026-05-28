@@ -17,7 +17,7 @@ export default function CompanyPage() {
                 Nome empresarial / razão social
               </dt>
               <dd className="mt-1 text-[#25364a]">
-                67.015.907 JAMYS MEDEIROS QUARESMA
+                67.015.907/0001-03 JAMYS MEDEIROS QUARESMA
               </dd>
             </div>
             <div>
