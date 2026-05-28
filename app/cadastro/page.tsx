@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { formatCentsAsMoneyInput, formatMoneyInput } from '../../src/lib/money'
 
 type Plan = {
   code: string
@@ -19,7 +18,6 @@ type SignupForm = {
   whatsapp_e164: string
   business_type: string
   plan: string
-  monthly_amount: string
   due_day: string
 }
 
@@ -32,7 +30,6 @@ const emptyForm: SignupForm = {
   whatsapp_e164: '',
   business_type: 'teacher',
   plan: 'plan1',
-  monthly_amount: '',
   due_day: '',
 }
 
@@ -58,7 +55,6 @@ export default function SignupPage() {
         setForm((current) => ({
           ...current,
           plan: current.plan || firstPlan.code,
-          monthly_amount: current.monthly_amount || formatCentsAsMoneyInput(firstPlan.monthly_amount_cents),
         }))
       }
 
@@ -69,15 +65,18 @@ export default function SignupPage() {
   }, [])
 
   function selectPlan(planCode: string) {
-    const selectedPlan = plans.find((plan) => plan.code === planCode)
-
     setForm({
       ...form,
       plan: planCode,
-      monthly_amount: selectedPlan
-        ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
-        : form.monthly_amount,
     })
+  }
+
+  function getPlanLabel(plan: Plan) {
+    if (plan.code === 'plan3') {
+      return 'Plano 3 - Completo (Cobranças + Agenda)'
+    }
+
+    return plan.name
   }
 
   async function submitSignup(event: React.FormEvent) {
@@ -298,33 +297,10 @@ export default function SignupPage() {
                   >
                     {plans.map((plan) => (
                       <option key={plan.code} value={plan.code}>
-                        {plan.name} ({plan.code})
+                        {getPlanLabel(plan)}
                       </option>
                     ))}
                   </select>
-                </label>
-                <label className="text-sm font-medium">
-                  Status inicial
-                  <input
-                    className="mt-1 w-full rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 font-normal text-slate-600"
-                    readOnly
-                    value="pending"
-                  />
-                </label>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="text-sm font-medium">
-                  Mensalidade
-                  <input
-                    value={form.monthly_amount}
-                    onBlur={() => setForm({ ...form, monthly_amount: formatMoneyInput(form.monthly_amount) })}
-                    onChange={(event) => setForm({ ...form, monthly_amount: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
-                    inputMode="decimal"
-                    placeholder="R$ 0,00"
-                    required
-                  />
                 </label>
                 <label className="text-sm font-medium">
                   Dia de cobrança

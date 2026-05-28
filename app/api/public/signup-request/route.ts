@@ -1,5 +1,4 @@
 import { createSupabaseAdminClient } from '../../../../src/lib/platform-admin'
-import { parseMoneyToCents } from '../../../../src/lib/money'
 import { isTenantPlanBusinessTypeCompatible } from '../../../../src/lib/plan-features'
 
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
@@ -34,7 +33,6 @@ export async function POST(request: Request) {
   const whatsappDigits = onlyDigits(whatsapp)
   const businessType = String(body.business_type || 'teacher').trim()
   const plan = String(body.plan || '').trim()
-  const amountCents = parseMoneyToCents(body.monthly_amount)
   const dueDay = Number(body.due_day)
 
   if (!legalName) return errorResponse('Informe o nome legal do cliente.')
@@ -57,7 +55,7 @@ export async function POST(request: Request) {
 
   const { data: selectedPlan, error: selectedPlanError } = await supabase
     .from('platform_plans')
-    .select('code, name, is_active')
+    .select('code, name, is_active, monthly_amount_cents')
     .eq('code', plan)
     .maybeSingle()
 
@@ -73,8 +71,10 @@ export async function POST(request: Request) {
     return errorResponse('Plano e tipo de negocio incompativeis. Restaurantes devem usar um plano de restaurante.')
   }
 
+  const amountCents = Number(selectedPlan.monthly_amount_cents)
+
   if (!Number.isFinite(amountCents) || amountCents <= 0) {
-    return errorResponse('Mensalidade invalida. Informe um valor maior que zero.')
+    return errorResponse('O plano selecionado nao possui mensalidade configurada.', 500)
   }
 
   if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) {
@@ -93,7 +93,6 @@ export async function POST(request: Request) {
     plan,
     plan_name: selectedPlan.name,
     tenant_status: 'pending',
-    monthly_amount: body.monthly_amount,
     amount_cents: amountCents,
     due_day: dueDay,
     submitted_at: new Date().toISOString(),

@@ -43,6 +43,7 @@ export default function SettingsPage() {
     pix_beneficiary_name: '',
   })
   const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
     new_password: '',
     confirm_password: '',
   })
@@ -169,6 +170,12 @@ export default function SettingsPage() {
     setError('')
     setSuccess('')
 
+    if (!passwordForm.current_password) {
+      setError('Informe a senha atual.')
+      setSavingPassword(false)
+      return
+    }
+
     if (passwordForm.new_password.length < 8) {
       setError('A nova senha precisa ter pelo menos 8 caracteres.')
       setSavingPassword(false)
@@ -181,18 +188,39 @@ export default function SettingsPage() {
       return
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: passwordForm.new_password,
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setSavingPassword(false)
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/tenant-password', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+        confirm_password: passwordForm.confirm_password,
+      }),
     })
 
     setSavingPassword(false)
 
-    if (updateError) {
-      setError('Não foi possível alterar a senha.')
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Nao foi possivel alterar a senha.')
       return
     }
 
     setPasswordForm({
+      current_password: '',
       new_password: '',
       confirm_password: '',
     })
@@ -357,6 +385,20 @@ export default function SettingsPage() {
 
             <form onSubmit={changePassword} className="bg-white rounded-2xl shadow p-5 space-y-4">
               <h2 className="font-bold">Alterar senha</h2>
+
+              <label className="block text-sm font-medium">
+                Senha atual
+                <input
+                  value={passwordForm.current_password}
+                  onChange={(event) => setPasswordForm({
+                    ...passwordForm,
+                    current_password: event.target.value,
+                  })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  type="password"
+                  required
+                />
+              </label>
 
               <label className="block text-sm font-medium">
                 Nova senha

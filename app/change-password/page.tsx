@@ -7,6 +7,7 @@ import { supabase } from '../../src/lib/supabase'
 export default function ChangePasswordPage() {
   const router = useRouter()
 
+  const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,47 +17,51 @@ export default function ChangePasswordPage() {
     e.preventDefault()
     setError('')
 
+    if (!currentPassword) {
+      setError('Informe a senha atual.')
+      return
+    }
+
     if (password.length < 8) {
       setError('A senha precisa ter pelo menos 8 caracteres.')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('As senhas não conferem.')
+      setError('As senhas nao conferem.')
       return
     }
 
     setLoading(true)
 
-    const { data: userData } = await supabase.auth.getUser()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    if (!userData.user) {
+    if (!session) {
       setLoading(false)
       router.push('/login')
       return
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
+    const response = await fetch('/api/tenant-password', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: password,
+        confirm_password: confirmPassword,
+      }),
     })
-
-    if (updateError) {
-      setLoading(false)
-      setError('Não foi possível alterar a senha.')
-      return
-    }
-
-    const { error: rpcError } = await supabase.rpc(
-      'admin_clear_must_change_password',
-      {
-        p_auth_user_id: userData.user.id,
-      }
-    )
 
     setLoading(false)
 
-    if (rpcError) {
-      setError('Senha alterada, mas não foi possível liberar o acesso. Avise o suporte.')
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Nao foi possivel alterar a senha.')
       return
     }
 
@@ -69,10 +74,25 @@ export default function ChangePasswordPage() {
         <h1 className="text-2xl font-bold mb-2">Alterar senha</h1>
 
         <p className="text-sm text-gray-500 mb-6">
-          Por segurança, defina uma nova senha antes de acessar o painel.
+          Por seguranca, confirme sua senha atual e defina uma nova senha antes
+          de acessar o painel.
         </p>
 
         <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Senha atual
+            </label>
+            <input
+              className="w-full border rounded-lg px-3 py-2"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Digite sua senha atual"
+              required
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">
               Nova senha
@@ -82,7 +102,7 @@ export default function ChangePasswordPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Minimo 8 caracteres"
               required
             />
           </div>
