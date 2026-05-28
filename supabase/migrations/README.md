@@ -16,6 +16,8 @@ Apply order:
 8. `008_assistente_jack_message_persona.sql`
 9. `009_tenant_whatsapp_entry_links.sql`
 10. `010_whatsapp_billing_signup_workflow.sql`
+11. `011_appointment_service_staff_links.sql`
+12. `012_whatsapp_appointment_service_staff_flow.sql`
 
 Keep the original loose SQL files until these migrations are applied in a staging database and the resulting schema is compared with production.
 

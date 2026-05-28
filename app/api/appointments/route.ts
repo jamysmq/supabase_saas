@@ -85,12 +85,36 @@ export async function POST(request: Request) {
     return errorResponse('Informe a data de nascimento.')
   }
 
+  if (!serviceId) {
+    return errorResponse('Informe o servico.')
+  }
+
+  if (!staffMemberId) {
+    return errorResponse('Informe o profissional.')
+  }
+
   if (!startsAt || !endsAt) {
     return errorResponse('Informe início e fim do agendamento.')
   }
 
   if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
     return errorResponse('O fim precisa ser depois do início.')
+  }
+
+  const { data: serviceStaffLink, error: serviceStaffLinkError } = await result.supabase
+    .from('tenant_service_staff_members')
+    .select('service_id')
+    .eq('tenant_id', result.tenantUser.tenant_id)
+    .eq('service_id', serviceId)
+    .eq('staff_member_id', staffMemberId)
+    .maybeSingle()
+
+  if (serviceStaffLinkError) {
+    return errorResponse('Nao foi possivel validar servico e profissional.', 500, serviceStaffLinkError.message)
+  }
+
+  if (!serviceStaffLink) {
+    return errorResponse('Este profissional nao esta vinculado ao servico selecionado.')
   }
 
   const { data, error } = await result.supabase.rpc('admin_create_external_appointment', {

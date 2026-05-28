@@ -33,6 +33,7 @@ type Service = {
   description: string | null
   duration_minutes: number
   price_cents: number | null
+  staff_member_ids: string[]
 }
 
 type ServiceForm = {
@@ -40,6 +41,7 @@ type ServiceForm = {
   description: string
   duration_minutes: string
   price: string
+  staff_member_ids: string[]
 }
 
 type StaffMember = {
@@ -126,6 +128,7 @@ export default function AppointmentsPage() {
     description: '',
     duration_minutes: '60',
     price: '',
+    staff_member_ids: [],
   })
   const [editingServiceId, setEditingServiceId] = useState('')
   const [staffForm, setStaffForm] = useState({ name: '', role: '' })
@@ -216,6 +219,14 @@ export default function AppointmentsPage() {
     }
   }, [appointments])
 
+  const appointmentStaff = useMemo(() => {
+    const selectedService = services.find((service) => service.id === appointmentForm.service_id)
+
+    if (!selectedService) return []
+
+    return staff.filter((member) => selectedService.staff_member_ids.includes(member.id))
+  }, [appointmentForm.service_id, services, staff])
+
   async function getToken() {
     const {
       data: { session },
@@ -226,10 +237,17 @@ export default function AppointmentsPage() {
 
   function selectService(serviceId: string) {
     const service = services.find((item) => item.id === serviceId)
+    const selectedStaffIds = service?.staff_member_ids ?? []
+    const nextStaffMemberId = selectedStaffIds.includes(appointmentForm.staff_member_id)
+      ? appointmentForm.staff_member_id
+      : selectedStaffIds.length === 1
+        ? selectedStaffIds[0]
+        : ''
 
     setAppointmentForm({
       ...appointmentForm,
       service_id: serviceId,
+      staff_member_id: nextStaffMemberId,
       duration_minutes: service ? String(service.duration_minutes) : appointmentForm.duration_minutes,
     })
   }
@@ -244,6 +262,18 @@ export default function AppointmentsPage() {
 
     if (!token) {
       router.push('/login')
+      return
+    }
+
+    if (!appointmentForm.service_id) {
+      setSaving(false)
+      setError('Selecione o servico.')
+      return
+    }
+
+    if (!appointmentForm.staff_member_id) {
+      setSaving(false)
+      setError('Selecione o profissional.')
       return
     }
 
@@ -297,6 +327,12 @@ export default function AppointmentsPage() {
       return
     }
 
+    if (serviceForm.staff_member_ids.length === 0) {
+      setSaving(false)
+      setError('Selecione pelo menos um profissional para o servico.')
+      return
+    }
+
     const response = await fetch(
       editingServiceId
         ? `/api/appointment-services/${editingServiceId}`
@@ -320,7 +356,7 @@ export default function AppointmentsPage() {
     }
 
     setSuccess(editingServiceId ? 'Serviço atualizado.' : 'Serviço criado.')
-    setServiceForm({ name: '', description: '', duration_minutes: '60', price: '' })
+    setServiceForm({ name: '', description: '', duration_minutes: '60', price: '', staff_member_ids: [] })
     setEditingServiceId('')
     await load()
   }
@@ -398,7 +434,7 @@ export default function AppointmentsPage() {
 
     if (editingServiceId === service.id) {
       setEditingServiceId('')
-      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '' })
+      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '', staff_member_ids: [] })
     }
 
     setSuccess('Serviço excluído.')
@@ -718,8 +754,9 @@ export default function AppointmentsPage() {
                   value={appointmentForm.service_id}
                   onChange={(event) => selectService(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  required
                 >
-                  <option value="">Sem serviço</option>
+                  <option value="">Selecione um servico</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.name}
@@ -734,9 +771,11 @@ export default function AppointmentsPage() {
                   value={appointmentForm.staff_member_id}
                   onChange={(event) => setAppointmentForm({ ...appointmentForm, staff_member_id: event.target.value })}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  required
+                  disabled={!appointmentForm.service_id}
                 >
-                  <option value="">Sem profissional</option>
-                  {staff.map((member) => (
+                  <option value="">Selecione um profissional</option>
+                  {appointmentStaff.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name}
                     </option>
@@ -809,7 +848,7 @@ export default function AppointmentsPage() {
                     type="button"
                     onClick={() => {
                       setEditingServiceId('')
-                      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '' })
+                      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '', staff_member_ids: [] })
                     }}
                     className="text-xs font-medium text-gray-500"
                   >
@@ -851,6 +890,38 @@ export default function AppointmentsPage() {
                   placeholder="R$ 0,00"
                 />
               </div>
+              <fieldset className="space-y-2 rounded-lg border border-gray-200 p-3">
+                <legend className="px-1 text-sm font-medium">
+                  Profissionais que executam este servico
+                </legend>
+                {staff.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Cadastre um profissional antes de criar servicos.
+                  </p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {staff.map((member) => (
+                      <label className="flex items-center gap-2 text-sm" key={member.id}>
+                        <input
+                          checked={serviceForm.staff_member_ids.includes(member.id)}
+                          onChange={(event) => {
+                            const nextIds = event.target.checked
+                              ? [...serviceForm.staff_member_ids, member.id]
+                              : serviceForm.staff_member_ids.filter((id) => id !== member.id)
+
+                            setServiceForm({
+                              ...serviceForm,
+                              staff_member_ids: nextIds,
+                            })
+                          }}
+                          type="checkbox"
+                        />
+                        <span>{member.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
               <button
                 type="submit"
                 disabled={saving}
@@ -884,6 +955,7 @@ export default function AppointmentsPage() {
                               description: service.description ?? '',
                               duration_minutes: String(service.duration_minutes ?? 60),
                               price: service.price_cents ? formatCurrencyFromCents(service.price_cents) : '',
+                              staff_member_ids: service.staff_member_ids,
                             })
                           }}
                           className="text-xs font-medium text-gray-950 underline"

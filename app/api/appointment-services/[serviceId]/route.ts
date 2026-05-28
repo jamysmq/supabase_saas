@@ -23,6 +23,18 @@ function parsePriceCents(value: unknown) {
   return amountCents
 }
 
+function parseStaffMemberIds(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item ?? '').trim())
+        .filter(Boolean)
+    )
+  )
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ serviceId: string }> }
@@ -41,6 +53,7 @@ export async function PATCH(
   const description = String(body?.description ?? '').trim() || null
   const durationMinutes = Number(body?.duration_minutes ?? 60)
   const priceCents = parsePriceCents(body?.price ?? body?.price_cents)
+  const staffMemberIds = parseStaffMemberIds(body?.staff_member_ids)
 
   if (!name) {
     return errorResponse('Informe o nome do serviço.')
@@ -52,6 +65,25 @@ export async function PATCH(
 
   if (Number.isNaN(priceCents)) {
     return errorResponse('Valor inválido. Informe um valor maior ou igual a zero.')
+  }
+
+  if (staffMemberIds.length === 0) {
+    return errorResponse('Selecione pelo menos um profissional para o servico.')
+  }
+
+  const { count: staffCount, error: staffError } = await result.supabase
+    .from('tenant_staff_members')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', result.tenantUser.tenant_id)
+    .eq('is_active', true)
+    .in('id', staffMemberIds)
+
+  if (staffError) {
+    return errorResponse('Nao foi possivel validar os profissionais do servico.', 500, staffError.message)
+  }
+
+  if ((staffCount ?? 0) !== staffMemberIds.length) {
+    return errorResponse('Selecione apenas profissionais ativos deste tenant.')
   }
 
   const { data, error } = await result.supabase
@@ -70,6 +102,19 @@ export async function PATCH(
 
   if (error || !data) {
     return errorResponse('Não foi possível atualizar o serviço.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
+  }
+
+  const { error: linkError } = await result.supabase.rpc(
+    'admin_replace_service_staff_members',
+    {
+      p_tenant_id: result.tenantUser.tenant_id,
+      p_service_id: serviceId,
+      p_staff_member_ids: staffMemberIds,
+    }
+  )
+
+  if (linkError) {
+    return errorResponse('Nao foi possivel vincular profissionais ao servico.', 500, linkError.message)
   }
 
   return Response.json({ ok: true })
