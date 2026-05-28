@@ -303,7 +303,7 @@ export default function SignupPage() {
                   </select>
                 </label>
                 <label className="text-sm font-medium">
-                  Dia de cobrança
+                  Dia de cobrança da mensalidade
                   <input
                     value={form.due_day}
                     onChange={(event) => setForm({ ...form, due_day: event.target.value })}
