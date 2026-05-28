@@ -24,6 +24,14 @@ export default function TermsPage() {
           necessários para segurança, auditoria, suporte e continuidade do
           serviço.
         </p>
+        <p className="mt-4 text-sm leading-7 text-[#4a463f]">
+          Meu Assistente Virtual e Assistente Jack são operados por 67.015.907
+          JAMYS MEDEIROS QUARESMA. Consulte também os{" "}
+          <Link className="font-semibold text-[#073a86]" href="/empresa">
+            dados da empresa
+          </Link>
+          .
+        </p>
       </article>
     </main>
   );

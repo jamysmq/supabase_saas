@@ -131,6 +131,26 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <footer className="bg-[#03142f] text-white">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-6 text-xs leading-6 text-white/70 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+          <p>
+            Meu Assistente Virtual e Assistente Jack são operados por 67.015.907
+            JAMYS MEDEIROS QUARESMA.
+          </p>
+          <div className="flex flex-wrap gap-4 font-semibold text-white/82">
+            <Link href="/empresa" className="hover:text-white">
+              Dados da empresa
+            </Link>
+            <Link href="/privacidade" className="hover:text-white">
+              Privacidade
+            </Link>
+            <Link href="/termos" className="hover:text-white">
+              Termos
+            </Link>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
