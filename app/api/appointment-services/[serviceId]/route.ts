@@ -23,6 +23,14 @@ function parsePriceCents(value: unknown) {
   return amountCents
 }
 
+function parseDurationMinutes(value: unknown) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return NaN
+  }
+
+  return Number(value)
+}
+
 function parseStaffMemberIds(value: unknown) {
   if (!Array.isArray(value)) return []
 
@@ -51,7 +59,7 @@ export async function PATCH(
   const body = await request.json().catch(() => null)
   const name = String(body?.name ?? '').trim()
   const description = String(body?.description ?? '').trim() || null
-  const durationMinutes = Number(body?.duration_minutes ?? 60)
+  const durationMinutes = parseDurationMinutes(body?.duration_minutes)
   const priceCents = parsePriceCents(body?.price ?? body?.price_cents)
   const staffMemberIds = parseStaffMemberIds(body?.staff_member_ids)
 

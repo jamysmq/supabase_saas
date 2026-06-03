@@ -126,7 +126,7 @@ export default function AppointmentsPage() {
   const [serviceForm, setServiceForm] = useState<ServiceForm>({
     name: '',
     description: '',
-    duration_minutes: '60',
+    duration_minutes: '',
     price: '',
     staff_member_ids: [],
   })
@@ -356,7 +356,7 @@ export default function AppointmentsPage() {
     }
 
     setSuccess(editingServiceId ? 'Serviço atualizado.' : 'Serviço criado.')
-    setServiceForm({ name: '', description: '', duration_minutes: '60', price: '', staff_member_ids: [] })
+    setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
     setEditingServiceId('')
     await load()
   }
@@ -434,7 +434,7 @@ export default function AppointmentsPage() {
 
     if (editingServiceId === service.id) {
       setEditingServiceId('')
-      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '', staff_member_ids: [] })
+      setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
     }
 
     setSuccess('Serviço excluído.')
@@ -848,7 +848,7 @@ export default function AppointmentsPage() {
                     type="button"
                     onClick={() => {
                       setEditingServiceId('')
-                      setServiceForm({ name: '', description: '', duration_minutes: '60', price: '', staff_member_ids: [] })
+                      setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
                     }}
                     className="text-xs font-medium text-gray-500"
                   >
@@ -878,7 +878,7 @@ export default function AppointmentsPage() {
                   value={serviceForm.duration_minutes}
                   onChange={(event) => setServiceForm({ ...serviceForm, duration_minutes: event.target.value })}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                  placeholder="Duracao em minutos"
+                  placeholder="Tempo obrigatorio em minutos"
                   required
                 />
                 <input

@@ -503,7 +503,7 @@ begin
     a.staff_member_id,
     coalesce(a.service_name_snapshot, s.name),
     coalesce(a.staff_member_name_snapshot, sm.name),
-    coalesce(s.duration_minutes, 60),
+    s.duration_minutes,
     coalesce(tc.birth_date, ec.birth_date)
     into v_tenant_id, v_recipient, v_service_id, v_staff_member_id, v_service_name, v_staff_member_name, v_duration_minutes, v_customer_birth_date
   from public.appointments a
@@ -728,7 +728,7 @@ security definer
 set search_path = public
 as $$
   with service_config as (
-    select coalesce(s.duration_minutes, 60) as duration_minutes
+    select s.duration_minutes as duration_minutes
     from public.tenant_services s
     where s.id = p_service_id
       and s.tenant_id = p_tenant_id
