@@ -152,6 +152,8 @@ export default function AppointmentsPage() {
   const [editingServiceId, setEditingServiceId] = useState('')
   const [staffForm, setStaffForm] = useState({ name: '', role: '' })
   const [editingStaffId, setEditingStaffId] = useState('')
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false)
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [actingId, setActingId] = useState('')
@@ -259,6 +261,57 @@ export default function AppointmentsPage() {
     } = await supabase.auth.getSession()
 
     return session?.access_token ?? ''
+  }
+
+  function resetServiceForm() {
+    setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
+    setEditingServiceId('')
+  }
+
+  function openNewServiceModal() {
+    resetServiceForm()
+    setIsServiceModalOpen(true)
+  }
+
+  function openEditServiceModal(service: Service) {
+    setEditingServiceId(service.id)
+    setServiceForm({
+      name: service.name,
+      description: service.description ?? '',
+      duration_minutes: String(service.duration_minutes ?? 60),
+      price: service.price_cents ? formatCurrencyFromCents(service.price_cents) : '',
+      staff_member_ids: service.staff_member_ids,
+    })
+    setIsServiceModalOpen(true)
+  }
+
+  function closeServiceModal() {
+    setIsServiceModalOpen(false)
+    resetServiceForm()
+  }
+
+  function resetStaffForm() {
+    setStaffForm({ name: '', role: '' })
+    setEditingStaffId('')
+  }
+
+  function openNewStaffModal() {
+    resetStaffForm()
+    setIsStaffModalOpen(true)
+  }
+
+  function openEditStaffModal(member: StaffMember) {
+    setEditingStaffId(member.id)
+    setStaffForm({
+      name: member.name,
+      role: member.role ?? '',
+    })
+    setIsStaffModalOpen(true)
+  }
+
+  function closeStaffModal() {
+    setIsStaffModalOpen(false)
+    resetStaffForm()
   }
 
   async function saveAppointmentSettings(event: React.FormEvent) {
@@ -425,8 +478,7 @@ export default function AppointmentsPage() {
     }
 
     setSuccess(editingServiceId ? 'Serviço atualizado.' : 'Serviço criado.')
-    setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
-    setEditingServiceId('')
+    closeServiceModal()
     await load()
   }
 
@@ -466,8 +518,7 @@ export default function AppointmentsPage() {
     }
 
     setSuccess(editingStaffId ? 'Profissional atualizado.' : 'Profissional criado.')
-    setStaffForm({ name: '', role: '' })
-    setEditingStaffId('')
+    closeStaffModal()
     await load()
   }
 
@@ -502,8 +553,7 @@ export default function AppointmentsPage() {
     }
 
     if (editingServiceId === service.id) {
-      setEditingServiceId('')
-      setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
+      closeServiceModal()
     }
 
     setSuccess('Serviço excluído.')
@@ -541,8 +591,7 @@ export default function AppointmentsPage() {
     }
 
     if (editingStaffId === member.id) {
-      setEditingStaffId('')
-      setStaffForm({ name: '', role: '' })
+      closeStaffModal()
     }
 
     setSuccess('Profissional excluído.')
@@ -981,22 +1030,126 @@ export default function AppointmentsPage() {
               </button>
             </form>
 
-            <form onSubmit={saveService} className="rounded-2xl bg-white p-5 shadow space-y-3">
+            <section className="rounded-2xl bg-white p-5 shadow">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-bold">Serviços</h2>
-                {editingServiceId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingServiceId('')
-                      setServiceForm({ name: '', description: '', duration_minutes: '', price: '', staff_member_ids: [] })
-                    }}
-                    className="text-xs font-medium text-gray-500"
-                  >
-                    Cancelar
-                  </button>
+                <button
+                  type="button"
+                  onClick={openNewServiceModal}
+                  className="rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white"
+                >
+                  Novo serviço
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {services.length === 0 ? (
+                  <p className="py-3 text-sm text-gray-500">Nenhum serviço cadastrado.</p>
+                ) : (
+                  services.map((service) => (
+                    <div key={service.id} className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <div className="break-words text-sm font-medium">{service.name}</div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {service.duration_minutes} min · {formatCurrency(service.price_cents)}
+                        </div>
+                        {service.description && (
+                          <div className="mt-1 break-words text-xs text-gray-500">{service.description}</div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditServiceModal(service)}
+                          className="text-xs font-medium text-gray-950 underline"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteService(service)}
+                          disabled={actingId === service.id}
+                          className="text-xs font-medium text-red-700 underline disabled:opacity-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
+            </section>
+
+            <section className="rounded-2xl bg-white p-5 shadow">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold">Profissionais</h2>
+                <button
+                  type="button"
+                  onClick={openNewStaffModal}
+                  className="rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white"
+                >
+                  Novo profissional
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {staff.length === 0 ? (
+                  <p className="py-3 text-sm text-gray-500">Nenhum profissional cadastrado.</p>
+                ) : (
+                  staff.map((member) => (
+                    <div key={member.id} className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <div className="break-words text-sm font-medium">{member.name}</div>
+                        {member.role && (
+                          <div className="break-words text-xs text-gray-500">{member.role}</div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditStaffModal(member)}
+                          className="text-xs font-medium text-gray-950 underline"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteStaff(member)}
+                          disabled={actingId === member.id}
+                          className="text-xs font-medium text-red-700 underline disabled:opacity-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          </aside>
+        </section>
+
+        {isServiceModalOpen && (
+          <div
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+            role="dialog"
+          >
+            <form
+              onSubmit={saveService}
+              className="w-full max-w-xl space-y-3 rounded-2xl bg-white p-5 shadow-xl"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold">
+                  {editingServiceId ? 'Editar serviço' : 'Novo serviço'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={closeServiceModal}
+                  className="text-sm font-medium text-gray-500"
+                >
+                  Fechar
+                </button>
+              </div>
+
               <input
                 value={serviceForm.name}
                 onChange={(event) => setServiceForm({ ...serviceForm, name: event.target.value })}
@@ -1033,11 +1186,11 @@ export default function AppointmentsPage() {
               </div>
               <fieldset className="space-y-2 rounded-lg border border-gray-200 p-3">
                 <legend className="px-1 text-sm font-medium">
-                  Profissionais que executam este servico
+                  Profissionais que executam este serviço
                 </legend>
                 {staff.length === 0 ? (
                   <p className="text-sm text-gray-500">
-                    Cadastre um profissional antes de criar servicos.
+                    Cadastre um profissional antes de criar serviços.
                   </p>
                 ) : (
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -1063,77 +1216,49 @@ export default function AppointmentsPage() {
                   </div>
                 )}
               </fieldset>
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium disabled:opacity-50"
-              >
-                {editingServiceId ? 'Salvar serviço' : 'Criar serviço'}
-              </button>
-
-              <div className="divide-y divide-gray-100">
-                {services.length === 0 ? (
-                  <p className="py-3 text-sm text-gray-500">Nenhum serviço cadastrado.</p>
-                ) : (
-                  services.map((service) => (
-                    <div key={service.id} className="flex items-start justify-between gap-3 py-3">
-                      <div className="min-w-0">
-                        <div className="break-words text-sm font-medium">{service.name}</div>
-                        <div className="mt-1 text-xs text-gray-500">
-                          {service.duration_minutes} min · {formatCurrency(service.price_cents)}
-                        </div>
-                        {service.description && (
-                          <div className="mt-1 break-words text-xs text-gray-500">{service.description}</div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingServiceId(service.id)
-                            setServiceForm({
-                              name: service.name,
-                              description: service.description ?? '',
-                              duration_minutes: String(service.duration_minutes ?? 60),
-                              price: service.price_cents ? formatCurrencyFromCents(service.price_cents) : '',
-                              staff_member_ids: service.staff_member_ids,
-                            })
-                          }}
-                          className="text-xs font-medium text-gray-950 underline"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void deleteService(service)}
-                          disabled={actingId === service.id}
-                          className="text-xs font-medium text-red-700 underline disabled:opacity-50"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={closeServiceModal}
+                  className="rounded-lg border border-gray-200 py-2 text-sm font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-gray-950 py-2 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {saving ? 'Salvando...' : editingServiceId ? 'Salvar serviço' : 'Criar serviço'}
+                </button>
               </div>
             </form>
+          </div>
+        )}
 
-            <form onSubmit={saveStaff} className="rounded-2xl bg-white p-5 shadow space-y-3">
+        {isStaffModalOpen && (
+          <div
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+            role="dialog"
+          >
+            <form
+              onSubmit={saveStaff}
+              className="w-full max-w-lg space-y-3 rounded-2xl bg-white p-5 shadow-xl"
+            >
               <div className="flex items-center justify-between gap-3">
-                <h2 className="font-bold">Profissionais</h2>
-                {editingStaffId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingStaffId('')
-                      setStaffForm({ name: '', role: '' })
-                    }}
-                    className="text-xs font-medium text-gray-500"
-                  >
-                    Cancelar
-                  </button>
-                )}
+                <h2 className="font-bold">
+                  {editingStaffId ? 'Editar profissional' : 'Novo profissional'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={closeStaffModal}
+                  className="text-sm font-medium text-gray-500"
+                >
+                  Fechar
+                </button>
               </div>
+
               <input
                 value={staffForm.name}
                 onChange={(event) => setStaffForm({ ...staffForm, name: event.target.value })}
@@ -1147,56 +1272,25 @@ export default function AppointmentsPage() {
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 placeholder="Observações"
               />
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium disabled:opacity-50"
-              >
-                {editingStaffId ? 'Salvar profissional' : 'Criar profissional'}
-              </button>
-
-              <div className="divide-y divide-gray-100">
-                {staff.length === 0 ? (
-                  <p className="py-3 text-sm text-gray-500">Nenhum profissional cadastrado.</p>
-                ) : (
-                  staff.map((member) => (
-                    <div key={member.id} className="flex items-start justify-between gap-3 py-3">
-                      <div className="min-w-0">
-                        <div className="break-words text-sm font-medium">{member.name}</div>
-                        {member.role && (
-                          <div className="break-words text-xs text-gray-500">{member.role}</div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingStaffId(member.id)
-                            setStaffForm({
-                              name: member.name,
-                              role: member.role ?? '',
-                            })
-                          }}
-                          className="text-xs font-medium text-gray-950 underline"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void deleteStaff(member)}
-                          disabled={actingId === member.id}
-                          className="text-xs font-medium text-red-700 underline disabled:opacity-50"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={closeStaffModal}
+                  className="rounded-lg border border-gray-200 py-2 text-sm font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-gray-950 py-2 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {saving ? 'Salvando...' : editingStaffId ? 'Salvar profissional' : 'Criar profissional'}
+                </button>
               </div>
             </form>
-          </aside>
-        </section>
+          </div>
+        )}
       </div>
     </main>
   )
