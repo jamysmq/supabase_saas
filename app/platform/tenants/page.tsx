@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
+import { getAllowedPlanCodesForBusinessType } from '../../../src/lib/plan-features'
 
 type Tenant = {
   id: string
@@ -136,8 +137,10 @@ export default function PlatformTenantsPage() {
 
       if (activePlans.length > 0) {
         setForm((currentForm) => {
-          const currentPlan = activePlans.find((plan: Plan) => plan.code === currentForm.plan)
-          const selectedPlan = currentPlan ?? activePlans[0]
+          const allowedCodes = getAllowedPlanCodesForBusinessType(currentForm.business_type)
+          const compatiblePlans = activePlans.filter((plan: Plan) => allowedCodes.includes(plan.code))
+          const currentPlan = compatiblePlans.find((plan: Plan) => plan.code === currentForm.plan)
+          const selectedPlan = currentPlan ?? compatiblePlans[0] ?? activePlans[0]
 
           return {
             ...currentForm,
@@ -158,6 +161,11 @@ export default function PlatformTenantsPage() {
 
     return () => window.clearTimeout(timeoutId)
   }, [load])
+
+  const availablePlans = useMemo(() => {
+    const allowedCodes = getAllowedPlanCodesForBusinessType(form.business_type)
+    return plans.filter((plan) => allowedCodes.includes(plan.code))
+  }, [form.business_type, plans])
 
   const filteredTenants = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -180,6 +188,21 @@ export default function PlatformTenantsPage() {
   async function logout() {
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  function selectBusinessType(businessType: string) {
+    const allowedCodes = getAllowedPlanCodesForBusinessType(businessType)
+    const nextPlanCode = allowedCodes.includes(form.plan) ? form.plan : allowedCodes[0]
+    const selectedPlan = plans.find((plan) => plan.code === nextPlanCode)
+
+    setForm({
+      ...form,
+      business_type: businessType,
+      plan: nextPlanCode,
+      monthly_amount: selectedPlan
+        ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
+        : form.monthly_amount,
+    })
   }
 
   function selectPlan(planCode: string) {
@@ -668,7 +691,7 @@ export default function PlatformTenantsPage() {
                   Tipo de negócio
                   <select
                     value={form.business_type}
-                    onChange={(event) => setForm({ ...form, business_type: event.target.value })}
+                    onChange={(event) => selectBusinessType(event.target.value)}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                   >
                     <option value="teacher">Professor</option>
@@ -689,10 +712,10 @@ export default function PlatformTenantsPage() {
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     required
                   >
-                    {plans.length === 0 ? (
-                      <option value="">Nenhum plano ativo</option>
+                    {availablePlans.length === 0 ? (
+                      <option value="">Nenhum plano ativo para este tipo</option>
                     ) : (
-                      plans.map((plan) => (
+                      availablePlans.map((plan) => (
                         <option key={plan.code} value={plan.code}>
                           {plan.name} ({plan.code})
                         </option>

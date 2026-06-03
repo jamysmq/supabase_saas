@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../src/lib/supabase'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../../src/lib/money'
+import { getAllowedPlanCodesForBusinessType } from '../../../../src/lib/plan-features'
 
 type Tenant = {
   id: string
@@ -179,6 +180,26 @@ export default function PlatformTenantDetailPage() {
     })
     setLoading(false)
   }, [params.id, router])
+
+  const availablePlans = useMemo(() => {
+    const allowedCodes = getAllowedPlanCodesForBusinessType(form.business_type)
+    return plans.filter((plan) => allowedCodes.includes(plan.code) || plan.code === form.plan)
+  }, [form.business_type, form.plan, plans])
+
+  function selectBusinessType(businessType: string) {
+    const allowedCodes = getAllowedPlanCodesForBusinessType(businessType)
+    const nextPlanCode = allowedCodes.includes(form.plan) ? form.plan : allowedCodes[0]
+    const selectedPlan = plans.find((plan) => plan.code === nextPlanCode)
+
+    setForm({
+      ...form,
+      business_type: businessType,
+      plan: nextPlanCode,
+      monthly_amount: selectedPlan
+        ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
+        : form.monthly_amount,
+    })
+  }
 
   function selectPlan(planCode: string) {
     const selectedPlan = plans.find((plan) => plan.code === planCode)
@@ -449,7 +470,7 @@ export default function PlatformTenantDetailPage() {
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                   required
                 >
-                  {plans.map((plan) => (
+                  {availablePlans.map((plan) => (
                     <option key={plan.code} value={plan.code} disabled={!plan.is_active && plan.code !== form.plan}>
                       {plan.name} ({plan.code}){plan.is_active ? '' : ' - inativo'}
                     </option>
@@ -461,7 +482,7 @@ export default function PlatformTenantDetailPage() {
                 Tipo de negócio
                 <select
                   value={form.business_type}
-                  onChange={(event) => setForm({ ...form, business_type: event.target.value })}
+                  onChange={(event) => selectBusinessType(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                 >
                   <option value="teacher">Professor</option>

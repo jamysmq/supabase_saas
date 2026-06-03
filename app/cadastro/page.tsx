@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { getAllowedPlanCodesForBusinessType } from '../../src/lib/plan-features'
 
 type Plan = {
   code: string
@@ -51,11 +52,17 @@ export default function SignupPage() {
       setPlans(activePlans)
 
       if (activePlans.length > 0) {
-        const firstPlan = activePlans[0] as Plan
-        setForm((current) => ({
-          ...current,
-          plan: current.plan || firstPlan.code,
-        }))
+        setForm((current) => {
+          const allowedCodes = getAllowedPlanCodesForBusinessType(current.business_type)
+          const compatiblePlans = activePlans.filter((plan: Plan) => allowedCodes.includes(plan.code))
+          const currentPlan = compatiblePlans.find((plan: Plan) => plan.code === current.plan)
+          const selectedPlan = currentPlan ?? compatiblePlans[0] ?? activePlans[0]
+
+          return {
+            ...current,
+            plan: selectedPlan.code,
+          }
+        })
       }
 
       setLoadingPlans(false)
@@ -63,6 +70,22 @@ export default function SignupPage() {
 
     void loadPlans()
   }, [])
+
+  const availablePlans = useMemo(() => {
+    const allowedCodes = getAllowedPlanCodesForBusinessType(form.business_type)
+    return plans.filter((plan) => allowedCodes.includes(plan.code))
+  }, [form.business_type, plans])
+
+  function selectBusinessType(businessType: string) {
+    const allowedCodes = getAllowedPlanCodesForBusinessType(businessType)
+    const nextPlan = allowedCodes.includes(form.plan) ? form.plan : allowedCodes[0]
+
+    setForm({
+      ...form,
+      business_type: businessType,
+      plan: nextPlan,
+    })
+  }
 
   function selectPlan(planCode: string) {
     setForm({
@@ -274,7 +297,7 @@ export default function SignupPage() {
                   Tipo de negócio
                   <select
                     value={form.business_type}
-                    onChange={(event) => setForm({ ...form, business_type: event.target.value })}
+                    onChange={(event) => selectBusinessType(event.target.value)}
                     className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
                   >
                     <option value="teacher">Professor</option>
@@ -295,7 +318,7 @@ export default function SignupPage() {
                     className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
                     required
                   >
-                    {plans.map((plan) => (
+                    {availablePlans.map((plan) => (
                       <option key={plan.code} value={plan.code}>
                         {getPlanLabel(plan)}
                       </option>

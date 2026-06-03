@@ -14,13 +14,24 @@ export function tenantCanUseTableReservations(plan?: string | null) {
   return plan === 'plan5'
 }
 
+const allowedPlanCodesByBusinessType: Record<string, string[]> = {
+  teacher: ['plan1', 'plan3'],
+  autonomous: ['plan2', 'plan3'],
+  clinic: ['plan2', 'plan3'],
+  salon: ['plan2', 'plan3'],
+  restaurant: ['plan4', 'plan5'],
+}
+
+export function getAllowedPlanCodesForBusinessType(businessType?: string | null) {
+  return allowedPlanCodesByBusinessType[businessType ?? ''] ?? allowedPlanCodesByBusinessType.teacher
+}
+
 export function isTenantPlanBusinessTypeCompatible(
   plan?: string | null,
   businessType?: string | null
 ) {
-  if (plan === 'plan4' || plan === 'plan5') return businessType === 'restaurant'
-  if (businessType === 'restaurant') return plan === 'plan4' || plan === 'plan5'
-  return true
+  if (!plan) return false
+  return getAllowedPlanCodesForBusinessType(businessType).includes(plan)
 }
 
 export function tenantPlanLabel(plan?: string | null) {

@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   }
 
   if (!isTenantPlanBusinessTypeCompatible(plan, businessType)) {
-    return errorResponse('Plano e tipo de negocio incompativeis. Restaurantes devem usar um plano de restaurante.')
+    return errorResponse('Plano indisponivel para o tipo de negocio selecionado.')
   }
 
   const amountCents = Number(selectedPlan.monthly_amount_cents)
