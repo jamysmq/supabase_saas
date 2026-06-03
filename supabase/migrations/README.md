@@ -19,6 +19,7 @@ Apply order:
 11. `011_appointment_service_staff_links.sql`
 12. `012_whatsapp_appointment_service_staff_flow.sql`
 13. `013_require_service_duration_minutes.sql`
+14. `014_tenant_appointment_settings.sql`
 
 Keep the original loose SQL files until these migrations are applied in a staging database and the resulting schema is compared with production.
 

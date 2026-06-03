@@ -64,6 +64,24 @@ type AppointmentForm = {
   notes: string
 }
 
+type AppointmentSettingsForm = {
+  opens_at: string
+  closes_at: string
+  has_break: boolean
+  break_starts_at: string
+  break_duration_minutes: string
+  timezone: string
+}
+
+const defaultAppointmentSettings: AppointmentSettingsForm = {
+  opens_at: '08:00',
+  closes_at: '18:00',
+  has_break: false,
+  break_starts_at: '12:00',
+  break_duration_minutes: '60',
+  timezone: 'America/Fortaleza',
+}
+
 const emptyAppointmentForm: AppointmentForm = {
   full_name: '',
   cpf: '',
@@ -130,6 +148,7 @@ export default function AppointmentsPage() {
     price: '',
     staff_member_ids: [],
   })
+  const [appointmentSettingsForm, setAppointmentSettingsForm] = useState<AppointmentSettingsForm>(defaultAppointmentSettings)
   const [editingServiceId, setEditingServiceId] = useState('')
   const [staffForm, setStaffForm] = useState({ name: '', role: '' })
   const [editingStaffId, setEditingStaffId] = useState('')
@@ -180,14 +199,15 @@ export default function AppointmentsPage() {
       Authorization: `Bearer ${session.access_token}`,
     }
 
-    const [appointmentsResponse, servicesResponse, staffResponse] =
+    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse] =
       await Promise.all([
         fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers }),
         fetch('/api/appointment-services', { headers }),
         fetch('/api/appointment-staff', { headers }),
+        fetch('/api/tenant-appointment-settings', { headers }),
       ])
 
-    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok) {
+    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok) {
       setError('Não foi possível carregar a agenda.')
       setLoading(false)
       return
@@ -196,10 +216,16 @@ export default function AppointmentsPage() {
     const appointmentsData = await appointmentsResponse.json()
     const servicesData = await servicesResponse.json()
     const staffData = await staffResponse.json()
+    const settingsData = await settingsResponse.json()
 
     setAppointments(appointmentsData.appointments ?? [])
     setServices(servicesData.services ?? [])
     setStaff(staffData.staff ?? [])
+    setAppointmentSettingsForm({
+      ...defaultAppointmentSettings,
+      ...(settingsData.settings ?? {}),
+      break_duration_minutes: String(settingsData.settings?.break_duration_minutes ?? defaultAppointmentSettings.break_duration_minutes),
+    })
     setLoading(false)
   }, [router, selectedDate])
 
@@ -233,6 +259,49 @@ export default function AppointmentsPage() {
     } = await supabase.auth.getSession()
 
     return session?.access_token ?? ''
+  }
+
+  async function saveAppointmentSettings(event: React.FormEvent) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess('')
+
+    const token = await getToken()
+
+    if (!token) {
+      setSaving(false)
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/tenant-appointment-settings', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...appointmentSettingsForm,
+        break_duration_minutes: Number(appointmentSettingsForm.break_duration_minutes),
+      }),
+    })
+
+    setSaving(false)
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Nao foi possivel salvar os horarios de funcionamento.')
+      return
+    }
+
+    const data = await response.json()
+    setAppointmentSettingsForm({
+      ...defaultAppointmentSettings,
+      ...(data.settings ?? {}),
+      break_duration_minutes: String(data.settings?.break_duration_minutes ?? defaultAppointmentSettings.break_duration_minutes),
+    })
+    setSuccess('Horarios de funcionamento salvos.')
   }
 
   function selectService(serviceId: string) {
@@ -697,6 +766,78 @@ export default function AppointmentsPage() {
           </div>
 
           <aside className="space-y-4">
+            <form onSubmit={saveAppointmentSettings} className="rounded-2xl bg-white p-5 shadow space-y-3">
+              <h2 className="font-bold">Funcionamento</h2>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm font-medium">
+                  Abre
+                  <input
+                    type="time"
+                    value={appointmentSettingsForm.opens_at}
+                    onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, opens_at: event.target.value })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    required
+                  />
+                </label>
+                <label className="text-sm font-medium">
+                  Fecha
+                  <input
+                    type="time"
+                    value={appointmentSettingsForm.closes_at}
+                    onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, closes_at: event.target.value })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    required
+                  />
+                </label>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={appointmentSettingsForm.has_break}
+                  onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, has_break: event.target.checked })}
+                />
+                Incluir pausa de almoco/descanso
+              </label>
+
+              {appointmentSettingsForm.has_break && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm font-medium">
+                    Inicio da pausa
+                    <input
+                      type="time"
+                      value={appointmentSettingsForm.break_starts_at}
+                      onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, break_starts_at: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                      required
+                    />
+                  </label>
+                  <label className="text-sm font-medium">
+                    Duracao da pausa
+                    <input
+                      type="number"
+                      min="15"
+                      max="240"
+                      step="15"
+                      value={appointmentSettingsForm.break_duration_minutes}
+                      onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, break_duration_minutes: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                      required
+                    />
+                  </label>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium disabled:opacity-50"
+              >
+                Salvar funcionamento
+              </button>
+            </form>
+
             <form onSubmit={createAppointment} className="rounded-2xl bg-white p-5 shadow space-y-3">
               <h2 className="font-bold">Novo agendamento</h2>
 

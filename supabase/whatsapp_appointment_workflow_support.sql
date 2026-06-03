@@ -728,32 +728,47 @@ security definer
 set search_path = public
 as $$
   with service_config as (
-    select s.duration_minutes as duration_minutes
+    select s.duration_minutes
     from public.tenant_services s
     where s.id = p_service_id
       and s.tenant_id = p_tenant_id
       and s.is_active = true
   ),
+  settings_config as (
+    select
+      coalesce(tas.opens_at, time '08:00') as opens_at,
+      coalesce(tas.closes_at, time '18:00') as closes_at,
+      coalesce(tas.has_break, false) as has_break,
+      tas.break_starts_at,
+      tas.break_duration_minutes
+    from (select p_tenant_id as tenant_id) tenant_scope
+    left join public.tenant_appointment_settings tas
+      on tas.tenant_id = tenant_scope.tenant_id
+  ),
   period_config as (
     select
       case lower(coalesce(p_period, 'any'))
-        when 'morning' then time '08:00'
-        when 'manha' then time '08:00'
-        when 'afternoon' then time '12:00'
-        when 'tarde' then time '12:00'
-        when 'night' then time '18:00'
-        when 'noite' then time '18:00'
-        else time '08:00'
+        when 'morning' then greatest(sc.opens_at, time '08:00')
+        when 'manha' then greatest(sc.opens_at, time '08:00')
+        when 'afternoon' then greatest(sc.opens_at, time '12:00')
+        when 'tarde' then greatest(sc.opens_at, time '12:00')
+        when 'night' then greatest(sc.opens_at, time '18:00')
+        when 'noite' then greatest(sc.opens_at, time '18:00')
+        else sc.opens_at
       end as starts_at,
       case lower(coalesce(p_period, 'any'))
-        when 'morning' then time '12:00'
-        when 'manha' then time '12:00'
-        when 'afternoon' then time '18:00'
-        when 'tarde' then time '18:00'
-        when 'night' then time '21:00'
-        when 'noite' then time '21:00'
-        else time '18:00'
-      end as ends_at
+        when 'morning' then least(sc.closes_at, time '12:00')
+        when 'manha' then least(sc.closes_at, time '12:00')
+        when 'afternoon' then least(sc.closes_at, time '18:00')
+        when 'tarde' then least(sc.closes_at, time '18:00')
+        when 'night' then sc.closes_at
+        when 'noite' then sc.closes_at
+        else sc.closes_at
+      end as ends_at,
+      sc.has_break,
+      sc.break_starts_at,
+      sc.break_duration_minutes
+    from settings_config sc
   ),
   staff_candidates as (
     select sm.id, sm.name
@@ -769,10 +784,10 @@ as $$
   candidate_slots as (
     select
       (slot_start.slot_local at time zone p_timezone) as starts_at,
-      ((slot_start.slot_local + make_interval(mins => sc.duration_minutes)) at time zone p_timezone) as ends_at,
+      ((slot_start.slot_local + make_interval(mins => service_config.duration_minutes)) at time zone p_timezone) as ends_at,
       staff_candidates.id as staff_member_id,
       staff_candidates.name as staff_member_name
-    from service_config sc
+    from service_config
     cross join period_config pc
     cross join staff_candidates
     cross join generate_series(
@@ -783,11 +798,26 @@ as $$
     cross join lateral (
       select generate_series(
         day_series.day_local + pc.starts_at,
-        day_series.day_local + pc.ends_at - make_interval(mins => sc.duration_minutes),
+        day_series.day_local + pc.ends_at - make_interval(mins => service_config.duration_minutes),
         interval '30 minutes'
       ) as slot_local
     ) slot_start
-    where (slot_start.slot_local at time zone p_timezone) > now()
+    where pc.ends_at > pc.starts_at
+      and (slot_start.slot_local at time zone p_timezone) > now()
+      and not (
+        pc.has_break
+        and pc.break_starts_at is not null
+        and pc.break_duration_minutes is not null
+        and tstzrange(
+          slot_start.slot_local at time zone p_timezone,
+          (slot_start.slot_local + make_interval(mins => service_config.duration_minutes)) at time zone p_timezone,
+          '[)'
+        ) && tstzrange(
+          (day_series.day_local + pc.break_starts_at) at time zone p_timezone,
+          (day_series.day_local + pc.break_starts_at + make_interval(mins => pc.break_duration_minutes)) at time zone p_timezone,
+          '[)'
+        )
+      )
   ),
   available_slots as (
     select candidate_slots.*
@@ -798,10 +828,7 @@ as $$
       where a.tenant_id = p_tenant_id
         and a.deleted_at is null
         and a.status not in ('cancelled', 'no_show')
-        and (
-          (candidate_slots.staff_member_id is null and a.staff_member_id is null)
-          or (candidate_slots.staff_member_id is not null and a.staff_member_id = candidate_slots.staff_member_id)
-        )
+        and candidate_slots.staff_member_id = a.staff_member_id
         and tstzrange(a.starts_at, a.ends_at, '[)') && tstzrange(candidate_slots.starts_at, candidate_slots.ends_at, '[)')
     )
   ),
