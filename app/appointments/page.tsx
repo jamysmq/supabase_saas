@@ -709,7 +709,7 @@ export default function AppointmentsPage() {
                     setSelectedDate(event.target.value)
                     setAppointmentForm({ ...appointmentForm, date: event.target.value })
                   }}
-                  className="mt-1 h-11 w-full rounded-lg border border-gray-200 px-3 text-base font-normal"
+                  className="mt-1 h-11 w-full cursor-pointer rounded-lg border border-gray-200 px-3 text-base font-normal"
                   type="date"
                 />
               </label>
