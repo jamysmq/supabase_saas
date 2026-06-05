@@ -10,6 +10,7 @@ import {
   tenantCanUseAppointments,
   tenantCanUseBilling,
   tenantCanUseRestaurant,
+  tenantCanUseSalonInventory,
 } from '../../src/lib/plan-features'
 
 type TenantUser = {
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const canUseBilling = tenantCanUseBilling(tenantPlan)
   const canUseAppointments = tenantCanUseAppointments(tenantPlan)
   const canUseRestaurant = tenantCanUseRestaurant(tenantPlan)
+  const canUseSalonInventory = tenantCanUseSalonInventory(tenantPlan, businessType)
 
   const navigationItems = [
     ...(canUseBilling
@@ -67,7 +69,14 @@ export default function DashboardPage() {
               href: '/service-revenue',
               title: 'Financeiro de atendimentos',
               description: 'Veja os atendimentos confirmados e valores reconhecidos.',
-            }]
+            },
+            ...(canUseSalonInventory
+              ? [{
+                  href: '/salon-inventory',
+                  title: 'Estoque',
+                  description: 'Controle produtos comprados e custos lancados no financeiro.',
+                }]
+              : [])]
           : []),
         {
           href: '/appointment-history?from=dashboard',

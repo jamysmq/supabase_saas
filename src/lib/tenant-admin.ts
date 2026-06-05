@@ -3,6 +3,7 @@ import {
   tenantCanUseAppointments as planCanUseAppointments,
   tenantCanUseBilling as planCanUseBilling,
   tenantCanUseRestaurant as planCanUseRestaurant,
+  tenantCanUseSalonInventory as planCanUseSalonInventory,
 } from './plan-features'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -86,4 +87,11 @@ export function tenantCanUseBilling(tenant: { plan?: string | null }) {
 
 export function tenantCanUseRestaurant(tenant: { plan?: string | null }) {
   return planCanUseRestaurant(tenant.plan)
+}
+
+export function tenantCanUseSalonInventory(tenant: {
+  plan?: string | null
+  business_type?: string | null
+}) {
+  return planCanUseSalonInventory(tenant.plan, tenant.business_type)
 }

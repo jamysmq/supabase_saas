@@ -8,7 +8,7 @@ import { tenantCanUseAppointments } from '../../src/lib/plan-features'
 
 type RevenueEvent = {
   id: string
-  appointment_id: string
+  appointment_id: string | null
   customer_name_snapshot: string | null
   customer_document_snapshot: string | null
   customer_phone_snapshot: string | null
@@ -50,6 +50,7 @@ function sourceLabel(source: string) {
     panel: 'Painel',
     whatsapp: 'WhatsApp',
     system: 'Sistema',
+    stock_purchase: 'Estoque',
   }
 
   return labels[source] ?? source
@@ -131,10 +132,14 @@ export default function ServiceRevenuePage() {
 
   const stats = useMemo(() => {
     const recognized = events.filter((event) => event.status === 'recognized')
+    const income = recognized.filter((event) => event.amount_cents > 0)
+    const expenses = recognized.filter((event) => event.amount_cents < 0)
 
     return {
-      total: recognized.reduce((sum, event) => sum + event.amount_cents, 0),
-      count: recognized.length,
+      income: income.reduce((sum, event) => sum + event.amount_cents, 0),
+      expenses: expenses.reduce((sum, event) => sum + Math.abs(event.amount_cents), 0),
+      net: recognized.reduce((sum, event) => sum + event.amount_cents, 0),
+      count: income.length,
       voided: events.filter((event) => event.status === 'voided').length,
     }
   }, [events])
@@ -200,15 +205,17 @@ export default function ServiceRevenuePage() {
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl bg-white p-5 shadow print:rounded-none print:border print:border-gray-200 print:p-3 print:shadow-none">
             <p className="text-sm text-gray-500">Total reconhecido</p>
-            <p className="mt-1 text-2xl font-bold">{formatCurrency(stats.total)}</p>
+            <p className="mt-1 text-2xl font-bold">{formatCurrency(stats.income)}</p>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow print:rounded-none print:border print:border-gray-200 print:p-3 print:shadow-none">
-            <p className="text-sm text-gray-500">Atendimentos</p>
-            <p className="mt-1 text-2xl font-bold">{stats.count}</p>
+            <p className="text-sm text-gray-500">Despesas de estoque</p>
+            <p className="mt-1 text-2xl font-bold text-red-700">-{formatCurrency(stats.expenses)}</p>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow print:rounded-none print:border print:border-gray-200 print:p-3 print:shadow-none">
-            <p className="text-sm text-gray-500">Estornados/cancelados</p>
-            <p className="mt-1 text-2xl font-bold">{stats.voided}</p>
+            <p className="text-sm text-gray-500">Saldo do periodo</p>
+            <p className={`mt-1 text-2xl font-bold ${stats.net < 0 ? 'text-red-700' : ''}`}>
+              {formatCurrency(stats.net)}
+            </p>
           </div>
         </section>
 
@@ -229,7 +236,9 @@ export default function ServiceRevenuePage() {
 
                   <div className="min-w-0">
                     <div className="break-words text-sm font-semibold">
-                      {event.customer_name_snapshot || 'Cliente sem nome'}
+                      {event.source === 'stock_purchase'
+                        ? 'Despesa de estoque'
+                        : event.customer_name_snapshot || 'Cliente sem nome'}
                     </div>
                     <div className="mt-1 break-words text-sm text-gray-500">
                       {event.service_name_snapshot || 'Serviço'} - {event.staff_member_name_snapshot || 'Sem profissional'}
@@ -240,7 +249,9 @@ export default function ServiceRevenuePage() {
                   </div>
 
                   <div className="lg:text-right">
-                    <div className="text-sm font-bold">{formatCurrency(event.amount_cents)}</div>
+                    <div className={`text-sm font-bold ${event.amount_cents < 0 ? 'text-red-700' : ''}`}>
+                      {formatCurrency(event.amount_cents)}
+                    </div>
                     <div className="mt-1 text-xs text-gray-500">
                       {event.status === 'recognized' ? 'Reconhecido' : 'Estornado'}
                     </div>

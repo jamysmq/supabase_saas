@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { DragEvent, FormEvent } from 'react'
+import type { DragEvent, FormEvent, PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
@@ -355,14 +355,11 @@ function TemplateEditor({
       onMouseUp={rememberSelection}
       onTouchEnd={rememberSelection}
       onBlur={() => {
+        rememberSelection()
         const nextValue = sync()
         if (typeof nextValue === 'string') {
           onChange(nextValue)
-          if (editorRef.current) {
-            editorRef.current.innerHTML = renderTemplateHtml(nextValue)
-          }
         }
-        rememberSelection()
       }}
       onDragOver={(event) => event.preventDefault()}
       onDragStart={handleDragStart}
@@ -401,7 +398,9 @@ export default function WhatsAppInboxPage() {
   const [loadingTemplates, setLoadingTemplates] = useState(false)
   const [savingTemplates, setSavingTemplates] = useState(false)
   const [activeTemplateKey, setActiveTemplateKey] = useState<string | null>(null)
+  const [hasCoarsePointer, setHasCoarsePointer] = useState(false)
   const templateEditorRefs = useRef(new Map<string, TemplateEditorHandle>())
+  const skipNextVariableClickRef = useRef(false)
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -411,6 +410,16 @@ export default function WhatsAppInboxPage() {
     () => snapshotTemplates(messageTemplates) !== savedTemplatesSnapshot,
     [messageTemplates, savedTemplatesSnapshot]
   )
+
+  useEffect(() => {
+    const query = window.matchMedia('(pointer: coarse)')
+    const update = () => setHasCoarsePointer(query.matches)
+
+    update()
+    query.addEventListener('change', update)
+
+    return () => query.removeEventListener('change', update)
+  }, [])
 
   const loadMessages = useCallback(async function loadMessages(threadId: string, token = accessToken) {
     if (!token) return
@@ -591,6 +600,26 @@ export default function WhatsAppInboxPage() {
     const currentContent =
       messageTemplates.find((template) => template.template_key === targetKey)?.content ?? ''
     updateMessageTemplate(targetKey, `${currentContent} ${variable.token}`.trim())
+  }
+
+  function insertVariableFromPointer(
+    event: PointerEvent<HTMLButtonElement>,
+    variable: TemplateVariable
+  ) {
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
+
+    event.preventDefault()
+    skipNextVariableClickRef.current = true
+    insertVariableIntoActiveTemplate(variable)
+  }
+
+  function insertVariableFromClick(variable: TemplateVariable) {
+    if (skipNextVariableClickRef.current) {
+      skipNextVariableClickRef.current = false
+      return
+    }
+
+    insertVariableIntoActiveTemplate(variable)
   }
 
   function openSettings() {
@@ -947,9 +976,9 @@ export default function WhatsAppInboxPage() {
         </section>
 
         {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
-            <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-xl">
-              <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-gray-100 bg-white p-5">
+          <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-0 sm:items-center sm:px-4 sm:py-6">
+            <div className="h-[100dvh] max-h-[100dvh] w-full max-w-4xl overflow-y-auto rounded-none bg-white shadow-xl sm:h-auto sm:max-h-[92vh] sm:rounded-2xl">
+              <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-gray-100 bg-white p-4 sm:items-center sm:p-5">
                 <div>
                   <h2 className="text-lg font-bold">Configurações do WhatsApp</h2>
                   <p className="mt-1 text-sm text-gray-500">
@@ -959,7 +988,13 @@ export default function WhatsAppInboxPage() {
                 <button
                   type="button"
                   onClick={requestCloseSettings}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
+                  onPointerUp={(event) => {
+                    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+                      event.preventDefault()
+                      requestCloseSettings()
+                    }
+                  }}
+                  className="min-h-10 shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
                 >
                   Fechar
                 </button>
@@ -1019,12 +1054,9 @@ export default function WhatsAppInboxPage() {
                           <button
                             key={variable.token}
                             type="button"
-                            draggable
-                            onClick={() => insertVariableIntoActiveTemplate(variable)}
-                            onTouchStart={(event) => {
-                              event.preventDefault()
-                              insertVariableIntoActiveTemplate(variable)
-                            }}
+                            draggable={!hasCoarsePointer}
+                            onClick={() => insertVariableFromClick(variable)}
+                            onPointerUp={(event) => insertVariableFromPointer(event, variable)}
                             onDragStart={(event) => {
                               event.dataTransfer.setData('text/plain', variable.token)
                               event.dataTransfer.setData('application/x-template-token', variable.token)

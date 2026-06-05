@@ -107,6 +107,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Receita de atendimento fica registrada em `tenant_service_revenue_events`, com snapshot de cliente, servico, profissional, valor e origem.
 - Cancelamento/remarcacao para status diferente de `confirmed` estorna logicamente o evento financeiro reconhecido.
 - Tela tenant-side `Financeiro de atendimentos` lista valores reconhecidos e exporta via impressao/PDF do navegador.
+- Tenants `salon` com agenda possuem tela `Estoque`; entrada de produto atualiza saldo e registra despesa negativa em `tenant_service_revenue_events` com origem `stock_purchase`.
 - Validacao autenticada tenant-side de financeiro de atendimentos passou em 2026-05-20: usuario temporario em tenant `plan2`/`salon` criou servico com valor, profissional e agendamento; confirmacao reconheceu receita de atendimento, cancelamento estornou logicamente a receita, e tenant/usuario de teste foram removidos ao final.
 
 ### Restaurante
@@ -132,6 +133,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Workflow base `WA_TENANT_INBOUND_Assistant_v1` foi localizado no n8n.
 - Workflow inativo `WA_TENANT_APPOINTMENTS_INBOUND_v1` foi criado no n8n com id `X1lUop6Q5fh9uxTG`.
 - Workflow inativo `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi criado no n8n com id `zWflZZXKn2XIlHEc`.
+- Workflow inativo `DAILY_TENANT_AGENDA_REMINDERS` foi criado no n8n com id `dcKARQX6GDCBPo3W`.
 - Workflow ativo `DAILY_BILLING_REMINDERS` foi localizado no n8n com id `YbD6NHWbgz9vLe33w_UU-`.
 - Rascunho versionado em `n8n/WA_TENANT_APPOINTMENTS_INBOUND_v1.workflow.json`.
 - Rascunho versionado em `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json`.
@@ -148,6 +150,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - remarcar sugere novos horarios e atualiza `starts_at`/`ends_at`.
 - Sugestao de horarios foi modelada por RPC para retornar poucas opcoes por vez dentro de 60 dias, com comando `mais` para paginar.
 - Menu de servicos e profissionais do WhatsApp e dinamico: o workflow carrega `tenant_services` e `tenant_staff_members` ativos do tenant a cada conversa, conforme configurado no front.
+- Inbound `WA_TENANT_APPOINTMENTS_INBOUND_v1` passou a abrir com menu de agenda: agendar, remarcar ou cancelar. Remarcacao/cancelamento usam os proximos agendamentos do WhatsApp e confirmam identidade por data de nascimento quando disponivel.
+- Lembrete diario tenant-side de agenda foi criado em `DAILY_TENANT_AGENDA_REMINDERS`: a cada 15 minutos busca tenants cujo expediente inicia em 30 minutos e envia resumo dos agendamentos do dia para o WhatsApp do tenant.
 - O workflow remoto `DAILY_BILLING_REMINDERS` passou a usar `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do ambiente do n8n, em vez de credenciais fixas nos nos HTTP.
 - O no de renderizacao de cobranca do `DAILY_BILLING_REMINDERS` passou a usar `template_content` retornado pelo Supabase, mantendo a mensagem editavel por tenant.
 - SQL de apoio criado em `supabase/whatsapp_billing_workflow_support.sql` para geracao idempotente de ciclos mensais, listagem de ciclos vencidos e baixa de lembrete enviado.

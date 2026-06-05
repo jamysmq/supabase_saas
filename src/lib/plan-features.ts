@@ -10,6 +10,13 @@ export function tenantCanUseRestaurant(plan?: string | null) {
   return plan === 'plan4' || plan === 'plan5'
 }
 
+export function tenantCanUseSalonInventory(
+  plan?: string | null,
+  businessType?: string | null
+) {
+  return businessType === 'salon' && tenantCanUseAppointments(plan)
+}
+
 export function tenantCanUseTableReservations(plan?: string | null) {
   return plan === 'plan5'
 }
