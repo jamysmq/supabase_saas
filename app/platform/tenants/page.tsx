@@ -401,6 +401,13 @@ export default function PlatformTenantsPage() {
               </button>
 
               <button
+                onClick={() => router.push('/platform/contact-messages')}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
+              >
+                Mensagens
+              </button>
+
+              <button
                 onClick={() => router.push('/platform/payment-history')}
                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
               >

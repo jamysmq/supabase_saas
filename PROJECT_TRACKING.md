@@ -62,6 +62,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Confirmacao manual de pagamento da plataforma.
 - Exclusao logica de pagamento da plataforma.
 - Historico de pagamentos/eventos da plataforma.
+- Card publico `Falar conosco` envia mensagens para o admin da plataforma; mensagens ficam em `platform_contact_messages` e podem ser lidas/arquivadas em `/platform/contact-messages`.
 
 ### Tenant
 

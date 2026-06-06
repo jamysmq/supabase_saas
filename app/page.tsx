@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ContactCard } from "./contact-card";
 
 const benefits = [
   ["Atendimento no WhatsApp", "Conversas organizadas para você responder sem se perder."],
@@ -76,7 +77,7 @@ export default function Home() {
                 </Link>
                 <a
                   className="rounded-md border border-white/30 px-5 py-3 text-center text-sm font-bold text-white hover:border-white hover:bg-white/10"
-                  href="mailto:contato@meuassistentevirtual.com.br"
+                  href="#falar-conosco"
                 >
                   Falar conosco
                 </a>
@@ -112,6 +113,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <ContactCard />
 
       <section className="bg-[#eef8ff]">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
