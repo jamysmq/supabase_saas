@@ -760,55 +760,72 @@ export default function AppointmentsPage() {
                     Nenhum agendamento neste dia.
                   </p>
                 ) : (
-                  appointments.map((appointment) => (
-                    <div
-                      key={appointment.appointment_id}
-                      className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-center"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-bold">
-                          {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
-                        </div>
-                        <div className="mt-1 break-words text-sm font-medium">
-                          {appointment.customer_name || appointment.title || 'Sem pessoa'}
-                        </div>
-                        <div className="break-words text-sm text-gray-500">
-                          {appointment.customer_phone_e164 || 'Sem WhatsApp'} · {appointment.service_name || 'Sem serviço'} · {appointment.staff_member_name || 'Sem profissional'}
-                        </div>
-                        {appointment.notes && (
-                          <div className="mt-1 break-words text-xs text-gray-500">
-                            {appointment.notes}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] md:flex md:flex-col md:items-end">
-                        <select
-                          value={appointment.status}
-                          onChange={(event) => void updateStatus(appointment, event.target.value)}
-                          disabled={actingId === appointment.appointment_id}
-                          className="h-10 w-full rounded-lg border border-gray-200 px-2 text-sm disabled:bg-gray-100 md:w-44"
-                        >
-                          <option value="scheduled">Agendado</option>
-                          <option value="confirmed">Confirmado</option>
-                          <option value="completed">Concluido</option>
-                          <option value="cancelled">Cancelado</option>
-                          <option value="no_show">Faltou</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => void deleteAppointment(appointment)}
-                          disabled={actingId === appointment.appointment_id}
-                          className="h-10 rounded-lg border border-red-200 px-3 text-sm font-medium text-red-700 disabled:opacity-60 md:w-44"
-                        >
-                          Excluir
-                        </button>
-                        <span className="text-xs font-medium text-gray-500 md:text-right">
-                          {statusLabel(appointment.status)}
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[920px] text-sm">
+                      <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                        <tr>
+                          <th className="py-2 pr-3 font-medium">Horario</th>
+                          <th className="py-2 pr-3 font-medium">Pessoa</th>
+                          <th className="py-2 pr-3 font-medium">Contato</th>
+                          <th className="py-2 pr-3 font-medium">Servico</th>
+                          <th className="py-2 pr-3 font-medium">Profissional</th>
+                          <th className="py-2 pr-3 font-medium">Status</th>
+                          <th className="py-2 text-right font-medium">Acoes</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {appointments.map((appointment) => (
+                          <tr key={appointment.appointment_id} className="hover:bg-gray-50">
+                            <td className="whitespace-nowrap py-2 pr-3 font-semibold tabular-nums">
+                              {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
+                            </td>
+                            <td className="max-w-[180px] truncate py-2 pr-3 font-medium">
+                              {appointment.customer_name || appointment.title || 'Sem pessoa'}
+                              {appointment.notes && (
+                                <div className="mt-0.5 truncate text-xs font-normal text-gray-500">
+                                  {appointment.notes}
+                                </div>
+                              )}
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-3 text-gray-600">
+                              {appointment.customer_phone_e164 || 'Sem WhatsApp'}
+                            </td>
+                            <td className="max-w-[180px] truncate py-2 pr-3 text-gray-700">
+                              {appointment.service_name || 'Sem servico'}
+                            </td>
+                            <td className="max-w-[160px] truncate py-2 pr-3 text-gray-700">
+                              {appointment.staff_member_name || 'Sem profissional'}
+                            </td>
+                            <td className="py-2 pr-3">
+                              <select
+                                value={appointment.status}
+                                onChange={(event) => void updateStatus(appointment, event.target.value)}
+                                disabled={actingId === appointment.appointment_id}
+                                className="h-9 w-36 rounded-lg border border-gray-200 px-2 text-sm disabled:bg-gray-100"
+                                aria-label={`Status: ${statusLabel(appointment.status)}`}
+                              >
+                                <option value="scheduled">Agendado</option>
+                                <option value="confirmed">Confirmado</option>
+                                <option value="completed">Concluido</option>
+                                <option value="cancelled">Cancelado</option>
+                                <option value="no_show">Faltou</option>
+                              </select>
+                            </td>
+                            <td className="py-2 text-right">
+                              <button
+                                type="button"
+                                onClick={() => void deleteAppointment(appointment)}
+                                disabled={actingId === appointment.appointment_id}
+                                className="h-9 rounded-lg border border-red-200 px-3 text-sm font-medium text-red-700 disabled:opacity-60"
+                              >
+                                Excluir
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </section>
