@@ -373,7 +373,7 @@ Validacao tecnica local/publica executada em 2026-05-27:
   - `HEAD /api/tenant-whatsapp/link`: 401;
   - `GET /api/whatsapp/webhook` sem token valido: 403;
   - `POST /api/internal/whatsapp/send` sem token interno: 401.
-- `npm audit --audit-level=moderate` encontrou 4 vulnerabilidades: `next` high, `postcss` moderate, `brace-expansion` moderate e `ws` moderate. Tratar em tarefa separada com update controlado.
+- Em 2026-06-06, vulnerabilidades de dependencias foram tratadas com update controlado: `next`/`eslint-config-next` para `16.2.7`, `ws` e `brace-expansion` atualizados pelo lockfile, e `postcss` forçado via `overrides` para versao corrigida. `npm audit --audit-level=moderate` passou com 0 vulnerabilidades.
 - Supabase CLI local instalada via pacote do projeto travou em timeout tanto via `npx supabase --version` quanto via binario direto. Para aplicacoes SQL imediatas, seguir usando SQL Editor do Supabase ou investigar a CLI antes de depender dela.
 - Relatorio completo salvo em `docs/validation-2026-05-27.md`.
 
@@ -451,7 +451,7 @@ Fluxo agenda:
 18. Preparar backups e politica de retencao.
 19. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
 20. `.env.local` local ja foi conferido em 2026-05-25 e usa `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem o sufixo `/rest/v1/`.
-21. Tratar vulnerabilidades apontadas pelo `npm audit` de 2026-05-27 com atualizacao controlada de dependencias e nova rodada de lint/build.
+21. Vulnerabilidades apontadas pelo `npm audit` de 2026-05-27 foram tratadas em 2026-06-06; manter nova auditoria em futuras atualizacoes.
 
 ## Decisoes para Evitar Gambiarra
 
