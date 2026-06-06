@@ -152,6 +152,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Menu de servicos e profissionais do WhatsApp e dinamico: o workflow carrega `tenant_services` e `tenant_staff_members` ativos do tenant a cada conversa, conforme configurado no front.
 - Inbound `WA_TENANT_APPOINTMENTS_INBOUND_v1` passou a abrir com menu de agenda: agendar, remarcar ou cancelar. Remarcacao/cancelamento usam os proximos agendamentos do WhatsApp e confirmam identidade por data de nascimento quando disponivel.
 - Lembrete diario tenant-side de agenda foi criado em `DAILY_TENANT_AGENDA_REMINDERS`: a cada 15 minutos busca tenants cujo expediente inicia em 30 minutos e envia resumo dos agendamentos do dia para o WhatsApp do tenant.
+- Em 2026-06-06, SQLs de apoio da agenda/lembrete diario foram reaplicados no Supabase alvo e os workflows remotos `WA_TENANT_APPOINTMENTS_INBOUND_v1` e `DAILY_TENANT_AGENDA_REMINDERS` foram atualizados no n8n mantendo status inativo.
 - O workflow remoto `DAILY_BILLING_REMINDERS` passou a usar `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do ambiente do n8n, em vez de credenciais fixas nos nos HTTP.
 - O no de renderizacao de cobranca do `DAILY_BILLING_REMINDERS` passou a usar `template_content` retornado pelo Supabase, mantendo a mensagem editavel por tenant.
 - SQL de apoio criado em `supabase/whatsapp_billing_workflow_support.sql` para geracao idempotente de ciclos mensais, listagem de ciclos vencidos e baixa de lembrete enviado.
@@ -196,7 +197,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - `admin_record_whatsapp_inbound` recebeu uma mensagem fake com o codigo;
   - thread foi criada para o tenant correto;
   - thread fake foi removida ao final, preservando apenas o codigo de entrada do tenant.
-- Correcao SQL pendente em 2026-05-25: `admin_ensure_tenant_whatsapp_entry_link` foi ajustada no repositorio para trocar o nome de retorno `tenant_id` por `link_tenant_id` e evitar ambiguidade no Postgres. O ambiente local nao possui `psql`/Supabase CLI instalado; reexecutar `supabase/tenant_whatsapp_entry_links.sql` no SQL Editor para substituir a funcao aplicada caso a correcao ainda nao tenha sido aplicada no Supabase alvo.
+- Correcao SQL de 2026-05-25: `admin_ensure_tenant_whatsapp_entry_link` foi ajustada no repositorio para trocar o nome de retorno `tenant_id` por `link_tenant_id` e evitar ambiguidade no Postgres.
+- Em 2026-06-06, `supabase/tenant_whatsapp_entry_links.sql` foi reaplicado no Supabase alvo via CLI e a funcao `admin_ensure_tenant_whatsapp_entry_link` foi confirmada com retorno `TABLE(link_tenant_id uuid, code text)`.
 - Templates padrao de WhatsApp atualizados para a persona `Assistente Jack`; SQL incremental criado em `supabase/tenant_message_templates_assistente_jack.sql` e migration `supabase/migrations/008_assistente_jack_message_persona.sql`.
 - Inbound generico de cadastro por WhatsApp para tenants com cobranca mensal foi versionado em 2026-05-25:
   - SQL incremental `supabase/whatsapp_billing_signup_workflow_support.sql`;
