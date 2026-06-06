@@ -82,7 +82,6 @@ export async function POST(request: Request) {
   }
 
   const name = String(body.name || '').trim()
-  const sku = String(body.sku || '').trim()
   const supplier = String(body.supplier || '').trim()
   const notes = String(body.notes || '').trim()
   const quantity = parseQuantity(body.quantity)
@@ -107,7 +106,7 @@ export async function POST(request: Request) {
       p_name: name,
       p_quantity: quantity,
       p_unit_cost_cents: unitCostCents,
-      p_sku: sku || null,
+      p_sku: null,
       p_supplier: supplier || null,
       p_notes: notes || null,
     }

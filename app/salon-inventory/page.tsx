@@ -36,7 +36,6 @@ type Movement = {
 
 type InventoryForm = {
   name: string
-  sku: string
   quantity: string
   unit_cost: string
   supplier: string
@@ -45,7 +44,6 @@ type InventoryForm = {
 
 const emptyForm: InventoryForm = {
   name: '',
-  sku: '',
   quantity: '1',
   unit_cost: '',
   supplier: '',
@@ -250,16 +248,6 @@ export default function SalonInventoryPage() {
               />
             </label>
 
-            <label className="block text-sm font-medium">
-              Codigo/SKU
-              <input
-                value={form.sku}
-                onChange={(event) => setForm({ ...form, sku: event.target.value })}
-                className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
-                maxLength={80}
-              />
-            </label>
-
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <label className="block text-sm font-medium">
                 Quantidade
@@ -324,23 +312,37 @@ export default function SalonInventoryPage() {
               {products.length === 0 ? (
                 <p className="py-8 text-center text-sm text-gray-500">Nenhum produto cadastrado.</p>
               ) : (
-                <div className="mt-3 divide-y divide-gray-100">
-                  {products.map((product) => (
-                    <article key={product.id} className="grid gap-3 py-3 sm:grid-cols-[1fr_120px_140px]">
-                      <div>
-                        <div className="font-semibold">{product.name}</div>
-                        <div className="text-xs text-gray-500">{product.sku || 'Sem SKU'}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Qtd.</div>
-                        <div className="font-medium">{formatQuantity(Number(product.current_quantity))}</div>
-                      </div>
-                      <div className="sm:text-right">
-                        <div className="text-xs text-gray-500">Custo total</div>
-                        <div className="font-bold">{formatCurrencyFromCents(product.total_cost_cents)}</div>
-                      </div>
-                    </article>
-                  ))}
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-sm">
+                    <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                      <tr>
+                        <th className="py-2 pr-3 font-medium">Produto</th>
+                        <th className="py-2 pr-3 text-right font-medium">Qtd.</th>
+                        <th className="py-2 pr-3 text-right font-medium">Valor un.</th>
+                        <th className="py-2 pr-3 text-right font-medium">Custo total</th>
+                        <th className="py-2 text-right font-medium">Atualizado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {products.map((product) => (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="py-2 pr-3 font-medium">{product.name}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatQuantity(Number(product.current_quantity))}
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatCurrencyFromCents(product.unit_cost_cents)}
+                          </td>
+                          <td className="py-2 pr-3 text-right font-semibold tabular-nums">
+                            {formatCurrencyFromCents(product.total_cost_cents)}
+                          </td>
+                          <td className="py-2 text-right text-xs text-gray-500">
+                            {formatDateTime(product.updated_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
@@ -350,26 +352,48 @@ export default function SalonInventoryPage() {
               {movements.length === 0 ? (
                 <p className="py-8 text-center text-sm text-gray-500">Nenhuma entrada registrada.</p>
               ) : (
-                <div className="mt-3 divide-y divide-gray-100">
-                  {movements.map((movement) => (
-                    <article key={movement.id} className="grid gap-3 py-3 sm:grid-cols-[160px_1fr_140px]">
-                      <div className="text-sm font-medium">{formatDateTime(movement.created_at)}</div>
-                      <div>
-                        <div className="font-semibold">{movement.product?.name || 'Produto'}</div>
-                        <div className="text-xs text-gray-500">
-                          {formatQuantity(Number(movement.quantity_delta))} un. x {formatCurrencyFromCents(movement.unit_cost_cents)}
-                        </div>
-                        {(movement.supplier || movement.notes) && (
-                          <div className="mt-1 text-xs text-gray-500">
-                            {[movement.supplier, movement.notes].filter(Boolean).join(' - ')}
-                          </div>
-                        )}
-                      </div>
-                      <div className="font-bold text-red-700 sm:text-right">
-                        -{formatCurrencyFromCents(movement.total_cost_cents)}
-                      </div>
-                    </article>
-                  ))}
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[680px] text-sm">
+                    <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                      <tr>
+                        <th className="py-2 pr-3 font-medium">Data</th>
+                        <th className="py-2 pr-3 font-medium">Produto</th>
+                        <th className="py-2 pr-3 text-right font-medium">Qtd.</th>
+                        <th className="py-2 pr-3 text-right font-medium">Valor un.</th>
+                        <th className="py-2 pr-3 font-medium">Fornecedor</th>
+                        <th className="py-2 text-right font-medium">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {movements.map((movement) => (
+                        <tr key={movement.id} className="hover:bg-gray-50">
+                          <td className="py-2 pr-3 text-xs text-gray-600">
+                            {formatDateTime(movement.created_at)}
+                          </td>
+                          <td className="py-2 pr-3">
+                            <div className="font-medium">{movement.product?.name || 'Produto'}</div>
+                            {movement.notes && (
+                              <div className="mt-0.5 max-w-[260px] truncate text-xs text-gray-500">
+                                {movement.notes}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatQuantity(Number(movement.quantity_delta))}
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatCurrencyFromCents(movement.unit_cost_cents)}
+                          </td>
+                          <td className="py-2 pr-3 text-gray-600">
+                            {movement.supplier || '-'}
+                          </td>
+                          <td className="py-2 text-right font-semibold text-red-700 tabular-nums">
+                            -{formatCurrencyFromCents(movement.total_cost_cents)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
