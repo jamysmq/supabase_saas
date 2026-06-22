@@ -388,6 +388,7 @@ export default function WhatsAppInboxPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sending, setSending] = useState(false)
+  const [clearingMessages, setClearingMessages] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [entryLink, setEntryLink] = useState<EntryLink | null>(null)
@@ -764,6 +765,37 @@ export default function WhatsAppInboxPage() {
     await loadThreads()
   }
 
+  async function clearThreadMessages() {
+    if (!selectedThread || !accessToken || clearingMessages) return
+
+    const confirmed = window.confirm('Limpar todas as mensagens desta conversa sem encerra-la?')
+
+    if (!confirmed) return
+
+    setClearingMessages(true)
+    setError('')
+    setSuccess('')
+
+    const response = await fetch(`/api/tenant-whatsapp/threads/${selectedThread.id}/messages`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    setClearingMessages(false)
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Nao foi possivel limpar a conversa.')
+      return
+    }
+
+    setMessages([])
+    setSuccess('Conversa limpa.')
+    await loadThreads()
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100 text-gray-950">
@@ -909,12 +941,23 @@ export default function WhatsAppInboxPage() {
                       {formatPhone(selectedThread.customer_phone_e164)}
                     </p>
                   </div>
-                  <button
-                    onClick={closeThread}
-                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
-                  >
-                    Encerrar
-                  </button>
+                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={clearThreadMessages}
+                      disabled={clearingMessages}
+                      className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium disabled:opacity-60"
+                    >
+                      {clearingMessages ? 'Limpando...' : 'Limpar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeThread}
+                      className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
+                    >
+                      Encerrar
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex-1 space-y-3 overflow-y-auto bg-gray-50 p-4">

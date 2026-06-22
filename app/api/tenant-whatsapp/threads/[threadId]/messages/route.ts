@@ -153,3 +153,54 @@ export async function POST(request: Request, context: RouteParams) {
     return errorResponse('Nao foi possivel enviar a mensagem pelo WhatsApp.', 500)
   }
 }
+
+export async function DELETE(request: Request, context: RouteParams) {
+  const result = await requireTenantUser(request)
+
+  if (result.error) return result.error
+
+  const { threadId } = await context.params
+
+  const { data: thread, error: threadError } = await result.supabase
+    .from('tenant_whatsapp_threads')
+    .select('id')
+    .eq('id', threadId)
+    .eq('tenant_id', result.tenantUser.tenant_id)
+    .single()
+
+  if (threadError || !thread) {
+    return errorResponse('Conversa nao encontrada.', 404, threadError?.message)
+  }
+
+  const { error: deleteError } = await result.supabase
+    .from('tenant_whatsapp_messages')
+    .delete()
+    .eq('thread_id', thread.id)
+    .eq('tenant_id', result.tenantUser.tenant_id)
+
+  if (deleteError) {
+    return errorResponse('Nao foi possivel limpar a conversa.', 500, deleteError.message)
+  }
+
+  const { data: updated, error: updateError } = await result.supabase
+    .from('tenant_whatsapp_threads')
+    .update({
+      status: 'open',
+      last_message_preview: null,
+      last_message_at: null,
+      last_inbound_at: null,
+      last_outbound_at: null,
+      unread_count: 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', thread.id)
+    .eq('tenant_id', result.tenantUser.tenant_id)
+    .select('id, customer_phone_e164, customer_name_snapshot, status, last_message_preview, last_message_at, last_inbound_at, last_outbound_at, unread_count, updated_at')
+    .single()
+
+  if (updateError) {
+    return errorResponse('Mensagens removidas, mas nao foi possivel atualizar a conversa.', 500, updateError.message)
+  }
+
+  return Response.json({ thread: updated })
+}
