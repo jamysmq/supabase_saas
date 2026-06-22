@@ -9,9 +9,14 @@ function jsonResponse(message: string, status = 400) {
   return Response.json({ error: message, message }, { status })
 }
 
+type InboxRoute = {
+  messageId: string
+  threadId: string
+}
+
 async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
   if (messages.length === 0) {
-    return { attempted: false, recorded: 0, failed: 0, unrouted: 0 }
+    return { attempted: false, recorded: 0, failed: 0, unrouted: 0, routes: [] as InboxRoute[] }
   }
 
   let supabase
@@ -20,12 +25,13 @@ async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
     supabase = createTenantAdminClient()
   } catch (error) {
     console.error('WhatsApp inbox recording skipped: Supabase admin client is not configured.', error)
-    return { attempted: false, recorded: 0, failed: messages.length, unrouted: 0 }
+    return { attempted: false, recorded: 0, failed: messages.length, unrouted: 0, routes: [] as InboxRoute[] }
   }
 
   let recorded = 0
   let failed = 0
   let unrouted = 0
+  const routes: InboxRoute[] = []
 
   for (const message of messages) {
     if (message.type !== 'text' || !message.text) continue
@@ -48,6 +54,10 @@ async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
       })
     } else if (data) {
       recorded += 1
+      routes.push({
+        messageId: message.messageId,
+        threadId: String(data),
+      })
     } else {
       unrouted += 1
       console.warn('WhatsApp inbound message was not routed to a tenant.', {
@@ -58,10 +68,10 @@ async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
     }
   }
 
-  return { attempted: true, recorded, failed, unrouted }
+  return { attempted: true, recorded, failed, unrouted, routes }
 }
 
-async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[]) {
+async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], routes: InboxRoute[]) {
   const webhookUrl = process.env.WHATSAPP_INBOUND_N8N_WEBHOOK_URL?.trim()
 
   if (!webhookUrl || messages.length === 0) {
@@ -74,6 +84,8 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[]) {
 
   for (const message of messages) {
     if (message.type !== 'text' || !message.text) continue
+
+    const route = routes.find((item) => item.messageId === message.messageId)
 
     try {
       const response = await fetch(webhookUrl, {
@@ -91,6 +103,8 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[]) {
           customer_phone_e164: message.from,
           chat_id: message.from,
           message_id: message.messageId,
+          inbox_thread_id: route?.threadId ?? null,
+          inbox_routed: Boolean(route),
           text: message.text,
           message: message.text,
           timestamp: message.timestamp,
@@ -172,7 +186,7 @@ export async function POST(request: Request) {
 
   const events = normalizeWhatsAppWebhookPayload(payload)
   const inbox = await recordMessagesInInbox(events.messages)
-  const forward = await forwardMessagesToN8n(events.messages)
+  const forward = await forwardMessagesToN8n(events.messages, inbox.routes)
 
   console.info('WhatsApp webhook received.', {
     messages: events.messages.length,

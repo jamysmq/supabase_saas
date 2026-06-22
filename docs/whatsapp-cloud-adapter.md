@@ -78,7 +78,7 @@ Usado pela Meta para verificar a URL. A Meta chama a URL com `hub.mode`, `hub.ve
 
 Recebe mensagens e status enviados pela Meta. O app valida `x-hub-signature-256` usando `WHATSAPP_APP_SECRET`, normaliza eventos de mensagem/status, tenta registrar mensagens de texto na inbox do tenant via Supabase e responde rapidamente.
 
-Quando `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` estiver configurada, mensagens de texto recebidas sao encaminhadas para o n8n com um corpo normalizado:
+Quando `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` estiver configurada, mensagens de texto recebidas sao encaminhadas para o n8n com um corpo normalizado. Essa URL deve apontar para um roteador/entrada central de inbound, nao diretamente para um workflow especifico de agenda ou cadastro, porque o app recebe todos os eventos do numero oficial em uma unica rota.
 
 ```json
 {
@@ -90,11 +90,19 @@ Quando `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` estiver configurada, mensagens de text
   "customer_phone_e164": "5583888888888",
   "chat_id": "5583888888888",
   "message_id": "wamid...",
+  "inbox_thread_id": "uuid-da-thread-ou-null",
+  "inbox_routed": true,
   "text": "Oi",
   "message": "Oi",
   "timestamp": "1770000000"
 }
 ```
+
+Os workflows de modulo continuam separados:
+
+- `WA_TENANT_APPOINTMENTS_INBOUND_v1`: agenda de servicos.
+- `WA_TENANT_BILLING_SIGNUP_INBOUND_v1`: cadastro de clientes/alunos para tenants com cobranca mensal.
+- `WA_TENANT_INBOUND_Assistant_v1`: entrada/base historica do Assistente Jack.
 
 URL para cadastrar na Meta, depois do deploy:
 

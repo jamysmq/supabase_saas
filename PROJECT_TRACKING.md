@@ -209,6 +209,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - fluxo coleta nome completo, grupo/turma opcional, valor da mensalidade e dia de vencimento;
   - cria ou reativa cliente pelo WhatsApp, cria/atualiza perfil de cobranca e gera ciclo inicial pendente.
 - Em 2026-06-22, workflow remoto `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` foi criado no n8n com id `A4XOl16nkcIYOre1` e mantido inativo para go-live controlado.
+- Em 2026-06-22, webhook do app passou a encaminhar ao n8n o `inbox_thread_id` e `inbox_routed` quando a mensagem inbound foi gravada na inbox, preparando a entrada central/roteador n8n para decidir fluxo por conversa/tenant.
 - Front da inbox WhatsApp recebeu ajustes de configuracao de mensagens em 2026-05-27:
   - configuracao abre em modal dentro de `/whatsapp-inbox`;
   - editor usa variaveis travadas para evitar alteracao acidental do codigo;
@@ -377,6 +378,7 @@ Validacao tecnica local/publica executada em 2026-05-27:
 - Em 2026-06-06, vulnerabilidades de dependencias foram tratadas com update controlado: `next`/`eslint-config-next` para `16.2.7`, `ws` e `brace-expansion` atualizados pelo lockfile, e `postcss` forçado via `overrides` para versao corrigida. `npm audit --audit-level=moderate` passou com 0 vulnerabilidades.
 - Em 2026-06-22, nova rodada de `npm audit --audit-level=moderate` apontou `@babel/core` e `js-yaml`; `npm audit fix` atualizou apenas o lockfile e a auditoria voltou a passar com 0 vulnerabilidades. `npm run lint` e `npm run build` tambem passaram.
 - Relatorio complementar salvo em `docs/validation-2026-06-22.md`.
+- Runbook de go-live WhatsApp criado em `docs/whatsapp-go-live-runbook.md`.
 - Supabase CLI local instalada via pacote do projeto travou em timeout tanto via `npx supabase --version` quanto via binario direto. Para aplicacoes SQL imediatas, seguir usando SQL Editor do Supabase ou investigar a CLI antes de depender dela.
 - Relatorio completo salvo em `docs/validation-2026-05-27.md`.
 
@@ -436,7 +438,7 @@ Fluxo agenda:
 6. Configurar no container n8n:
    - `APP_BASE_URL=https://app.meuassistentevirtual.com.br`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`.
-7. Se automacoes inbound pelo n8n forem usadas, configurar tambem na Vercel:
+7. Se automacoes inbound pelo n8n forem usadas, configurar tambem na Vercel apontando para uma entrada central/roteador n8n:
    - `WHATSAPP_INBOUND_N8N_WEBHOOK_URL`;
    - `WHATSAPP_INBOUND_N8N_TOKEN`.
 8. Ativar webhooks/workflows de WhatsApp no n8n somente para go-live controlado com tenant `plan2` ou `plan3`.
