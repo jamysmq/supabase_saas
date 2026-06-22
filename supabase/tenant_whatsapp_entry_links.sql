@@ -118,6 +118,7 @@ declare
   v_platform_phone text;
   v_tenant_id uuid;
   v_thread_id uuid;
+  v_existing_thread_id uuid;
   v_message_id uuid;
   v_created_at timestamptz;
   v_body text;
@@ -167,8 +168,8 @@ begin
   end if;
 
   if v_tenant_id is null then
-    select th.tenant_id
-      into v_tenant_id
+    select th.tenant_id, th.id
+      into v_tenant_id, v_existing_thread_id
     from public.tenant_whatsapp_threads th
     join public.tenants t on t.id = th.tenant_id
     where t.status = 'active'
@@ -216,35 +217,47 @@ begin
     return null;
   end if;
 
-  insert into public.tenant_whatsapp_threads (
-    tenant_id,
-    customer_phone_e164,
-    status,
-    last_message_preview,
-    last_message_at,
-    last_inbound_at,
-    unread_count,
-    updated_at
-  )
-  values (
-    v_tenant_id,
-    v_customer_phone,
-    'open',
-    left(v_body, 240),
-    v_created_at,
-    v_created_at,
-    1,
-    now()
-  )
-  on conflict (tenant_id, customer_phone_e164)
-  do update set
-    status = 'open',
-    last_message_preview = excluded.last_message_preview,
-    last_message_at = excluded.last_message_at,
-    last_inbound_at = excluded.last_inbound_at,
-    unread_count = public.tenant_whatsapp_threads.unread_count + 1,
-    updated_at = now()
-  returning id into v_thread_id;
+  if v_existing_thread_id is not null then
+    update public.tenant_whatsapp_threads
+       set status = 'open',
+           last_message_preview = left(v_body, 240),
+           last_message_at = v_created_at,
+           last_inbound_at = v_created_at,
+           unread_count = unread_count + 1,
+           updated_at = now()
+     where id = v_existing_thread_id
+     returning id into v_thread_id;
+  else
+    insert into public.tenant_whatsapp_threads (
+      tenant_id,
+      customer_phone_e164,
+      status,
+      last_message_preview,
+      last_message_at,
+      last_inbound_at,
+      unread_count,
+      updated_at
+    )
+    values (
+      v_tenant_id,
+      v_customer_phone,
+      'open',
+      left(v_body, 240),
+      v_created_at,
+      v_created_at,
+      1,
+      now()
+    )
+    on conflict (tenant_id, customer_phone_e164)
+    do update set
+      status = 'open',
+      last_message_preview = excluded.last_message_preview,
+      last_message_at = excluded.last_message_at,
+      last_inbound_at = excluded.last_inbound_at,
+      unread_count = public.tenant_whatsapp_threads.unread_count + 1,
+      updated_at = now()
+    returning id into v_thread_id;
+  end if;
 
   insert into public.tenant_whatsapp_messages (
     thread_id,
