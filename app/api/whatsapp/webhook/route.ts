@@ -1,5 +1,4 @@
 import { createTenantAdminClient } from '../../../../src/lib/tenant-admin'
-import { createHash } from 'crypto'
 import {
   type WhatsAppWebhookMessageEvent,
   normalizeWhatsAppWebhookPayload,
@@ -10,13 +9,9 @@ function jsonResponse(message: string, status = 400) {
   return Response.json({ error: message, message }, { status })
 }
 
-function shortFingerprint(value: string) {
-  return createHash('sha256').update(value).digest('hex').slice(0, 10)
-}
-
 async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
   if (messages.length === 0) {
-    return { attempted: false, recorded: 0, failed: 0 }
+    return { attempted: false, recorded: 0, failed: 0, unrouted: 0 }
   }
 
   let supabase
@@ -25,11 +20,12 @@ async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
     supabase = createTenantAdminClient()
   } catch (error) {
     console.error('WhatsApp inbox recording skipped: Supabase admin client is not configured.', error)
-    return { attempted: false, recorded: 0, failed: messages.length }
+    return { attempted: false, recorded: 0, failed: messages.length, unrouted: 0 }
   }
 
   let recorded = 0
   let failed = 0
+  let unrouted = 0
 
   for (const message of messages) {
     if (message.type !== 'text' || !message.text) continue
@@ -52,10 +48,17 @@ async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
       })
     } else if (data) {
       recorded += 1
+    } else {
+      unrouted += 1
+      console.warn('WhatsApp inbound message was not routed to a tenant.', {
+        messageId: message.messageId,
+        phoneNumberId: message.phoneNumberId,
+        fromSuffix: message.from.slice(-4),
+      })
     }
   }
 
-  return { attempted: true, recorded, failed }
+  return { attempted: true, recorded, failed, unrouted }
 }
 
 async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[]) {
@@ -153,11 +156,7 @@ export async function POST(request: Request) {
   if (!verifyMetaWebhookSignature(rawBody, signature, appSecret)) {
     console.error('Invalid WhatsApp webhook signature.', {
       hasSignature: Boolean(signature),
-      signaturePrefix: signature?.slice(0, 7) ?? null,
-      signatureLength: signature?.length ?? 0,
       rawBodyLength: rawBody.length,
-      appSecretLength: appSecret.length,
-      appSecretFingerprint: shortFingerprint(appSecret),
     })
 
     return jsonResponse('Invalid WhatsApp webhook signature.', 401)
@@ -180,6 +179,7 @@ export async function POST(request: Request) {
     statuses: events.statuses.length,
     inboxRecorded: inbox.recorded,
     inboxFailures: inbox.failed,
+    inboxUnrouted: inbox.unrouted,
     forwarded: forward.sent,
     forwardFailures: forward.failed,
   })
@@ -190,6 +190,7 @@ export async function POST(request: Request) {
     statuses: events.statuses.length,
     inbox_recorded: inbox.recorded,
     inbox_failed: inbox.failed,
+    inbox_unrouted: inbox.unrouted,
     forwarded: forward.sent,
     forward_failed: forward.failed,
   })
