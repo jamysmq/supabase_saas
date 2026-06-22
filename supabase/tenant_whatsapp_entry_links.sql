@@ -166,6 +166,30 @@ begin
     limit 1;
   end if;
 
+  if v_tenant_id is null then
+    select th.tenant_id
+      into v_tenant_id
+    from public.tenant_whatsapp_threads th
+    join public.tenants t on t.id = th.tenant_id
+    where t.status = 'active'
+      and th.status = 'open'
+      and regexp_replace(th.customer_phone_e164, '\D', '', 'g') in (
+        v_customer_phone,
+        case
+          when v_customer_phone ~ '^55[0-9]{2}9[0-9]{8}$'
+          then substring(v_customer_phone from 1 for 4) || substring(v_customer_phone from 6)
+          else null
+        end,
+        case
+          when v_customer_phone ~ '^55[0-9]{2}[0-9]{8}$'
+          then substring(v_customer_phone from 1 for 4) || '9' || substring(v_customer_phone from 5)
+          else null
+        end
+      )
+    order by coalesce(th.last_message_at, th.updated_at) desc
+    limit 1;
+  end if;
+
   if v_tenant_id is null and v_platform_phone <> '' then
     select r.tenant_id
       into v_tenant_id
