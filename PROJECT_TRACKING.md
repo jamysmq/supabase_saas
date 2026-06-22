@@ -208,6 +208,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - template editavel `billing_signup_welcome`;
   - fluxo coleta nome completo, grupo/turma opcional, valor da mensalidade e dia de vencimento;
   - cria ou reativa cliente pelo WhatsApp, cria/atualiza perfil de cobranca e gera ciclo inicial pendente.
+- Em 2026-06-22, workflow remoto `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` foi criado no n8n com id `A4XOl16nkcIYOre1` e mantido inativo para go-live controlado.
 - Front da inbox WhatsApp recebeu ajustes de configuracao de mensagens em 2026-05-27:
   - configuracao abre em modal dentro de `/whatsapp-inbox`;
   - editor usa variaveis travadas para evitar alteracao acidental do codigo;
@@ -374,6 +375,8 @@ Validacao tecnica local/publica executada em 2026-05-27:
   - `GET /api/whatsapp/webhook` sem token valido: 403;
   - `POST /api/internal/whatsapp/send` sem token interno: 401.
 - Em 2026-06-06, vulnerabilidades de dependencias foram tratadas com update controlado: `next`/`eslint-config-next` para `16.2.7`, `ws` e `brace-expansion` atualizados pelo lockfile, e `postcss` forçado via `overrides` para versao corrigida. `npm audit --audit-level=moderate` passou com 0 vulnerabilidades.
+- Em 2026-06-22, nova rodada de `npm audit --audit-level=moderate` apontou `@babel/core` e `js-yaml`; `npm audit fix` atualizou apenas o lockfile e a auditoria voltou a passar com 0 vulnerabilidades. `npm run lint` e `npm run build` tambem passaram.
+- Relatorio complementar salvo em `docs/validation-2026-06-22.md`.
 - Supabase CLI local instalada via pacote do projeto travou em timeout tanto via `npx supabase --version` quanto via binario direto. Para aplicacoes SQL imediatas, seguir usando SQL Editor do Supabase ou investigar a CLI antes de depender dela.
 - Relatorio completo salvo em `docs/validation-2026-05-27.md`.
 
@@ -433,25 +436,28 @@ Fluxo agenda:
 6. Configurar no container n8n:
    - `APP_BASE_URL=https://app.meuassistentevirtual.com.br`;
    - `WHATSAPP_INTERNAL_SEND_TOKEN`.
-7. Ativar webhook de agendamento somente para go-live controlado com tenant `plan2` ou `plan3`.
-8. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
-9. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
-10. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
-11. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
+7. Se automacoes inbound pelo n8n forem usadas, configurar tambem na Vercel:
+   - `WHATSAPP_INBOUND_N8N_WEBHOOK_URL`;
+   - `WHATSAPP_INBOUND_N8N_TOKEN`.
+8. Ativar webhooks/workflows de WhatsApp no n8n somente para go-live controlado com tenant `plan2` ou `plan3`.
+9. Manter um unico workflow por tipo de modulo, nao um workflow por tenant. O workflow deve buscar tenant, plano, templates e dados no Supabase.
+10. Para restaurantes, planejar workflow WhatsApp separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
+11. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
+12. Quando a cadeia WhatsApp + front estiver funcionando ponta a ponta, iniciar integracao de pagamentos:
    - QR Code Pix para pedidos de restaurante;
    - QR Code Pix para cobrancas mensais de alunos/clientes;
    - pagamento por cartao de credito;
    - conciliacao automatica entre provedor de pagamento, pedido/cobranca e historico financeiro.
-12. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
-13. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
-14. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
-15. Executar checklist de release/deploy da Vercel em `docs/vercel-deploy-checklist.md`.
-16. Configurar WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
-17. Fazer teste multi-tenant com usuarios reais separados.
-18. Preparar backups e politica de retencao.
-19. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
-20. `.env.local` local ja foi conferido em 2026-05-25 e usa `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem o sufixo `/rest/v1/`.
-21. Vulnerabilidades apontadas pelo `npm audit` de 2026-05-27 foram tratadas em 2026-06-06; manter nova auditoria em futuras atualizacoes.
+13. Implementar confirmacao Asaas/QR code para pagamentos da plataforma.
+14. Depois implementar Asaas/QR code para cobrancas dos clientes dos tenants.
+15. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
+16. Executar checklist de release/deploy da Vercel em `docs/vercel-deploy-checklist.md`.
+17. Configurar WhatsApp Cloud API seguindo `docs/meta-whatsapp-cloud-setup.md`.
+18. Fazer teste multi-tenant com usuarios reais separados.
+19. Preparar backups e politica de retencao.
+20. Rotacionar credenciais sensiveis expostas durante configuracao/testes antes de producao.
+21. `.env.local` local ja foi conferido em 2026-05-25 e usa `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`, sem o sufixo `/rest/v1/`.
+22. Vulnerabilidades apontadas pelo `npm audit` de 2026-05-27 foram tratadas em 2026-06-06; nova rodada em 2026-06-22 tambem foi tratada com `npm audit fix` sem `--force`.
 
 ## Decisoes para Evitar Gambiarra
 

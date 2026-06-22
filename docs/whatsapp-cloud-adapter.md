@@ -76,7 +76,7 @@ Usado pela Meta para verificar a URL. A Meta chama a URL com `hub.mode`, `hub.ve
 
 `POST /api/whatsapp/webhook`
 
-Recebe mensagens e status enviados pela Meta. O app valida `x-hub-signature-256` usando `WHATSAPP_APP_SECRET`, normaliza eventos de mensagem/status e responde rapidamente. O encaminhamento desses eventos para n8n deve ser conectado na proxima etapa, depois que a URL publica do app e as envs finais estiverem prontas.
+Recebe mensagens e status enviados pela Meta. O app valida `x-hub-signature-256` usando `WHATSAPP_APP_SECRET`, normaliza eventos de mensagem/status, tenta registrar mensagens de texto na inbox do tenant via Supabase e responde rapidamente.
 
 Quando `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` estiver configurada, mensagens de texto recebidas sao encaminhadas para o n8n com um corpo normalizado:
 
@@ -101,3 +101,5 @@ URL para cadastrar na Meta, depois do deploy:
 ```text
 https://SEU_DOMINIO/api/whatsapp/webhook
 ```
+
+Observacao operacional: a inbox tenant-side nao depende do encaminhamento para n8n para mostrar atendimento humano. O n8n deve ser conectado/ativado por modulo quando a automacao correspondente estiver pronta para go-live.
