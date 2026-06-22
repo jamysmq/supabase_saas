@@ -54,6 +54,12 @@ Workflows remotos conferidos via API:
 - `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` (`zWflZZXKn2XIlHEc`): inativo.
 - `DAILY_TENANT_AGENDA_REMINDERS` (`dcKARQX6GDCBPo3W`): inativo.
 - `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` (`A4XOl16nkcIYOre1`): criado nesta rodada e mantido inativo.
+- `WA_INBOUND_ROUTER_v1` (`JSlq95lyTAVjZjtz`): criado nesta rodada, ativado e testado pela rota `/webhook/wa-inbound-router-v1`.
+
+Teste do roteador central:
+
+- Payload fake com texto `Quero agendar um corte amanha`: 200, rota `appointments`, alvo `WA_TENANT_APPOINTMENTS_INBOUND_v1`.
+- Payload fake com texto `Quero fazer cadastro de aluno na turma`: 200, rota `billing_signup`, alvo `WA_TENANT_BILLING_SIGNUP_INBOUND_v1`.
 
 ## Alteracoes aplicadas
 

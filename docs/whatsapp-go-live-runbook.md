@@ -21,6 +21,12 @@ WHATSAPP_INBOUND_N8N_TOKEN=
 
 `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` deve apontar para uma entrada central/roteador de inbound no n8n. Nao aponte diretamente para `WA_TENANT_APPOINTMENTS_INBOUND_v1` ou `WA_TENANT_BILLING_SIGNUP_INBOUND_v1`, porque esses sao workflows de modulo.
 
+Roteador central criado:
+
+- Workflow: `WA_INBOUND_ROUTER_v1`
+- ID remoto n8n: `JSlq95lyTAVjZjtz`
+- Production path: `/webhook/wa-inbound-router-v1`
+
 `WHATSAPP_INBOUND_N8N_TOKEN` e um segredo criado por nos. O app envia esse valor no header `Authorization: Bearer <token>` quando encaminha eventos para o n8n.
 
 Payload que o n8n recebe do app:
@@ -46,6 +52,7 @@ Payload que o n8n recebe do app:
 ## 3. Workflows n8n atuais
 
 - `DAILY_BILLING_REMINDERS` (`YbD6NHWbgz9vLe33w_UU-`): ativo.
+- `WA_INBOUND_ROUTER_v1` (`JSlq95lyTAVjZjtz`): ativo para receber/testar a entrada central.
 - `WA_TENANT_APPOINTMENTS_INBOUND_v1` (`X1lUop6Q5fh9uxTG`): manter inativo ate teste controlado.
 - `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` (`zWflZZXKn2XIlHEc`): manter inativo ate teste controlado.
 - `DAILY_TENANT_AGENDA_REMINDERS` (`dcKARQX6GDCBPo3W`): manter inativo ate teste controlado.
@@ -55,6 +62,6 @@ Payload que o n8n recebe do app:
 
 1. Confirmar que envio manual pela inbox funciona.
 2. Confirmar que resposta real chega em `/api/whatsapp/webhook` e aparece na inbox.
-3. Configurar `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` na Vercel apenas quando houver uma entrada central/roteador pronta no n8n.
+3. Configurar `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` na Vercel apontando para `/webhook/wa-inbound-router-v1`.
 4. Ativar primeiro um tenant de teste com `salaoteste@teste.com`.
 5. Ativar workflows de modulo um por vez, testando logs e mensagens reais antes de liberar para mais tenants.

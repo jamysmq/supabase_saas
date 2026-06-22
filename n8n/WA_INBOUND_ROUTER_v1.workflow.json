@@ -1,0 +1,82 @@
+{
+  "name": "WA_INBOUND_ROUTER_v1",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wa-inbound-router-v1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5db6746f-cd1f-4bd3-8b33-18c8762d9d15",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "f97fd090-f87f-4ce4-86c0-dc78e69a6e62",
+      "position": [
+        -520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const headers = $json.headers ?? {};\nconst body = $json.body ?? {};\nconst auth = String(headers.authorization ?? headers.Authorization ?? '').trim();\nconst expectedToken = String($env.WHATSAPP_INBOUND_N8N_TOKEN ?? '').trim();\nconst authorized = !expectedToken || auth === `Bearer ${expectedToken}`;\nconst text = String(body.text ?? body.message ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/\\s+/g, ' ').trim();\nconst hasAny = (words) => words.some((word) => text.includes(word));\nlet route = 'inbox_only';\nlet target_workflow = null;\nlet reason = 'default_inbox_handoff';\nif (!authorized) {\n  route = 'unauthorized';\n  reason = 'invalid_authorization_header';\n} else if (hasAny(['agendar', 'agenda', 'horario', 'remarcar', 'reagendar', 'cancelar agendamento', 'profissional', 'servico'])) {\n  route = 'appointments';\n  target_workflow = 'WA_TENANT_APPOINTMENTS_INBOUND_v1';\n  reason = 'appointment_intent_keyword';\n} else if (hasAny(['cadastro', 'cadastrar', 'matricula', 'aluno', 'mensalidade', 'turma', 'vencimento'])) {\n  route = 'billing_signup';\n  target_workflow = 'WA_TENANT_BILLING_SIGNUP_INBOUND_v1';\n  reason = 'billing_signup_intent_keyword';\n} else if (hasAny(['humano', 'atendente', 'falar conosco', 'atendimento'])) {\n  route = 'human_handoff';\n  reason = 'human_handoff_keyword';\n}\nreturn {\n  ok: authorized,\n  route,\n  reason,\n  target_workflow,\n  provider: body.provider ?? 'whatsapp_cloud',\n  message_id: body.message_id ?? null,\n  inbox_thread_id: body.inbox_thread_id ?? null,\n  inbox_routed: Boolean(body.inbox_routed),\n  customer_phone_e164: body.customer_phone_e164 ?? body.from ?? body.chat_id ?? null,\n  tenant_phone_e164: body.tenant_phone_e164 ?? body.to ?? null,\n  text: body.text ?? body.message ?? '',\n  received_at: new Date().toISOString()\n};"
+      },
+      "id": "e8060230-6bf3-4a05-94f3-cce5276ba59c",
+      "name": "Classify route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -260,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "492f5f35-90c8-4674-b19a-6476c6d46816",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify route": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
