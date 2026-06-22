@@ -1,4 +1,5 @@
 import { createTenantAdminClient } from '../../../../src/lib/tenant-admin'
+import { createHash } from 'crypto'
 import {
   type WhatsAppWebhookMessageEvent,
   normalizeWhatsAppWebhookPayload,
@@ -7,6 +8,10 @@ import {
 
 function jsonResponse(message: string, status = 400) {
   return Response.json({ error: message, message }, { status })
+}
+
+function shortFingerprint(value: string) {
+  return createHash('sha256').update(value).digest('hex').slice(0, 10)
 }
 
 async function recordMessagesInInbox(messages: WhatsAppWebhookMessageEvent[]) {
@@ -146,6 +151,15 @@ export async function POST(request: Request) {
   const signature = request.headers.get('x-hub-signature-256')
 
   if (!verifyMetaWebhookSignature(rawBody, signature, appSecret)) {
+    console.error('Invalid WhatsApp webhook signature.', {
+      hasSignature: Boolean(signature),
+      signaturePrefix: signature?.slice(0, 7) ?? null,
+      signatureLength: signature?.length ?? 0,
+      rawBodyLength: rawBody.length,
+      appSecretLength: appSecret.length,
+      appSecretFingerprint: shortFingerprint(appSecret),
+    })
+
     return jsonResponse('Invalid WhatsApp webhook signature.', 401)
   }
 
