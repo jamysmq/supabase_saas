@@ -60,6 +60,11 @@ Teste do roteador central:
 
 - Payload fake com texto `Quero agendar um corte amanha`: 200, rota `appointments`, alvo `WA_TENANT_APPOINTMENTS_INBOUND_v1`.
 - Payload fake com texto `Quero fazer cadastro de aluno na turma`: 200, rota `billing_signup`, alvo `WA_TENANT_BILLING_SIGNUP_INBOUND_v1`.
+- Em 2026-06-23, o roteador foi ajustado para menu numerado e retestado:
+  - `1`: 200, rota `appointments`;
+  - `2`: 200, rota `billing_signup`;
+  - `3`: 200, rota `human_handoff`;
+  - entrada invalida: 200, rota `menu`, com texto das opcoes numeradas.
 
 ## Alteracoes aplicadas
 

@@ -26,6 +26,11 @@ Roteador central criado:
 - Workflow: `WA_INBOUND_ROUTER_v1`
 - ID remoto n8n: `JSlq95lyTAVjZjtz`
 - Production path: `/webhook/wa-inbound-router-v1`
+- Menu numerado:
+  - `1`: agenda (`WA_TENANT_APPOINTMENTS_INBOUND_v1`)
+  - `2`: cadastro/mensalidades (`WA_TENANT_BILLING_SIGNUP_INBOUND_v1`)
+  - `3`: atendimento humano
+- Se a mensagem nao bater em numero nem fallback de palavra-chave, o roteador retorna o texto do menu numerado.
 
 `WHATSAPP_INBOUND_N8N_TOKEN` e um segredo criado por nos. O app envia esse valor no header `Authorization: Bearer <token>` quando encaminha eventos para o n8n.
 
