@@ -41,11 +41,25 @@ export async function POST(request: Request) {
 
   try {
     const client = createWhatsAppCloudClient(getWhatsAppCloudConfigFromEnv())
-    const result = await client.sendText({
-      to: String(body?.to ?? ''),
-      body: String(body?.body ?? ''),
-      previewUrl: parsePreviewUrl(body?.preview_url),
-    })
+    const messageType = String(body?.type ?? 'text').trim().toLowerCase()
+    const result = messageType === 'buttons'
+      ? await client.sendButtons({
+        to: String(body?.to ?? ''),
+        body: String(body?.body ?? ''),
+        buttons: Array.isArray(body?.buttons) ? body.buttons : [],
+      })
+      : messageType === 'list'
+        ? await client.sendList({
+          to: String(body?.to ?? ''),
+          body: String(body?.body ?? ''),
+          buttonText: String(body?.button_text ?? 'Opcoes'),
+          sections: Array.isArray(body?.sections) ? body.sections : [],
+        })
+        : await client.sendText({
+          to: String(body?.to ?? ''),
+          body: String(body?.body ?? ''),
+          previewUrl: parsePreviewUrl(body?.preview_url),
+        })
 
     return Response.json({
       ok: true,

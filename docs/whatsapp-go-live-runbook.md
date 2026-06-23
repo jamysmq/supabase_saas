@@ -31,6 +31,8 @@ Roteador central criado:
   - `2`: cadastro/mensalidades (`WA_TENANT_BILLING_SIGNUP_INBOUND_v1`)
   - `3`: atendimento humano
 - Se a mensagem nao bater em numero nem fallback de palavra-chave, o roteador retorna o texto do menu numerado.
+- O roteador tambem retorna `target_webhook_path` para os modulos de agenda/cadastro.
+- O disparo automatico de modulo fica bloqueado ate `WA_INBOUND_ROUTER_DISPATCH_ENABLED=true` estar configurado no n8n.
 
 `WHATSAPP_INBOUND_N8N_TOKEN` e um segredo criado por nos. O app envia esse valor no header `Authorization: Bearer <token>` quando encaminha eventos para o n8n.
 
@@ -70,3 +72,4 @@ Payload que o n8n recebe do app:
 3. Configurar `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` na Vercel apontando para `/webhook/wa-inbound-router-v1`.
 4. Ativar primeiro um tenant de teste com `salaoteste@teste.com`.
 5. Ativar workflows de modulo um por vez, testando logs e mensagens reais antes de liberar para mais tenants.
+6. Depois dos modulos ativos, ligar `WA_INBOUND_ROUTER_DISPATCH_ENABLED=true` no n8n e testar novamente com um tenant controlado.

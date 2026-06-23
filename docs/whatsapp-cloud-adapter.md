@@ -48,7 +48,42 @@ Resposta esperada:
 
 Os workflows devem chamar esse endpoint interno quando o app estiver publicado e acessivel pelo n8n. Ate la, os mocks de envio continuam uteis para validar a logica sem consumir a API real.
 
-Esse endpoint envia apenas texto livre. Templates aprovados, midias, botoes/listas e webhooks de status devem entrar como proximas evolucoes do adaptador, mantendo o mesmo principio: workflow generico, tenant/template/dados vindos do Supabase, provedor isolado em uma camada unica.
+Esse endpoint envia texto livre e tambem ja aceita mensagens interativas basicas de botoes/listas, mantendo o mesmo principio: workflow generico, tenant/template/dados vindos do Supabase, provedor isolado em uma camada unica.
+
+Exemplo de botoes:
+
+```json
+{
+  "type": "buttons",
+  "to": "5583999999999",
+  "body": "Escolha uma opcao:",
+  "buttons": [
+    { "id": "1", "title": "Agenda" },
+    { "id": "2", "title": "Cadastro" },
+    { "id": "3", "title": "Atendimento" }
+  ]
+}
+```
+
+Exemplo de lista:
+
+```json
+{
+  "type": "list",
+  "to": "5583999999999",
+  "body": "Escolha uma opcao:",
+  "button_text": "Opcoes",
+  "sections": [
+    {
+      "title": "Menu",
+      "rows": [
+        { "id": "1", "title": "Agenda" },
+        { "id": "2", "title": "Cadastro" }
+      ]
+    }
+  ]
+}
+```
 
 ## Links de atendimento por tenant
 
@@ -111,3 +146,5 @@ https://SEU_DOMINIO/api/whatsapp/webhook
 ```
 
 Observacao operacional: a inbox tenant-side nao depende do encaminhamento para n8n para mostrar atendimento humano. O n8n deve ser conectado/ativado por modulo quando a automacao correspondente estiver pronta para go-live.
+
+Quando o roteador n8n responder `reply_text`, o webhook do app tenta enviar essa mensagem ao cliente via WhatsApp Cloud API e registrar o outbound na inbox como mensagem do bot. Quando o roteador responder `dispatch_to_module: true` e `target_webhook_path`, o app esta preparado para encaminhar o mesmo payload ao workflow de modulo correspondente.

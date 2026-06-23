@@ -65,6 +65,8 @@ Teste do roteador central:
   - `2`: 200, rota `billing_signup`;
   - `3`: 200, rota `human_handoff`;
   - entrada invalida: 200, rota `menu`, com texto das opcoes numeradas.
+- Em 2026-06-23, o roteador passou a retornar `target_webhook_path` e `dispatch_to_module=false` enquanto `WA_INBOUND_ROUTER_DISPATCH_ENABLED` nao estiver ativo.
+- Em 2026-06-23, teste fake controlado passou: n8n retornou `reply_text` para entrada invalida e o client WhatsApp Cloud com `fetch` falso montou envio de texto com `wamid.fake`, sem mandar mensagem real.
 
 ## Alteracoes aplicadas
 

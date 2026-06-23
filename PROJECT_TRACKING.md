@@ -212,6 +212,9 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Em 2026-06-22, webhook do app passou a encaminhar ao n8n o `inbox_thread_id` e `inbox_routed` quando a mensagem inbound foi gravada na inbox, preparando a entrada central/roteador n8n para decidir fluxo por conversa/tenant.
 - Em 2026-06-22, roteador central remoto `WA_INBOUND_ROUTER_v1` foi criado no n8n com id `JSlq95lyTAVjZjtz`, ativado e testado com payloads fake de agenda/cadastro, respondendo 200 e classificando corretamente as rotas.
 - Em 2026-06-23, `WA_INBOUND_ROUTER_v1` foi ajustado para priorizar menu numerado: `1` agenda, `2` cadastro/mensalidades, `3` atendimento humano; palavras-chave permanecem apenas como fallback e entrada invalida retorna o menu.
+- Em 2026-06-23, webhook Meta do app passou a consumir `reply_text` retornado pelo roteador n8n, enviar a resposta pelo WhatsApp Cloud API e registrar a mensagem na inbox como bot quando houver thread roteada.
+- Em 2026-06-23, roteador/app ficaram preparados para disparo controlado de modulos via `target_webhook_path` + `dispatch_to_module`; o disparo real depende de `WA_INBOUND_ROUTER_DISPATCH_ENABLED=true` no n8n.
+- Em 2026-06-23, adaptador WhatsApp Cloud e endpoint interno passaram a suportar mensagens interativas basicas de botoes e listas, mantendo texto como fallback operacional.
 - Front da inbox WhatsApp recebeu ajustes de configuracao de mensagens em 2026-05-27:
   - configuracao abre em modal dentro de `/whatsapp-inbox`;
   - editor usa variaveis travadas para evitar alteracao acidental do codigo;
