@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
-import { getBusinessLabels } from '../../src/lib/business-labels'
+import { getBusinessLabels, getCatalogLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import {
   tenantCanUseAppointments,
   tenantCanUseBilling,
-  tenantCanUseRestaurant,
+  tenantCanUseCatalog,
   tenantCanUseSalonInventory,
 } from '../../src/lib/plan-features'
 
@@ -30,10 +30,12 @@ export default function DashboardPage() {
     useState<TenantUser | null>(null)
 
   const labels = getBusinessLabels(businessType)
+  const catalog = getCatalogLabels(businessType)
   const canUseBilling = tenantCanUseBilling(tenantPlan)
   const canUseAppointments = tenantCanUseAppointments(tenantPlan)
-  const canUseRestaurant = tenantCanUseRestaurant(tenantPlan)
+  const canUseCatalog = tenantCanUseCatalog(tenantPlan)
   const canUseSalonInventory = tenantCanUseSalonInventory(tenantPlan, businessType)
+  const canUseFinance = canUseCatalog || (canUseAppointments && businessType === 'salon')
 
   const navigationItems = [
     ...(canUseBilling
@@ -64,19 +66,12 @@ export default function DashboardPage() {
           title: 'Agenda',
           description: 'Gerencie atendimentos, consultas e horários.',
         },
-        ...(businessType === 'salon'
+        ...(businessType === 'salon' && canUseSalonInventory
           ? [{
-              href: '/service-revenue',
-              title: 'Financeiro de atendimentos',
-              description: 'Veja os atendimentos confirmados e valores reconhecidos.',
-            },
-            ...(canUseSalonInventory
-              ? [{
-                  href: '/salon-inventory',
-                  title: 'Estoque',
-                  description: 'Controle produtos comprados e custos lancados no financeiro.',
-                }]
-              : [])]
+              href: '/salon-inventory',
+              title: 'Estoque',
+              description: 'Controle produtos comprados e custos lancados no financeiro.',
+            }]
           : []),
         {
           href: '/appointment-history?from=dashboard',
@@ -84,21 +79,23 @@ export default function DashboardPage() {
           description: 'Consulte atendimentos realizados, cancelados e excluídos.',
         }]
       : []),
-    ...(canUseRestaurant
+    ...(canUseCatalog
       ? [{
-          href: '/restaurant-menu',
-          title: 'Cardápio',
-          description: 'Cadastre itens, descrições e valores para pedidos via WhatsApp.',
+          href: '/catalogo',
+          title: catalog.title,
+          description: catalog.dashboardCatalogDescription,
         },
         {
-          href: '/restaurant-orders',
+          href: '/pedidos',
           title: 'Pedidos pendentes',
-          description: 'Confirme entregas e pagamentos de pedidos recebidos.',
-        },
-        {
-          href: '/restaurant-finance',
-          title: 'Financeiro de pedidos',
-          description: 'Consulte pedidos pagos, cancelados e totais reconhecidos.',
+          description: catalog.dashboardOrdersDescription,
+        }]
+      : []),
+    ...(canUseFinance
+      ? [{
+          href: '/financeiro',
+          title: 'Financeiro',
+          description: 'Receitas, despesas e saldo do período, com resumo por dia e exportação.',
         }]
       : []),
     {

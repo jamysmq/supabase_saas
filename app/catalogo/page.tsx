@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
-import { tenantCanUseRestaurant } from '../../src/lib/plan-features'
+import { tenantCanUseCatalog } from '../../src/lib/plan-features'
+import { getCatalogLabels } from '../../src/lib/business-labels'
 import { formatCurrencyFromCents, formatMoneyInput } from '../../src/lib/money'
 
 type MenuItem = {
@@ -40,9 +41,14 @@ function formatCurrency(valueCents: number) {
   return formatCurrencyFromCents(valueCents)
 }
 
-export default function RestaurantMenuPage() {
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+export default function CatalogPage() {
   const router = useRouter()
 
+  const [businessType, setBusinessType] = useState<string | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
   const [groups, setGroups] = useState<MenuGroup[]>([])
   const [form, setForm] = useState<MenuForm>(emptyForm)
@@ -54,6 +60,9 @@ export default function RestaurantMenuPage() {
   const [actingId, setActingId] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const catalog = getCatalogLabels(businessType)
+  const itemLabel = capitalize(catalog.itemSingular)
 
   const totalItems = useMemo(() => items.length, [items])
   const groupedItems = useMemo(() => {
@@ -99,10 +108,12 @@ export default function RestaurantMenuPage() {
       return
     }
 
-    if (!tenantCanUseRestaurant(result.tenant?.plan)) {
+    if (!tenantCanUseCatalog(result.tenant?.plan)) {
       router.push('/dashboard')
       return
     }
+
+    setBusinessType(result.tenant?.business_type ?? null)
 
     const token = await getToken()
 
@@ -115,13 +126,13 @@ export default function RestaurantMenuPage() {
       Authorization: `Bearer ${token}`,
     }
     const [itemsResponse, groupsResponse] = await Promise.all([
-      fetch('/api/restaurant/menu-items', { headers }),
-      fetch('/api/restaurant/menu-groups', { headers }),
+      fetch('/api/catalog/menu-items', { headers }),
+      fetch('/api/catalog/menu-groups', { headers }),
     ])
 
     if (!itemsResponse.ok || !groupsResponse.ok) {
       const data = await itemsResponse.json().catch(() => null)
-      setError(data?.message || 'Não foi possível carregar o cardápio.')
+      setError(data?.message || 'Não foi possível carregar o catálogo.')
       setLoading(false)
       return
     }
@@ -158,8 +169,8 @@ export default function RestaurantMenuPage() {
 
     const response = await fetch(
       editingItemId
-        ? `/api/restaurant/menu-items/${editingItemId}`
-        : '/api/restaurant/menu-items',
+        ? `/api/catalog/menu-items/${editingItemId}`
+        : '/api/catalog/menu-items',
       {
         method: editingItemId ? 'PATCH' : 'POST',
         headers: {
@@ -174,11 +185,11 @@ export default function RestaurantMenuPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Não foi possível salvar o item.')
+      setError(data?.message || `Não foi possível salvar o ${catalog.itemSingular}.`)
       return
     }
 
-    setSuccess(editingItemId ? 'Item atualizado.' : 'Item criado.')
+    setSuccess(editingItemId ? `${itemLabel} atualizado.` : `${itemLabel} criado.`)
     setEditingItemId('')
     setForm(emptyForm)
     await load()
@@ -199,8 +210,8 @@ export default function RestaurantMenuPage() {
 
     const response = await fetch(
       editingGroupId
-        ? `/api/restaurant/menu-groups/${editingGroupId}`
-        : '/api/restaurant/menu-groups',
+        ? `/api/catalog/menu-groups/${editingGroupId}`
+        : '/api/catalog/menu-groups',
       {
         method: editingGroupId ? 'PATCH' : 'POST',
         headers: {
@@ -226,7 +237,7 @@ export default function RestaurantMenuPage() {
   }
 
   async function deleteItem(item: MenuItem) {
-    const confirmed = confirm(`Excluir o item ${item.name}?`)
+    const confirmed = confirm(`Excluir o ${catalog.itemSingular} ${item.name}?`)
     if (!confirmed) return
 
     const token = await getToken()
@@ -240,7 +251,7 @@ export default function RestaurantMenuPage() {
     setError('')
     setSuccess('')
 
-    const response = await fetch(`/api/restaurant/menu-items/${item.id}`, {
+    const response = await fetch(`/api/catalog/menu-items/${item.id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -251,7 +262,7 @@ export default function RestaurantMenuPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Não foi possível excluir o item.')
+      setError(data?.message || `Não foi possível excluir o ${catalog.itemSingular}.`)
       return
     }
 
@@ -260,12 +271,12 @@ export default function RestaurantMenuPage() {
       setForm(emptyForm)
     }
 
-    setSuccess('Item excluído.')
+    setSuccess(`${itemLabel} excluído.`)
     await load()
   }
 
   async function deleteGroup(group: MenuGroup) {
-    const confirmed = confirm(`Excluir o grupo ${group.name}? Os itens ficarão sem grupo.`)
+    const confirmed = confirm(`Excluir o grupo ${group.name}? Os ${catalog.itemPlural} ficarão sem grupo.`)
     if (!confirmed) return
 
     const token = await getToken()
@@ -279,7 +290,7 @@ export default function RestaurantMenuPage() {
     setError('')
     setSuccess('')
 
-    const response = await fetch(`/api/restaurant/menu-groups/${group.id}`, {
+    const response = await fetch(`/api/catalog/menu-groups/${group.id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -321,13 +332,13 @@ export default function RestaurantMenuPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Cardápio</h1>
+              <h1 className="text-2xl font-bold">{catalog.title}</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Cadastre os itens que vão alimentar o workflow de pedidos do WhatsApp.
+                {catalog.pageHint}
               </p>
             </div>
             <div className="rounded-xl bg-gray-100 px-4 py-3 text-sm">
-              <span className="font-bold">{totalItems}</span> itens ativos
+              <span className="font-bold">{totalItems}</span> {catalog.itemPlural} ativos
             </div>
           </div>
         </section>
@@ -358,7 +369,7 @@ export default function RestaurantMenuPage() {
               value={groupForm.name}
               onChange={(event) => setGroupForm({ ...groupForm, name: event.target.value })}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-              placeholder="Bebidas, lanches, combos..."
+              placeholder={catalog.groupPlaceholder}
               required
             />
             <input
@@ -420,7 +431,7 @@ export default function RestaurantMenuPage() {
 
           <form onSubmit={saveItem} className="rounded-2xl bg-white p-5 shadow space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-bold">{editingItemId ? 'Editar item' : 'Novo item'}</h2>
+              <h2 className="font-bold">{editingItemId ? `Editar ${catalog.itemSingular}` : `Novo ${catalog.itemSingular}`}</h2>
               {editingItemId && (
                 <button
                   type="button"
@@ -451,7 +462,7 @@ export default function RestaurantMenuPage() {
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-              placeholder="Nome do item"
+              placeholder={catalog.itemNamePlaceholder}
               required
             />
             <textarea
@@ -474,14 +485,14 @@ export default function RestaurantMenuPage() {
               disabled={saving}
               className="w-full rounded-lg bg-gray-950 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {saving ? 'Salvando...' : editingItemId ? 'Salvar item' : 'Criar item'}
+              {saving ? 'Salvando...' : editingItemId ? `Salvar ${catalog.itemSingular}` : `Criar ${catalog.itemSingular}`}
             </button>
           </form>
           </div>
 
           <section className="rounded-2xl bg-white p-5 shadow">
             {items.length === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-500">Nenhum item cadastrado.</p>
+              <p className="py-8 text-center text-sm text-gray-500">{catalog.emptyItems}</p>
             ) : (
               <div className="space-y-5">
                 {groupedItems.map((group) => (

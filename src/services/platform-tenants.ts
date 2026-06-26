@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isTenantPlanBusinessTypeCompatible } from '../lib/plan-features'
 
-const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
+const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop'])
 
 export class PlatformTenantCreationError extends Error {
   status: number

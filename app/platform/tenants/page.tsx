@@ -371,7 +371,7 @@ export default function PlatformTenantsPage() {
             <div>
               <h1 className="text-2xl font-bold">Tenants</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Gerencie professores, clinicas, saloes, restaurantes e demais contas da plataforma.
+                Gerencie professores, clinicas, saloes, restaurantes, lojas, petshops e demais contas da plataforma.
               </p>
             </div>
 
@@ -706,6 +706,8 @@ export default function PlatformTenantsPage() {
                     <option value="clinic">Clínica</option>
                     <option value="salon">Salão</option>
                     <option value="restaurant">Restaurante</option>
+                    <option value="loja_material">Loja de material de construção</option>
+                    <option value="petshop">Petshop</option>
                   </select>
                 </label>
               </div>

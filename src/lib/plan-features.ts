@@ -6,8 +6,14 @@ export function tenantCanUseAppointments(plan?: string | null) {
   return plan === 'plan2' || plan === 'plan3'
 }
 
-export function tenantCanUseRestaurant(plan?: string | null) {
+// Motor de catálogo + pedidos (ex-"restaurante"). Disponível nos planos 4 e 5.
+export function tenantCanUseCatalog(plan?: string | null) {
   return plan === 'plan4' || plan === 'plan5'
+}
+
+// Mantido como alias retrocompatível enquanto rotas/templates antigos ainda o referenciam.
+export function tenantCanUseRestaurant(plan?: string | null) {
+  return tenantCanUseCatalog(plan)
 }
 
 export function tenantCanUseSalonInventory(
@@ -27,6 +33,8 @@ const allowedPlanCodesByBusinessType: Record<string, string[]> = {
   clinic: ['plan2', 'plan3'],
   salon: ['plan2', 'plan3'],
   restaurant: ['plan4', 'plan5'],
+  loja_material: ['plan4', 'plan5'],
+  petshop: ['plan4', 'plan5'],
 }
 
 export function getAllowedPlanCodesForBusinessType(businessType?: string | null) {
@@ -46,8 +54,8 @@ export function tenantPlanLabel(plan?: string | null) {
     plan1: 'Plano 1 - Cobranças',
     plan2: 'Plano 2 - Agenda',
     plan3: 'Plano 3 - Cobranças + agenda',
-    plan4: 'Plano 4 - Restaurantes',
-    plan5: 'Plano 5 - Restaurantes + reservas',
+    plan4: 'Plano 4 - Catálogo e pedidos',
+    plan5: 'Plano 5 - Catálogo e pedidos + reservas',
   }
 
   return plan ? labels[plan] ?? plan : '-'

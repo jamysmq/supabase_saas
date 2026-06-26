@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
-import { tenantCanUseRestaurant } from '../../src/lib/plan-features'
+import { tenantCanUseCatalog } from '../../src/lib/plan-features'
+import { getCatalogLabels } from '../../src/lib/business-labels'
 import { formatCurrencyFromCents } from '../../src/lib/money'
 
 type OrderItem = {
@@ -17,7 +18,7 @@ type OrderItem = {
   notes: string | null
 }
 
-type RestaurantOrder = {
+type CatalogOrder = {
   id: string
   customer_name: string | null
   customer_phone_e164: string | null
@@ -87,10 +88,11 @@ function statusLabel(value: string) {
   return labels[value] ?? value
 }
 
-export default function RestaurantOrdersPage() {
+export default function OrdersPage() {
   const router = useRouter()
 
-  const [orders, setOrders] = useState<RestaurantOrder[]>([])
+  const [businessType, setBusinessType] = useState<string | null>(null)
+  const [orders, setOrders] = useState<CatalogOrder[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [itemQuery, setItemQuery] = useState('')
@@ -101,6 +103,8 @@ export default function RestaurantOrdersPage() {
   const [actingId, setActingId] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const catalog = getCatalogLabels(businessType)
 
   async function getToken() {
     const {
@@ -126,10 +130,12 @@ export default function RestaurantOrdersPage() {
       return
     }
 
-    if (!tenantCanUseRestaurant(result.tenant?.plan)) {
+    if (!tenantCanUseCatalog(result.tenant?.plan)) {
       router.push('/dashboard')
       return
     }
+
+    setBusinessType(result.tenant?.business_type ?? null)
 
     const token = await getToken()
 
@@ -142,8 +148,8 @@ export default function RestaurantOrdersPage() {
       Authorization: `Bearer ${token}`,
     }
     const [ordersResponse, menuItemsResponse] = await Promise.all([
-      fetch('/api/restaurant/orders?status=confirmed', { headers }),
-      fetch('/api/restaurant/menu-items', { headers }),
+      fetch('/api/catalog/orders?status=confirmed', { headers }),
+      fetch('/api/catalog/menu-items', { headers }),
     ])
 
     if (!ordersResponse.ok || !menuItemsResponse.ok) {
@@ -237,12 +243,12 @@ export default function RestaurantOrdersPage() {
     }
 
     if (cartItems.length === 0) {
-      setError('Adicione pelo menos um item ao carrinho.')
+      setError(`Adicione pelo menos um ${catalog.itemSingular} ao carrinho.`)
       setSaving(false)
       return
     }
 
-    const response = await fetch('/api/restaurant/orders', {
+    const response = await fetch('/api/catalog/orders', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -272,7 +278,7 @@ export default function RestaurantOrdersPage() {
     await load()
   }
 
-  async function updateOrder(order: RestaurantOrder, action: 'pay' | 'cancel') {
+  async function updateOrder(order: CatalogOrder, action: 'pay' | 'cancel') {
     const confirmed = action === 'pay'
       ? confirm('Confirmar pagamento/entrega deste pedido?')
       : confirm('Cancelar este pedido?')
@@ -289,7 +295,7 @@ export default function RestaurantOrdersPage() {
     setError('')
     setSuccess('')
 
-    const response = await fetch(`/api/restaurant/orders/${order.id}`, {
+    const response = await fetch(`/api/catalog/orders/${order.id}`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -379,11 +385,11 @@ export default function RestaurantOrdersPage() {
                 value={itemQuery}
                 onChange={(event) => setItemQuery(event.target.value)}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                placeholder="Buscar item"
+                placeholder={`Buscar ${catalog.itemSingular}`}
               />
               <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-gray-100 p-2">
                 {filteredMenuItems.length === 0 ? (
-                  <p className="py-4 text-center text-sm text-gray-500">Nenhum item encontrado.</p>
+                  <p className="py-4 text-center text-sm text-gray-500">Nenhum {catalog.itemSingular} encontrado.</p>
                 ) : (
                   filteredMenuItems.map((item) => (
                     <button
@@ -414,7 +420,7 @@ export default function RestaurantOrdersPage() {
                 </div>
 
                 {cartItems.length === 0 ? (
-                  <p className="py-3 text-sm text-gray-500">Nenhum item adicionado.</p>
+                  <p className="py-3 text-sm text-gray-500">Nenhum {catalog.itemSingular} adicionado.</p>
                 ) : (
                   <div className="space-y-2">
                     {cartItems.map((cartItem) => (

@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import {
   tenantCanUseAppointments as planCanUseAppointments,
   tenantCanUseBilling as planCanUseBilling,
+  tenantCanUseCatalog as planCanUseCatalog,
   tenantCanUseRestaurant as planCanUseRestaurant,
   tenantCanUseSalonInventory as planCanUseSalonInventory,
 } from './plan-features'
@@ -85,6 +86,11 @@ export function tenantCanUseBilling(tenant: { plan?: string | null }) {
   return planCanUseBilling(tenant.plan)
 }
 
+export function tenantCanUseCatalog(tenant: { plan?: string | null }) {
+  return planCanUseCatalog(tenant.plan)
+}
+
+// Alias retrocompatível para rotas/templates que ainda usam o nome antigo.
 export function tenantCanUseRestaurant(tenant: { plan?: string | null }) {
   return planCanUseRestaurant(tenant.plan)
 }

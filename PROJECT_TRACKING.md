@@ -128,6 +128,18 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Cancelamento de pedido estorna logicamente a receita reconhecida.
 - Inputs monetarios principais foram padronizados para exibicao e parse em formato `R$ 0,00`.
 
+### Generalizacao Catalogo + Pedidos (2026-06-26)
+
+- O modulo "restaurante" foi generalizado para um motor de **catalogo + pedidos** reaproveitavel por outros tipos de negocio de varejo.
+- Decisao de escopo: generalizamos a camada de app + rotas, mantendo os nomes fisicos das tabelas e RPCs no banco (`tenant_menu_*`, `tenant_restaurant_orders`, `wa_restaurant_menu_grouped`). Limpeza fisica do banco fica como migration dedicada futura.
+- Capability nova `tenantCanUseCatalog` (planos 4/5); `tenantCanUseRestaurant` mantido como alias retrocompativel para rotas/templates antigos.
+- Novos tipos de negocio adicionados ao motor de catalogo: `loja_material` (loja de material de construcao) e `petshop`, ambos compativeis com `plan4`/`plan5`.
+- Vocabulario por tipo de negocio em `src/lib/business-labels.ts` via `getCatalogLabels`: restaurante usa "Cardapio/itens"; demais varejos usam "Catalogo/produtos".
+- Rotas de API renomeadas: `/api/restaurant/*` -> `/api/catalog/*` (mesma logica, mesmas tabelas).
+- Telas renomeadas/generalizadas: `/restaurant-menu` -> `/catalogo`, `/restaurant-orders` -> `/pedidos`.
+- Financeiro unificado em `/financeiro`: junta receita de pedidos, atendimentos e despesas de estoque numa unica tela, com filtro de periodo, resumo por dia, exportacao CSV e PDF. As telas antigas `/restaurant-finance` e `/service-revenue` foram removidas (a API `/api/service-revenue` continua existindo como fonte de dados).
+- Plataforma e cadastro publico passaram a listar os novos tipos de negocio.
+
 ### n8n / WhatsApp
 
 - Integracao com n8n via API confirmada usando `N8N_BASE_URL` e `N8N_API_KEY`.
@@ -431,6 +443,10 @@ Fluxo agenda:
 3. Testar challenge/webhook real da Meta em `https://app.meuassistentevirtual.com.br/api/whatsapp/webhook`.
 4. Testar inbound real pelo WhatsApp oficial usando link de tenant com codigo `jack-xxxxxxxx`.
 5. Testar envio real pela inbox tenant-side e gravar evidencia para operacao.
+
+### Banco a Aplicar
+
+1. Aplicar `supabase/tenant_business_type_catalog_expansion.sql` (migration `019_business_type_catalog_expansion.sql`) no Supabase alvo: amplia o CHECK de `tenants.business_type` para aceitar `loja_material` e `petshop`. Sem isso, criar tenant desses tipos falha no banco. Aditivo e idempotente.
 
 ### Seguranca e Env Antes do Go-live
 

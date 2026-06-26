@@ -3,7 +3,7 @@ import { parseMoneyToCents } from '../../../../../src/lib/money'
 import { isTenantPlanBusinessTypeCompatible } from '../../../../../src/lib/plan-features'
 
 const allowedStatuses = new Set(['pending', 'active', 'suspended', 'cancelled'])
-const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant'])
+const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop'])
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {

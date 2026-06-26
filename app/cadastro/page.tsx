@@ -187,7 +187,7 @@ export default function SignupPage() {
             {[
               ['Cobranças e alunos', 'Para professores, escolas pequenas e serviços com mensalidade recorrente.'],
               ['Agenda', 'Para salões, clínicas e profissionais que precisam organizar horários.'],
-              ['Restaurante', 'Para cardápio, pedidos e atendimento pelo WhatsApp.'],
+              ['Catálogo e pedidos', 'Para restaurantes, lojas de material, petshops e quem vende por catálogo no WhatsApp.'],
             ].map(([title, description]) => (
               <article className="rounded-lg border border-sky-100 bg-white p-5 shadow" key={title}>
                 <h2 className="font-bold text-slate-950">{title}</h2>
@@ -305,6 +305,8 @@ export default function SignupPage() {
                     <option value="clinic">Clínica</option>
                     <option value="salon">Salão</option>
                     <option value="restaurant">Restaurante</option>
+                    <option value="loja_material">Loja de material de construção</option>
+                    <option value="petshop">Petshop</option>
                   </select>
                 </label>
               </div>
