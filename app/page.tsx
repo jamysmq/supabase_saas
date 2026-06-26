@@ -60,7 +60,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f7fbff] text-[#07111f]">
-      <section className="relative isolate min-h-[92vh] overflow-hidden bg-[#03142f] text-white">
+      <section className="relative isolate min-h-[86vh] overflow-hidden bg-[#03142f] text-white">
         <Image
           src="/jack-hero.svg"
           alt="Assistente Jack sorrindo"
@@ -71,7 +71,7 @@ export default function Home() {
         />
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,20,47,0.98)_0%,rgba(3,20,47,0.9)_38%,rgba(3,20,47,0.38)_74%,rgba(3,20,47,0.08)_100%)]" />
 
-        <div className="mx-auto flex min-h-[92vh] w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
+        <div className="mx-auto flex min-h-[86vh] w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
           <header className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Link className="text-sm font-bold uppercase tracking-[0.14em]" href="/">
               Assistente Jack
@@ -98,13 +98,13 @@ export default function Home() {
             </nav>
           </header>
 
-          <div className="flex flex-1 items-center py-14">
+          <div className="flex flex-1 items-center py-10">
             <div className="max-w-2xl">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-[#68e5ff]">
-                Assistente Jack
+                Assistente virtual para pequenos negócios
               </p>
-              <h1 className="text-4xl font-black leading-[1.04] text-white sm:text-5xl lg:text-6xl">
-                Atenda, cobre e agende pelo WhatsApp sem perder cliente no caminho.
+              <h1 className="text-5xl font-black leading-[1.03] text-white sm:text-6xl lg:text-7xl">
+                Atenda, cobre e agende pelo WhatsApp sem perder cliente.
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-white/84 sm:text-xl">
                 O Jack é o assistente virtual que organiza o WhatsApp do seu
