@@ -122,7 +122,7 @@ export default function SignupPage() {
       return
     }
 
-    setSuccess('Solicitacao enviada. Vamos revisar seus dados e retornar pelo contato informado.')
+    setSuccess('Cadastro enviado! Vamos confirmar seus dados e retornar pelo contato informado.')
     setForm(emptyForm)
     setModalOpen(false)
   }
@@ -151,8 +151,8 @@ export default function SignupPage() {
               Se cadastre para usar o Assistente Jack no seu negócio.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
-              Abra uma solicitação com os dados do seu negócio. Ela entra como
-              cadastro pendente para revisão do admin da plataforma.
+              Envie os dados do seu negócio em poucos minutos. Confirmamos seu
+              cadastro e liberamos o acesso para você começar a usar.
             </p>
 
             {success && (
@@ -208,7 +208,7 @@ export default function SignupPage() {
               <div>
                 <h2 className="text-xl font-bold">Solicitar cadastro</h2>
                 <p className="text-sm text-slate-500">
-                  Preencha os mesmos dados usados na criação do tenant.
+                  Preencha os dados do seu negócio. Leva poucos minutos.
                 </p>
               </div>
               <button
@@ -261,7 +261,7 @@ export default function SignupPage() {
 
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="text-sm font-medium">
-                  Email do tenant
+                  E-mail do negócio
                   <input
                     value={form.email}
                     onChange={(event) => setForm({ ...form, email: event.target.value })}
@@ -271,12 +271,12 @@ export default function SignupPage() {
                   />
                 </label>
                 <label className="text-sm font-medium">
-                  Email admin
+                  E-mail de acesso
                   <input
                     value={form.admin_email}
                     onChange={(event) => setForm({ ...form, admin_email: event.target.value })}
                     className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
-                    placeholder="Se vazio, usa o email do tenant"
+                    placeholder="Se vazio, usamos o e-mail do negócio"
                     type="email"
                   />
                 </label>

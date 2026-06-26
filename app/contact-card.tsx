@@ -59,10 +59,10 @@ export function ContactCard() {
             Falar conosco
           </p>
           <h2 className="mt-3 max-w-xl text-3xl font-black text-[#07111f]">
-            Envie uma mensagem para o admin da plataforma.
+            Ficou com alguma dúvida? Fale com a gente.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-[#44546a]">
-            Use este canal para tirar duvidas, pedir ajuda com cadastro ou falar sobre o Assistente Jack.
+            Tire dúvidas, peça ajuda com o cadastro ou conheça melhor o Assistente Jack. A gente retorna pelo contato que você informar.
           </p>
         </div>
 
