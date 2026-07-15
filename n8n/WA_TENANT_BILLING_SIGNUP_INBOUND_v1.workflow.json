@@ -246,47 +246,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "to",
-              "value": "={{$node.FN_render_success.json.to}}"
-            },
-            {
-              "name": "body",
-              "value": "={{$node.FN_render_success.json.reply}}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "fbdaeeef-6a7e-4e29-ac6e-fb7e82cc6e8b",
-      "name": "HTTP_send_success",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        1060,
-        -120
-      ]
-    },
-    {
-      "parameters": {
         "respondWith": "text",
         "responseBody": "={{$node.FN_render_success.json.reply}}",
         "options": {}
@@ -350,47 +309,6 @@
       "typeVersion": 4.3,
       "position": [
         320,
-        120
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "to",
-              "value": "={{$node.FN_signup_state_machine.json.to}}"
-            },
-            {
-              "name": "body",
-              "value": "={{$node.FN_signup_state_machine.json.reply}}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "3045a3c9-81e3-406b-920d-52988360065e",
-      "name": "HTTP_send_reply",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        560,
         120
       ]
     },
@@ -499,17 +417,6 @@
       "main": [
         [
           {
-            "node": "HTTP_send_success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP_send_success": {
-      "main": [
-        [
-          {
             "node": "Respond_success",
             "type": "main",
             "index": 0
@@ -518,17 +425,6 @@
       ]
     },
     "RPC_patch_reply": {
-      "main": [
-        [
-          {
-            "node": "HTTP_send_reply",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP_send_reply": {
       "main": [
         [
           {
