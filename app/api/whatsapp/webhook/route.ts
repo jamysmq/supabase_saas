@@ -253,6 +253,17 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
     }
   }
 
+  if (body.includes('Confira os dados antes de enviar')) {
+    return {
+      kind: 'buttons',
+      body,
+      options: [
+        { id: 'billing_signup_confirm', title: 'Confirmar cadastro' },
+        { id: 'billing_signup_restart', title: 'Refazer cadastro' },
+      ],
+    }
+  }
+
   const lines = body.split('\n')
   const numbered = lines.flatMap((line, lineIndex) => {
     const match = line.trim().match(/^(\d+)\)\s+(.+)$/)
@@ -264,12 +275,16 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   const firstOptionLine = numbered[0].lineIndex
   const cleanBody = lines.slice(0, firstOptionLine).join('\n').trim() || 'Escolha uma opção:'
   const isSlotMenu = body.includes('Encontrei estes horarios') || body.includes('Encontrei estes horários')
+  const normalizedBody = body.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const isBillingSignupMenu = normalizedBody.includes('plano de mensalidade') ||
+    normalizedBody.includes('turma desejada') || normalizedBody.includes('turma com vaga')
   const options = numbered.map((option) => {
     const compactSlotTitle = compactAppointmentSlotTitle(option.title)
+    const title = isBillingSignupMenu ? `${option.number}. ${option.title}` : option.title
 
     return {
-      id: `appointment_choice_${option.number}`,
-      title: compactSlotTitle ?? option.title,
+      id: `${isBillingSignupMenu ? 'billing_signup_choice' : 'appointment_choice'}_${option.number}`,
+      title: compactSlotTitle ?? title,
       ...(compactSlotTitle ? { description: shortInteractiveTitle(option.title, 72) } : {}),
     }
   })
@@ -295,7 +310,11 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
       ? 'Ver profissionais'
       : isSlotMenu
         ? 'Ver horários'
-        : 'Ver opções'
+        : normalizedBody.includes('plano de mensalidade')
+          ? 'Ver planos'
+          : normalizedBody.includes('turma')
+            ? 'Ver turmas'
+            : 'Ver opções'
 
   return {
     kind: 'list',

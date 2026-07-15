@@ -474,6 +474,13 @@ export default function SettingsPage() {
                         : 'Inativo · ativar'}
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => router.push('/signup-settings')}
+                  className="mt-4 rounded-lg border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700"
+                >
+                  Configurar valores e planos
+                </button>
               </section>
             )}
 
