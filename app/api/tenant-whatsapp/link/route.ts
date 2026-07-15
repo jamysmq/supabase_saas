@@ -7,6 +7,7 @@ type EntryLinkRow = {
 
 type TenantInfo = {
   legal_name?: string | null
+  public_name?: string | null
   business_type?: string | null
 }
 
@@ -19,26 +20,8 @@ function buildWaMeUrl(phone: string, text: string) {
 }
 
 function buildPrefilledText(tenant: TenantInfo | null, code: string) {
-  const businessName = tenant?.legal_name?.trim() || 'o negócio'
-  const ticket = `Atendimento ${code}`
-
-  if (tenant?.business_type === 'salon') {
-    return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
-  }
-
-  if (tenant?.business_type === 'clinic') {
-    return `Olá, Assistente Jack. Gostaria de atendimento da ${businessName}. ${ticket}`
-  }
-
-  if (tenant?.business_type === 'teacher') {
-    return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
-  }
-
-  if (tenant?.business_type === 'restaurant') {
-    return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
-  }
-
-  return `Olá, Assistente Jack. Gostaria de atendimento do ${businessName}. ${ticket}`
+  const businessName = tenant?.public_name?.trim() || tenant?.legal_name?.trim() || 'este estabelecimento'
+  return `Olá! Quero iniciar um atendimento com ${businessName} pelo Assistente Jack. Meu código de acesso é ${code}.`
 }
 
 export async function GET(request: Request) {
@@ -57,9 +40,9 @@ export async function GET(request: Request) {
   const entryLink = data as EntryLinkRow | null
 
   if (error || !entryLink) {
-    console.error('Could not ensure tenant WhatsApp entry link.', error?.message)
+    console.error('Não foi possível gerar o link de atendimento do tenant.', error?.message)
     return Response.json(
-      { error: 'Could not load WhatsApp entry link.' },
+      { error: 'Não foi possível carregar o link de atendimento.' },
       { status: 500 }
     )
   }

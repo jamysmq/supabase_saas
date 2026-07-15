@@ -26,9 +26,31 @@ export async function PATCH(
   const description = typeof body?.description === 'string'
     ? body.description.trim() || null
     : null
+  const maxMembers = body?.max_members === null || body?.max_members === '' || body?.max_members === undefined
+    ? null
+    : Number(body.max_members)
 
   if (!name) {
     return errorResponse('Informe o nome do grupo.')
+  }
+
+  if (maxMembers !== null && (!Number.isInteger(maxMembers) || maxMembers < 1)) {
+    return errorResponse('A capacidade deve ser um número inteiro maior que zero.')
+  }
+
+  const { count: currentMembers, error: countError } = await result.supabase
+    .from('tenant_customers')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', result.tenantUser.tenant_id)
+    .eq('group_id', groupId)
+    .eq('is_active', true)
+
+  if (countError) {
+    return errorResponse('Não foi possível validar a ocupação do grupo.', 500, countError.message)
+  }
+
+  if (maxMembers !== null && maxMembers < (currentMembers ?? 0)) {
+    return errorResponse(`A capacidade não pode ser menor que os ${currentMembers ?? 0} alunos ativos desta turma.`)
   }
 
   const { data: group, error } = await result.supabase
@@ -36,12 +58,13 @@ export async function PATCH(
     .update({
       name,
       description,
+      max_members: maxMembers,
       updated_at: new Date().toISOString(),
     })
     .eq('id', groupId)
     .eq('tenant_id', result.tenantUser.tenant_id)
     .eq('is_active', true)
-    .select('id, name, description, is_active, created_at, updated_at')
+    .select('id, name, description, max_members, is_active, created_at, updated_at')
     .single()
 
   if (error || !group) {

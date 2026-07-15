@@ -15,6 +15,15 @@ type Signup = {
   amount_cents: number
   due_day: number
   created_at: string
+  group_id: string | null
+}
+
+type Group = {
+  id: string
+  name: string
+  max_members: number | null
+  active_customers_count: number
+  is_full: boolean
 }
 
 const money = (value: number) => (value / 100).toLocaleString('pt-BR', {
@@ -25,6 +34,8 @@ const money = (value: number) => (value / 100).toLocaleString('pt-BR', {
 export default function PendingSignupsPage() {
   const router = useRouter()
   const [items, setItems] = useState<Signup[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [selectedGroups, setSelectedGroups] = useState<Record<string, string>>({})
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [acting, setActing] = useState('')
@@ -52,7 +63,10 @@ export default function PendingSignupsPage() {
       setMessage({ error: data?.message || 'Não foi possível carregar os cadastros.', success: '' })
       return
     }
-    setItems(data.signups ?? [])
+    const signups = (data.signups ?? []) as Signup[]
+    setItems(signups)
+    setGroups(data.groups ?? [])
+    setSelectedGroups(Object.fromEntries(signups.map((item) => [item.id, item.group_id ?? ''])))
   }, [router])
 
   useEffect(() => {
@@ -75,7 +89,7 @@ export default function PendingSignupsPage() {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action, group_id: selectedGroups[item.id] || null }),
     })
     const data = await response.json().catch(() => null)
     setActing('')
@@ -113,7 +127,7 @@ export default function PendingSignupsPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Alunos do professor</p>
               <h1 className="mt-1 text-2xl font-bold">Cadastros pendentes</h1>
               <p className="mt-1 text-sm text-slate-600">
-                Revise os dados enviados pelo WhatsApp antes de ativar o aluno e a cobrança.
+                Confira os dados recebidos pelo WhatsApp, ajuste a turma se necessário e só então aprove o aluno.
               </p>
             </div>
             <button onClick={() => void load()} className="h-10 rounded-lg border border-sky-200 px-4 text-sm font-medium hover:bg-sky-50">
@@ -137,7 +151,22 @@ export default function PendingSignupsPage() {
               <div>
                 <h2 className="font-semibold">{item.full_name}</h2>
                 <p className="mt-1 text-sm text-slate-600">WhatsApp: {item.customer_phone_e164}</p>
-                <p className="text-sm text-slate-600">Turma: {item.group_name_snapshot || 'Não informada'}</p>
+                <label className="mt-3 block text-sm font-medium text-slate-700">
+                  Turma antes da aprovação
+                  <select
+                    value={selectedGroups[item.id] ?? ''}
+                    onChange={(event) => setSelectedGroups((current) => ({ ...current, [item.id]: event.target.value }))}
+                    className="mt-1 h-10 w-full rounded-lg border border-sky-200 bg-white px-3 font-normal"
+                  >
+                    <option value="">Sem turma</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id} disabled={group.is_full}>
+                        {group.name} · {group.active_customers_count}{group.max_members ? `/${group.max_members}` : ''}
+                        {group.is_full ? ' · lotada' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <p className="mt-1 text-xs text-slate-500">Recebido em {new Date(item.created_at).toLocaleString('pt-BR')}</p>
               </div>
               <div className="rounded-lg bg-sky-50 p-3 text-sm">

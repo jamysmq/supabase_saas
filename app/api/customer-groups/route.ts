@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
   const { data: groups, error } = await result.supabase
     .from('tenant_customer_groups')
-    .select('id, name, description, is_active, created_at, updated_at')
+    .select('id, name, description, max_members, is_active, created_at, updated_at')
     .eq('tenant_id', result.tenantUser.tenant_id)
     .eq('is_active', true)
     .order('name', { ascending: true })
@@ -69,9 +69,16 @@ export async function POST(request: Request) {
   const description = typeof body?.description === 'string'
     ? body.description.trim() || null
     : null
+  const maxMembers = body?.max_members === null || body?.max_members === '' || body?.max_members === undefined
+    ? null
+    : Number(body.max_members)
     
   if (!name) {
     return errorResponse('Informe o nome do grupo.')
+  }
+
+  if (maxMembers !== null && (!Number.isInteger(maxMembers) || maxMembers < 1)) {
+    return errorResponse('A capacidade deve ser um número inteiro maior que zero.')
   }
 
   const { data: group, error: groupError } = await result.supabase
@@ -80,9 +87,10 @@ export async function POST(request: Request) {
       tenant_id: result.tenantUser.tenant_id,
       name,
       description,
+      max_members: maxMembers,
       is_active: true,
     })
-    .select('id, name, description, is_active, created_at, updated_at')
+    .select('id, name, description, max_members, is_active, created_at, updated_at')
     .single()
 
   if (groupError) {

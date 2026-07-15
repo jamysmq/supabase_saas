@@ -24,5 +24,39 @@ export async function GET(request: Request) {
     return errorResponse('Não foi possível carregar os cadastros pendentes.', 500, error.message)
   }
 
-  return Response.json({ signups: data ?? [] })
+  const [{ data: groups, error: groupsError }, { data: customers, error: customersError }] = await Promise.all([
+    result.supabase
+      .from('tenant_customer_groups')
+      .select('id, name, max_members')
+      .eq('tenant_id', result.tenantUser.tenant_id)
+      .eq('is_active', true)
+      .order('name', { ascending: true }),
+    result.supabase
+      .from('tenant_customers')
+      .select('group_id')
+      .eq('tenant_id', result.tenantUser.tenant_id)
+      .eq('is_active', true)
+      .not('group_id', 'is', null),
+  ])
+
+  if (groupsError || customersError) {
+    return errorResponse('Não foi possível carregar a capacidade das turmas.', 500, groupsError?.message ?? customersError?.message)
+  }
+
+  const counts = new Map<string, number>()
+  for (const customer of customers ?? []) {
+    if (customer.group_id) counts.set(customer.group_id, (counts.get(customer.group_id) ?? 0) + 1)
+  }
+
+  return Response.json({
+    signups: data ?? [],
+    groups: (groups ?? []).map((group) => {
+      const activeCustomersCount = counts.get(group.id) ?? 0
+      return {
+        ...group,
+        active_customers_count: activeCustomersCount,
+        is_full: group.max_members !== null && activeCustomersCount >= group.max_members,
+      }
+    }),
+  })
 }

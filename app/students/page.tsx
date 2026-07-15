@@ -13,6 +13,7 @@ type Group = {
   name: string
   description?: string | null
   active_customers_count?: number
+  max_members?: number | null
 }
 
 type BillingProfile = {
@@ -110,11 +111,12 @@ export default function StudentsPage() {
   const [query, setQuery] = useState('')
   const [groupFilter, setGroupFilter] = useState('all')
   const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupMaxMembers, setNewGroupMaxMembers] = useState('')
   const [showGroupsManager, setShowGroupsManager] = useState(false)
   const [managedGroups, setManagedGroups] = useState<Group[]>([])
   const [groupsLoading, setGroupsLoading] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState('')
-  const [groupForm, setGroupForm] = useState({ name: '', description: '' })
+  const [groupForm, setGroupForm] = useState({ name: '', description: '', max_members: '' })
   const [creatingStudent, setCreatingStudent] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [form, setForm] = useState<StudentForm>(emptyForm)
@@ -459,7 +461,7 @@ export default function StudentsPage() {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, max_members: newGroupMaxMembers || null }),
     })
 
     if (!response.ok) {
@@ -470,6 +472,7 @@ export default function StudentsPage() {
     }
 
     setNewGroupName('')
+    setNewGroupMaxMembers('')
     setGroupSuccess(`${labels.groupSingular} criada.`)
     setGroupSaving(false)
     await load()
@@ -525,6 +528,7 @@ export default function StudentsPage() {
     setGroupForm({
       name: group.name,
       description: group.description ?? '',
+      max_members: group.max_members ? String(group.max_members) : '',
     })
   }
 
@@ -566,7 +570,7 @@ export default function StudentsPage() {
     }
 
     setEditingGroupId('')
-    setGroupForm({ name: '', description: '' })
+    setGroupForm({ name: '', description: '', max_members: '' })
     setGroupSuccess(`${labels.groupSingular} atualizada.`)
     await load()
     await loadManagedGroups()
@@ -944,6 +948,16 @@ export default function StudentsPage() {
                 placeholder={`Nome da ${labels.groupSingular.toLowerCase()}`}
               />
 
+              <input
+                value={newGroupMaxMembers}
+                onChange={(event) => setNewGroupMaxMembers(event.target.value)}
+                className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm"
+                placeholder="Capacidade máxima (opcional)"
+                inputMode="numeric"
+                min="1"
+                type="number"
+              />
+
               {groupError && (
                 <p className="text-sm text-red-600">{groupError}</p>
               )}
@@ -1176,6 +1190,18 @@ export default function StudentsPage() {
                           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                           placeholder="Descricao opcional"
                         />
+                        <input
+                          value={groupForm.max_members}
+                          onChange={(event) => setGroupForm({
+                            ...groupForm,
+                            max_members: event.target.value,
+                          })}
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                          placeholder="Capacidade máxima (opcional)"
+                          inputMode="numeric"
+                          min="1"
+                          type="number"
+                        />
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -1199,7 +1225,8 @@ export default function StudentsPage() {
                         <div>
                           <h3 className="font-medium">{group.name}</h3>
                           <p className="text-sm text-gray-500">
-                            {group.description || 'Sem descricao'} · {group.active_customers_count ?? 0} {labels.customerPluralLower}
+                            {group.description || 'Sem descrição'} · {group.active_customers_count ?? 0}
+                            {group.max_members ? ` de ${group.max_members}` : ''} {labels.customerPluralLower}
                           </p>
                         </div>
                         <div className="flex gap-2">

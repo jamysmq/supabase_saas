@@ -700,10 +700,12 @@ export default function WhatsAppInboxPage() {
 
     try {
       await navigator.clipboard.writeText(value)
-      setSuccess(entryLink.whatsapp_url ? 'Link copiado.' : 'Texto de entrada copiado.')
+      setSuccess(entryLink.whatsapp_url
+        ? 'Link exclusivo copiado. Agora é só compartilhá-lo com seus clientes.'
+        : 'Mensagem de entrada copiada. Agora é só compartilhá-la com seus clientes.')
       setError('')
     } catch {
-      setError('Nao foi possivel copiar automaticamente.')
+      setError('Não foi possível copiar automaticamente.')
     }
   }
 
@@ -894,15 +896,15 @@ export default function WhatsAppInboxPage() {
           <section className="rounded-2xl bg-white p-5 shadow">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="font-bold">Link de atendimento do negocio</h2>
+                <h2 className="font-bold">Link exclusivo de atendimento</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Compartilhe este link nos canais do negocio para abrir conversas ja roteadas para este tenant.
+                  Compartilhe este link nas redes sociais, no seu site ou diretamente com seus clientes. Ao abri-lo, a pessoa verá uma mensagem pronta e será direcionada automaticamente para o atendimento do seu negócio pelo Jack.
                 </p>
                 <p className="mt-3 break-all rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
                   {entryLink.whatsapp_url ?? entryLink.prefilled_text}
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
-                  Codigo de roteamento: {entryLink.code}
+                  Código de roteamento: {entryLink.code}
                 </p>
                 {!entryLink.platform_phone_configured && (
                   <p className="mt-2 text-xs text-amber-700">
@@ -914,7 +916,7 @@ export default function WhatsAppInboxPage() {
                 onClick={copyEntryLink}
                 className="h-10 shrink-0 rounded-lg bg-gray-950 px-4 text-sm font-medium text-white"
               >
-                Copiar
+                Copiar link de atendimento
               </button>
             </div>
           </section>

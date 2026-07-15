@@ -25,16 +25,26 @@ export async function POST(
   }
 
   const rpcName = action === 'approve'
-    ? 'admin_approve_teacher_customer_signup'
+    ? 'admin_approve_teacher_customer_signup_with_group'
     : 'admin_reject_teacher_customer_signup'
 
-  const { data, error } = await result.supabase.rpc(rpcName, {
+  const rpcArgs: Record<string, string | null> = {
     p_tenant_id: result.tenantUser.tenant_id,
     p_request_id: requestId,
     p_reviewed_by_tenant_user_id: result.tenantUser.id,
-  })
+  }
+
+  if (action === 'approve') {
+    rpcArgs.p_group_id = typeof body?.group_id === 'string' && body.group_id ? body.group_id : null
+  }
+
+  const { data, error } = await result.supabase.rpc(rpcName, rpcArgs)
 
   if (error) {
+    if (action === 'approve' && error.message.includes('group_is_full')) {
+      return errorResponse('A turma escolhida acabou de atingir a capacidade máxima. Selecione outra turma ou aprove sem turma.', 409)
+    }
+
     return errorResponse(
       action === 'approve'
         ? 'Não foi possível aprovar o cadastro.'
