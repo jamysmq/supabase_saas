@@ -7,6 +7,8 @@ import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseBilling } from '../../src/lib/plan-features'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput, parseMoneyToCents } from '../../src/lib/money'
+import { InactiveStudentsPanel } from '../inactive-students/page'
+import { SignupSettingsPanel } from '../signup-settings/page'
 
 type Group = {
   id: string
@@ -118,6 +120,7 @@ export default function StudentsPage() {
   const [editingGroupId, setEditingGroupId] = useState('')
   const [groupForm, setGroupForm] = useState({ name: '', description: '', max_members: '' })
   const [creatingStudent, setCreatingStudent] = useState(false)
+  const [managementView, setManagementView] = useState<'active' | 'inactive' | 'plans'>('active')
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [form, setForm] = useState<StudentForm>(emptyForm)
   const labels = getBusinessLabels(businessType)
@@ -701,13 +704,13 @@ export default function StudentsPage() {
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">{labels.customerPlural}</h1>
+              <h1 className="text-2xl font-bold">Gerenciamento dos {labels.customerPluralLower}</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Edite dados, organize em {labels.groupPluralLower} e acompanhe cobrancas ativas.
+                Consulte ativos e inativos, organize {labels.groupPluralLower} e configure mensalidades.
               </p>
             </div>
 
-            <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+            {managementView === 'active' && <div className="w-full sm:w-auto">
               <button
                 onClick={openCreator}
                 className="h-10 min-w-[144px] rounded-lg bg-gray-950 px-4 text-sm font-medium text-white"
@@ -715,16 +718,25 @@ export default function StudentsPage() {
                 {labels.addCustomer}
               </button>
 
-              <button
-                onClick={() => router.push('/inactive-students')}
-                className="h-10 min-w-[144px] rounded-lg border border-gray-200 px-4 text-sm font-medium"
-              >
-                {labels.inactiveCustomers}
-              </button>
-            </div>
+            </div>}
           </div>
         </section>
 
+        <nav className={`grid gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-sm ${businessType === 'teacher' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`} aria-label="Seções do gerenciamento dos alunos">
+          <button type="button" onClick={() => setManagementView('active')} className={`rounded-lg px-4 py-2.5 text-sm font-semibold ${managementView === 'active' ? 'bg-sky-700 text-white' : 'text-gray-600 hover:bg-sky-50'}`}>
+            {labels.customerPlural} ativos
+          </button>
+          <button type="button" onClick={() => setManagementView('inactive')} className={`rounded-lg px-4 py-2.5 text-sm font-semibold ${managementView === 'inactive' ? 'bg-sky-700 text-white' : 'text-gray-600 hover:bg-sky-50'}`}>
+            {labels.inactiveCustomers}
+          </button>
+          {businessType === 'teacher' && (
+            <button type="button" onClick={() => setManagementView('plans')} className={`rounded-lg px-4 py-2.5 text-sm font-semibold ${managementView === 'plans' ? 'bg-sky-700 text-white' : 'text-gray-600 hover:bg-sky-50'}`}>
+              Planos e mensalidades
+            </button>
+          )}
+        </nav>
+
+        {managementView === 'active' ? <>
         {error && (
           <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-700">
             {error}
@@ -837,23 +849,29 @@ export default function StudentsPage() {
               )}
             </div>
 
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[840px] text-sm">
-                <thead className="border-b border-gray-200 text-left text-gray-500">
+            <div className="hidden md:block">
+              <table className="w-full table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[29%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[19%]" />
+                  <col className="w-[20%]" />
+                </colgroup>
+                <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
                   <tr>
-                    <th className="py-3 pr-4 font-medium">Nome</th>
-                    <th className="py-3 pr-4 font-medium">Telefone</th>
-                  <th className="py-3 pr-4 font-medium">{labels.groupSingular}</th>
-                    <th className="py-3 pr-4 font-medium">Mensalidade</th>
-                    <th className="py-3 pr-4 font-medium">Cobrança</th>
-                    <th className="py-3 text-right font-medium">Acoes</th>
+                    <th className="py-2.5 pr-3 font-semibold">{labels.customerSingular}</th>
+                    <th className="py-2.5 pr-3 font-semibold">{labels.groupSingular}</th>
+                    <th className="py-2.5 pr-3 font-semibold">Mensalidade</th>
+                    <th className="py-2.5 pr-3 font-semibold">Cobrança</th>
+                    <th className="py-2.5 text-right font-semibold">Ações</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {filteredStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-500">
+                      <td colSpan={5} className="py-8 text-center text-gray-500">
                         Nenhum {labels.customerSingular.toLowerCase()} ativo encontrado.
                       </td>
                     </tr>
@@ -862,23 +880,23 @@ export default function StudentsPage() {
                       const billing = student.customer_billing_profiles?.[0]
 
                       return (
-                        <tr key={student.id} className="border-b border-gray-100">
-                          <td className="py-3 pr-4 font-medium">
-                            <div>{student.full_name}</div>
-                            <div className="text-xs font-normal text-gray-400">
+                        <tr key={student.id} className="border-b border-gray-100 align-middle hover:bg-gray-50">
+                          <td className="min-w-0 py-3 pr-3 font-medium">
+                            <div className="truncate">{student.full_name}</div>
+                            <div className="mt-0.5 truncate text-xs font-normal text-gray-500">
+                              {student.phone_e164 || 'Sem telefone'}
+                            </div>
+                            <div className="mt-0.5 truncate text-xs font-normal text-gray-400">
                               {student.cpf || 'CPF não informado'}
                             </div>
                           </td>
-                          <td className="py-3 pr-4 text-gray-600">
-                            {student.phone_e164 || '-'}
+                          <td className="min-w-0 py-3 pr-3 text-gray-600">
+                            <div className="truncate">{firstRelation(student.tenant_customer_groups)?.name || `Sem ${labels.groupSingular.toLowerCase()}`}</div>
                           </td>
-                          <td className="py-3 pr-4 text-gray-600">
-                            {firstRelation(student.tenant_customer_groups)?.name || `Sem ${labels.groupSingular.toLowerCase()}`}
-                          </td>
-                          <td className="py-3 pr-4 text-gray-600">
+                          <td className="whitespace-nowrap py-3 pr-3 font-medium text-gray-700">
                             {formatCurrencyFromCents(billing?.amount_cents)}
                           </td>
-                          <td className="py-3 pr-4 text-gray-600">
+                          <td className="py-3 pr-3 text-gray-600">
                             {billing ? (
                               <div>
                                 <div>{billing.status ?? '-'} · dia {billing.due_day ?? '-'}</div>
@@ -902,22 +920,22 @@ export default function StudentsPage() {
                             )}
                           </td>
                           <td className="py-3 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="grid gap-1.5">
                               <button
                                 onClick={() => openEditor(student)}
-                                className="h-9 rounded-lg border border-gray-200 px-3 text-sm font-medium"
+                                className="h-8 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
                               >
                                 Editar
                               </button>
                               <button
                                 onClick={() => router.push(`/students/${student.id}/move`)}
-                                className="h-9 rounded-lg border border-gray-200 px-3 text-sm font-medium"
+                                className="h-8 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
                               >
                                 Mover
                               </button>
                               <button
                                 onClick={() => deactivateStudent(student)}
-                                className="h-9 rounded-lg bg-red-50 px-3 text-sm font-medium text-red-700"
+                                className="h-8 w-full rounded-lg border border-red-100 bg-red-50 px-2 text-xs font-medium text-red-700"
                               >
                                 Desativar
                               </button>
@@ -1005,6 +1023,11 @@ export default function StudentsPage() {
             </div>
           </aside>
         </section>
+        </> : managementView === 'inactive' ? (
+          <InactiveStudentsPanel embedded />
+        ) : (
+          <SignupSettingsPanel embedded />
+        )}
       </div>
 
       {(creatingStudent || editingStudent) && (

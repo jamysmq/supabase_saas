@@ -30,7 +30,7 @@ type PlanForm = {
 
 const emptyPlan: PlanForm = { name: '', description: '', amount: '', due_day: '10' }
 
-export default function SignupSettingsPage() {
+export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter()
   const [settings, setSettings] = useState<SignupSettings | null>(null)
   const [plans, setPlans] = useState<SignupPlan[]>([])
@@ -184,14 +184,14 @@ export default function SignupSettingsPage() {
     }
   }
 
-  if (loading) return <main className="min-h-screen bg-sky-50 p-6 text-center">Carregando...</main>
+  if (loading) return <div className={embedded ? 'py-10 text-center' : 'min-h-screen bg-sky-50 p-6 text-center'}>Carregando...</div>
 
   return (
-    <main className="min-h-screen bg-sky-50 px-4 py-6 text-slate-950">
-      <div className="mx-auto max-w-4xl space-y-4">
+    <div className={embedded ? 'text-slate-950' : 'min-h-screen bg-sky-50 px-4 py-6 text-slate-950'}>
+      <div className={embedded ? 'space-y-4' : 'mx-auto max-w-4xl space-y-4'}>
         <section className="rounded-2xl bg-white p-5 shadow-sm">
-          <button onClick={() => router.push('/settings')} className="mb-3 text-sm text-sky-700">← Voltar às configurações</button>
-          <h1 className="text-2xl font-bold">Cadastro de alunos pelo WhatsApp</h1>
+          {!embedded && <button onClick={() => router.push('/students')} className="mb-3 text-sm text-sky-700">← Voltar ao gerenciamento dos alunos</button>}
+          <h1 className={embedded ? 'text-lg font-bold' : 'text-2xl font-bold'}>Planos e cadastro pelo WhatsApp</h1>
           <p className="mt-1 text-sm text-slate-600">
             Defina o valor que o Jack apresentará. O aluno escolhe apenas entre opções prontas; valores e vencimentos são controlados por você.
           </p>
@@ -297,6 +297,12 @@ export default function SignupSettingsPage() {
           </>
         )}
       </div>
-    </main>
+    </div>
   )
+}
+
+export default function SignupSettingsPage() {
+  const router = useRouter()
+  useEffect(() => { router.replace('/students') }, [router])
+  return <main className="min-h-screen bg-sky-50 p-6 text-center">Abrindo o gerenciamento dos alunos...</main>
 }

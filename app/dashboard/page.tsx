@@ -57,13 +57,8 @@ export default function DashboardPage() {
         },
         {
           href: '/students',
-          title: labels.customerPlural,
-          description: labels.dashboardCustomersDescription,
-        },
-        {
-          href: '/inactive-students',
-          title: labels.inactiveCustomers,
-          description: labels.dashboardInactiveDescription,
+          title: `Gerenciamento dos ${labels.customerPluralLower}`,
+          description: `Gerencie ${labels.customerPluralLower} ativos e inativos, ${labels.groupPluralLower}, planos e mensalidades em um só lugar.`,
         }]
       : []),
     ...(canUseAppointments

@@ -26,7 +26,7 @@ function firstRelation<T>(relation: T | T[] | null | undefined) {
   return Array.isArray(relation) ? relation[0] ?? null : relation ?? null
 }
 
-export default function InactiveStudentsPage() {
+export function InactiveStudentsPanel({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter()
 
   const [students, setStudents] = useState<InactiveStudent[]>([])
@@ -127,24 +127,24 @@ export default function InactiveStudentsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className={embedded ? 'py-10 text-center' : 'min-h-screen flex items-center justify-center bg-gray-100'}>
         Carregando...
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
-      <div className="max-w-4xl mx-auto space-y-4">
+    <div className={embedded ? 'text-gray-950' : 'min-h-screen bg-gray-100 px-4 py-6 text-gray-950'}>
+      <div className={embedded ? 'space-y-4' : 'max-w-4xl mx-auto space-y-4'}>
         <section className="bg-white rounded-2xl shadow p-5">
-          <button
+          {!embedded && <button
             onClick={() => router.push('/students')}
             className="text-sm text-gray-500 mb-3"
           >
-            Voltar
-          </button>
+            Voltar ao gerenciamento dos alunos
+          </button>}
 
-          <h1 className="text-2xl font-bold">{labels.inactiveCustomers}</h1>
+          <h1 className={embedded ? 'text-lg font-bold' : 'text-2xl font-bold'}>{labels.inactiveCustomers}</h1>
           <p className="text-sm text-gray-500 mt-1">
             Consulte e reative {labels.customerPluralLower} sem perder o cadastro existente.
           </p>
@@ -194,6 +194,12 @@ export default function InactiveStudentsPage() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   )
+}
+
+export default function InactiveStudentsPage() {
+  const router = useRouter()
+  useEffect(() => { router.replace('/students') }, [router])
+  return <main className="min-h-screen bg-gray-100 p-6 text-center">Abrindo o gerenciamento dos alunos...</main>
 }

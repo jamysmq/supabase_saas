@@ -14,7 +14,6 @@ type Tenant = {
   whatsapp_e164: string
   plan: string
   status: string
-  whatsapp_customer_signup_enabled: boolean
 }
 
 type BillingSettings = {
@@ -59,7 +58,6 @@ export default function SettingsPage() {
   const [savingPix, setSavingPix] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
-  const [savingWhatsappSignup, setSavingWhatsappSignup] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const labels = getBusinessLabels(businessType)
@@ -96,7 +94,7 @@ export default function SettingsPage() {
     const [tenantResult, settingsResult] = await Promise.all([
       supabase
         .from('tenants')
-        .select('id, legal_name, public_name, email, whatsapp_e164, plan, status, whatsapp_customer_signup_enabled')
+        .select('id, legal_name, public_name, email, whatsapp_e164, plan, status')
         .eq('id', result.tenantUser.tenant_id)
         .single(),
       supabase
@@ -213,41 +211,6 @@ export default function SettingsPage() {
 
     setSuccess('Dados de Pix atualizados.')
     await load()
-  }
-
-  async function toggleWhatsappSignup() {
-    if (!tenant) return
-
-    setSavingWhatsappSignup(true)
-    setError('')
-    setSuccess('')
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      setSavingWhatsappSignup(false)
-      router.push('/login')
-      return
-    }
-
-    const enabled = !tenant.whatsapp_customer_signup_enabled
-    const response = await fetch('/api/whatsapp-signup-settings', {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ enabled }),
-    })
-
-    setSavingWhatsappSignup(false)
-    if (!response.ok) {
-      const payload = await response.json().catch(() => null)
-      setError(payload?.message ?? 'Não foi possível atualizar o cadastro pelo WhatsApp.')
-      return
-    }
-
-    setTenant({ ...tenant, whatsapp_customer_signup_enabled: enabled })
-    setSuccess(enabled ? 'Cadastro de alunos pelo WhatsApp ativado.' : 'Cadastro de alunos pelo WhatsApp desativado.')
   }
 
   async function changePassword(event: React.FormEvent) {
@@ -451,38 +414,6 @@ export default function SettingsPage() {
                 </div>
               </dl>
             </section>
-
-            {businessType === 'teacher' && tenant && ['plan1', 'plan3'].includes(tenant.plan) && (
-              <section className="rounded-2xl bg-white p-5 shadow">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="font-bold">Cadastro de alunos pelo WhatsApp</h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Quando ativo, o Jack coleta os dados e envia a solicitação para sua aprovação. Turmas lotadas não são oferecidas.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void toggleWhatsappSignup()}
-                    disabled={savingWhatsappSignup}
-                    className={`h-10 shrink-0 rounded-lg px-4 text-sm font-semibold text-white disabled:opacity-50 ${tenant.whatsapp_customer_signup_enabled ? 'bg-emerald-700' : 'bg-slate-600'}`}
-                  >
-                    {savingWhatsappSignup
-                      ? 'Salvando...'
-                      : tenant.whatsapp_customer_signup_enabled
-                        ? 'Ativo · desativar'
-                        : 'Inativo · ativar'}
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => router.push('/signup-settings')}
-                  className="mt-4 rounded-lg border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700"
-                >
-                  Configurar valores e planos
-                </button>
-              </section>
-            )}
 
             <form onSubmit={savePix} className="bg-white rounded-2xl shadow p-5 space-y-4">
               <div>
