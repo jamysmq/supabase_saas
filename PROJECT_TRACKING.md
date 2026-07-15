@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-05-27
+Atualizado em: 2026-07-14
 
 ## Visao Geral
 
@@ -88,6 +88,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Historico de agendamentos, incluindo registros excluidos.
 - Snapshot de nome de servico e profissional no agendamento para preservar historico mesmo apos edicoes.
 - Exportacao via impressao/PDF pelo navegador no historico.
+- Bloqueios temporarios de agenda por intervalo continuo foram adicionados em 2026-07-14: o tenant pode fechar de uma data/hora ate outra, inclusive atravessando dias.
+- A regra de bloqueio e central no banco: painel, WhatsApp e remarcacoes nao aceitam novos horarios no intervalo, enquanto agendamentos existentes permanecem preservados.
 
 ### Mensagens Personalizaveis
 
@@ -481,6 +483,9 @@ Fluxo agenda:
 
 ### Produto / Proximas Evolucoes
 
+- Roadmap detalhado de botões, listas, busca tolerante e confirmações salvo em `docs/whatsapp-interactive-roadmap.md`.
+- Planejar bloqueios extraordinarios de agenda por intervalo continuo, por tenant ou profissional (ex.: terca 14h ate quinta 10h), com deteccao de conflito em agendamentos existentes.
+
 1. Evoluir mensagens WhatsApp para botoes/listas interativas quando o uso em producao estiver liberado.
 2. Planejar workflow WhatsApp de restaurante separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.
 3. Planejar agenda de mesas/reservas para `plan5`, com tabelas e workflow proprios, sem reaproveitar a agenda de servicos de salao/clinica.
@@ -507,6 +512,87 @@ Fluxo agenda:
 - Nao tratar SQL solto como produto final; ele e etapa de desenvolvimento antes das migrations.
 
 ## Prompt Para Continuar em Outra Task
+
+### Atualizacao operacional de 2026-07-14
+
+- Identidade publica do tenant separada em dois campos:
+  - legal_name: nome completo ou razao social, usado no cadastro administrativo;
+  - public_name: nome fantasia, usado na busca e nas mensagens do Assistente Jack.
+- Cadastro publico, criacao administrativa, edicao pela plataforma e configuracoes do tenant passaram a coletar/exibir os dois nomes.
+- Nome fantasia do tenant Samara atualizado no Supabase para Samara.
+- Lista de resultados do WhatsApp deixou de repetir o mesmo nome como titulo truncado e descricao completa.
+- Menus institucionais, menu do tenant, confirmacao e retorno ao menu principal usam interacoes do WhatsApp quando aplicavel.
+- Webhook do app passou a enviar e registrar a resposta devolvida pelos workflows de modulo do n8n.
+- WA_INBOUND_ROUTER_v1 remoto atualizado para liberar dispatch quando o RPC solicitar um modulo.
+- WA_TENANT_APPOINTMENTS_INBOUND_v1 remoto ativado para o primeiro teste controlado real.
+- Validacoes concluidas: ESLint, TypeScript, build local, build Vercel e GET /api/health em producao.
+- Bloqueios extraordinarios de agenda por intervalo continuo foram implementados na migration `026_tenant_appointment_blocks.sql`, integrados as sugestoes do Jack, a criacao de agendamentos e a tela do tenant, e publicados em producao.
+- Teste real revelou que a mensagem seguinte ao clique em `Agendar` voltava ao menu do tenant: o roteador geral nao priorizava uma `wa_conversations` de modulo ainda aberta.
+- Correcao preparada na migration `027_whatsapp_module_continuity_and_full_reset.sql`:
+  - conversa aberta de agenda ou cobranca passa a ter prioridade e continua no respectivo workflow ate o encerramento;
+  - reset centralizado remove sessoes de roteamento e estado transitorio de modulo, fecha threads abertas e preserva o historico de mensagens;
+  - comandos `Menu do Jack` e `menu principal` executam o reset completo antes de voltar ao institucional.
+  - equivalencia de telefone brasileiro cobre o `wa_id` da Meta com ou sem o nono digito; o numero de teste `5583998036994` chegou no webhook como `558398036994`, causa do reset anterior nao encontrar o vinculo.
+- Migration 027 executada no Supabase alvo em 2026-07-14.
+- Reset completo validado no numero de teste informado como `5583998036994`: a variante Meta `558398036994` foi reconhecida; 1 sessao de tenant e 1 conversa de modulo foram removidas, 1 thread foi fechada e nenhum vinculo aberto permaneceu.
+- Continuidade validada com teste sintetico reversivel: uma conversa `collect_full_name` retornou `route=appointments`, `reason=continue_active_module` e `request_dispatch=true`; os registros sinteticos foram removidos ao final.
+- Falta apenas repetir o teste real pelo WhatsApp: `Ola -> tenant -> Agendamentos -> Agendar -> nome completo`.
+- Revisao da experiencia de agenda preparada em `028_whatsapp_appointment_experience.sql`:
+  - unicidade de `wa_conversations` passa a valer somente para conversa aberta, permitindo iniciar novo atendimento depois de concluir o anterior;
+  - configuracoes `opens_at`, `closes_at` e timezone sao injetadas no estado do workflow;
+  - rotulos de horarios passam a usar nome completo do dia em portugues;
+  - agradecimento apos agendamento recebe resposta contextual, sem repetir a saudacao de entrada do tenant.
+- Adaptador do WhatsApp preparado para transformar opcoes numeradas da agenda em botoes quando houver ate 3 e listas quando houver mais, incluindo servicos, profissionais, periodos, horarios e confirmacao.
+- Workflow remoto `WA_TENANT_APPOINTMENTS_INBOUND_v1` atualizado em 2026-07-14 mantendo ID `X1lUop6Q5fh9uxTG` e estado ativo; para tenant 08:00-18:00, oferece manha, tarde e primeiro horario livre, sem noite.
+- Causa do atendimento parar ao reabrir agenda confirmada nas execucoes n8n 758 e 761: `duplicate key value violates unique constraint wa_conversations_chat_uq`; corrigida pela migration 028.
+- Validacoes locais da revisao: sintaxe do Code node n8n, TypeScript, ESLint e build Next.js aprovados.
+- Migration 028 executada no Supabase alvo em 2026-07-14.
+- Validacao ao vivo da 028:
+  - configuracoes da agenda enriquecidas como `08:00-18:00`, timezone `America/Fortaleza`;
+  - horario exibido como `Terça-feira, 14/07 às 11:00 com Lucas`;
+  - agradecimento apos conclusao retornou `tenant_post_appointment` com contexto correto.
+- A validacao de reabertura encontrou que `wa_conversations_chat_uq` existe no ambiente como indice unico independente, e nao como constraint; por isso o `drop constraint` da 028 nao o removeu.
+- Migration corretiva `029_whatsapp_active_conversation_index_fix.sql` criada para remover as duas representacoes possiveis e manter apenas a unicidade de conversa ativa. Pendente executar no Supabase.
+- Reset completo repetido para `5583998036994`/`558398036994`: 1 sessao de tenant e 1 conversa de modulo removidas, 1 thread fechada e nenhum contexto ativo restante.
+- Migration 029 executada no Supabase alvo e deploy em producao autorizado pelo usuario em 2026-07-14.
+- A validacao reversivel posterior encontrou um segundo indice unico legado, `ux_wa_conversations_chat_id`, ainda impedindo reabrir a agenda depois de uma conversa concluida.
+- Migration `030_whatsapp_legacy_chat_index_fix.sql` criada para remover esse segundo indice e preservar apenas `wa_conversations_active_chat_uq` por tenant, cliente e conversa aberta. Pendente executar no Supabase.
+- Migration 030 executada no Supabase alvo em 2026-07-14.
+- Invariantes de conversa validados com dados sinteticos reversiveis:
+  - historico concluido permanece armazenado;
+  - somente uma conversa aberta e permitida por tenant e cliente;
+  - uma nova conversa pode ser aberta depois do fechamento;
+  - o mesmo telefone pode manter contexto independente em tenants diferentes;
+  - o bloqueio de duplicidade ativa vem de `wa_conversations_active_chat_uq`.
+- Lint e build Next.js 16.2.7 aprovados no estado final.
+- Deploy de producao concluido: `dpl_BrA1Tczq7246m8FSXh1XYkkadU2D`, alias `supabase-saas-nine.vercel.app`.
+- `https://app.meuassistentevirtual.com.br/api/health` e o alias Vercel responderam HTTP 200 com `ok=true`.
+- Contexto de teste de `5583998036994`/`558398036994` verificado apos o deploy: zero sessoes de roteador, sessoes de tenant, conversas de modulo e threads abertas.
+- Pendente apenas repetir o teste real completo pelo WhatsApp.
+- Revisao de UX da agenda preparada em 2026-07-14 apos teste real:
+  - periodo `Primeiro horario livre` reduzido para `Primeiro livre`, dentro do limite visual do botao;
+  - horarios interativos usam titulos compactos como `Ter 14/07 às 11:00`; listas preservam o rotulo completo na descricao;
+  - opcoes de agendamentos existentes usam `14/07 às 12:30`, sem corte arbitrario;
+  - conclusoes de criar, remarcar e cancelar possuem estados e textos distintos, sem agradecimento presumido;
+  - respostas de conclusao e mensagens aleatorias posteriores oferecem `Agendamentos`, `Falar com pessoa` e `Menu do Jack`, sem repetir a saudacao de entrada do tenant.
+- Workflow remoto `X1lUop6Q5fh9uxTG` atualizado e ativo em `2026-07-14T15:22:03.021Z`.
+- Maquina de estados validada por execucao dos caminhos `suggest_slots` e `appointment_cancelled`; `last_action` fica apenas na conclusao, nao na sugestao.
+- TypeScript, lint, build Next.js e sintaxe dos nos de codigo aprovados.
+- Pendente: autorizacao explicita para publicar o novo adaptador do app em producao e repetir o teste real.
+- Tela `/appointments` compactada para remover a rolagem horizontal na tabela: grade lateral reduzida, cards de resumo menores, tabela com layout fixo, colunas proporcionais e controles compactos.
+- Todos os inputs nativos de data/hora da agenda usam cursor de clique e `showPicker()` ao clicar em qualquer parte do campo, com fallback nativo para navegadores sem suporte.
+- Build Next.js 16.2.7, TypeScript e ESLint aprovados apos a revisao responsiva.
+- Pendente: autorizacao explicita para publicar em producao o adaptador WhatsApp e a revisao visual da agenda.
+- Usuario autorizou explicitamente em 2026-07-14 o deploy em producao das alteracoes futuras que solicitar neste projeto, apos validacao tecnica proporcional ao risco.
+- Adaptador WhatsApp revisado e tela de agenda compactada publicados no deployment `dpl_48RrDKMkkHSdZFHCmyJiXmBLvVYs`.
+- Dominio oficial e alias Vercel responderam HTTP 200 com `ok=true` apos o deploy.
+- Pendente apenas validacao visual/funcional real pelo usuario no WhatsApp e na tela `/appointments`.
+- Auditoria independente de WhatsApp realizada em 2026-07-14:
+  - checklist Vercel atualizado com dominios e estado reais de producao;
+  - runbook corrigido para nao recomendar a desativacao do workflow de agenda ja ativo em teste controlado;
+  - headers defensivos globais adicionados no Next.js: `X-Content-Type-Options`, `X-Frame-Options` e `Referrer-Policy`;
+  - listagem de clientes/alunos ganhou cartoes responsivos no celular, preservando a tabela completa no desktop e eliminando rolagem lateral nessa operacao.
+  - deploy de producao concluido em `dpl_7e3NtboXSDAm7RBo9RbFoUxZW4tK`; health HTTP 200 e headers confirmados no dominio oficial.
 
 ```text
 Bom dia, Codex. Estamos no projeto `c:\Users\Jamys\billing-app`.
@@ -542,14 +628,16 @@ Estado atual:
   - 2: cadastro/mensalidades;
   - 3: atendimento humano.
 - O app ja consome `reply_text` do roteador e pode enviar/resgistrar resposta automatica como bot.
-- O app e o roteador ja estao preparados para disparar modulo via `target_webhook_path` + `dispatch_to_module`, mas o disparo real depende de `WA_INBOUND_ROUTER_DISPATCH_ENABLED=true` no n8n.
+- Em 2026-07-14, o roteamento da inbox passou a priorizar o tenant confirmado pelo roteador; a caixa institucional recebeu envio manual pelo numero oficial do Jack.
+- Em 2026-07-14, o fluxo de agenda voltou a responder apos a compatibilidade de `tenant_customers.birth_date`; teste sintetico do modulo retornou o menu de agendar, remarcar e cancelar.
+- O app e o roteador disparam modulos via target_webhook_path + dispatch_to_module; o workflow de agenda esta ativo desde 2026-07-14.
 - Adaptador WhatsApp Cloud ja suporta texto, botoes e listas via `src/lib/whatsapp-cloud.ts` e `POST /api/internal/whatsapp/send`.
 
 Proxima prioridade:
 1. Aguardar aprovacao da Meta para `whatsapp_business_messaging`.
 2. Quando o usuario criar o segredo, configurar `WHATSAPP_INBOUND_N8N_TOKEN` no n8n e na Vercel.
 3. Configurar `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` na Vercel apontando para `/webhook/wa-inbound-router-v1`.
-4. Manter `WA_INBOUND_ROUTER_DISPATCH_ENABLED` desligado ate teste controlado.
+4. Fazer o teste controlado do fluxo de agenda ja ativado.
 5. Depois testar WhatsApp real:
    - challenge do webhook Meta;
    - mensagem inbound real;

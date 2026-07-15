@@ -1,5 +1,5 @@
 {
-  "name": "DAILY_APPOINTMENT_CONFIRMATION_REMINDERS",
+  "name": "APPOINTMENT_CUSTOMER_NOTIFICATIONS",
   "active": false,
   "nodes": [
     {
@@ -7,7 +7,8 @@
         "rule": {
           "interval": [
             {
-              "triggerAtHour": 9
+              "field": "minutes",
+              "minutesInterval": 5
             }
           ]
         }
@@ -24,7 +25,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_list_confirmation_reminders'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_list_due_notifications'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -50,8 +51,8 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "p_run_date",
-              "value": "={{ new Date().toLocaleDateString('en-CA', { timeZone: 'America/Fortaleza' }) }}"
+              "name": "p_now",
+              "value": "={{ new Date().toISOString() }}"
             },
             {
               "name": "p_timezone",
@@ -62,7 +63,7 @@
         "options": {}
       },
       "id": "869e1e96-03e3-438b-b1e3-a8a236b10f0a",
-      "name": "RPC_list_confirmation_reminders",
+      "name": "RPC_list_due_notifications",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
@@ -73,10 +74,10 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = {\n  tenant_name: $json.tenant_name ?? '',\n  customer_name: $json.customer_name ?? '',\n  appointment_date: $json.appointment_date ?? '',\n  appointment_time: $json.appointment_time ?? '',\n  service_name: $json.service_name ?? '',\n  staff_member_name: $json.staff_member_name ?? ''\n};\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) {\n  rendered = rendered.replaceAll(`{{${key}}}`, String(value || '-'));\n}\nconst normalized = rendered.toLowerCase();\nconst alreadyHasOptions = normalized.includes('1') && normalized.includes('2') && normalized.includes('3') && normalized.includes('confirmar') && normalized.includes('remarcar') && normalized.includes('cancelar');\nif (!alreadyHasOptions) {\n  rendered += '\\n\\n1) Confirmar\\n2) Remarcar\\n3) Cancelar';\n}\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered\n};"
+        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = {\n  tenant_name: $json.tenant_name ?? '',\n  customer_name: $json.customer_name ?? '',\n  appointment_date: $json.appointment_date ?? '',\n  appointment_time: $json.appointment_time ?? '',\n  service_name: $json.service_name ?? '',\n  staff_member_name: $json.staff_member_name ?? ''\n};\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) {\n  rendered = rendered.replaceAll('{{' + key + '}}', String(value || '-'));\n}\nconst isConfirmation = $json.notification_type === 'confirmation';\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered,\n  message_type: isConfirmation ? 'buttons' : 'text',\n  buttons: isConfirmation ? [\n    { id: 'appointment_confirm_yes', title: 'Confirmar' },\n    { id: 'appointment_reschedule', title: 'Remarcar' },\n    { id: 'appointment_cancel', title: 'Cancelar' }\n  ] : []\n};"
       },
       "id": "56db307d-733f-4b2c-af31-fddbf3d18299",
-      "name": "FN_render_confirmation_message",
+      "name": "FN_render_notification_message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -87,14 +88,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
+        "url": "https://app.meuassistentevirtual.com.br/api/internal/whatsapp/send",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -109,8 +106,16 @@
               "value": "={{$json.wa_to}}"
             },
             {
+              "name": "type",
+              "value": "={{$json.message_type}}"
+            },
+            {
               "name": "body",
               "value": "={{$json.rendered_message}}"
+            },
+            {
+              "name": "buttons",
+              "value": "={{$json.buttons}}"
             },
             {
               "name": "preview_url",
@@ -118,21 +123,29 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "c79c15c2-61f7-45db-8db9-e5626c91242d",
-      "name": "HTTP_send_whatsapp_text",
+      "name": "HTTP_send_whatsapp_notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
         20,
         0
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8z6uYfkBtQJUb8vd",
+          "name": "WhatsApp Internal Send - Production"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_mark_confirmation_reminder_sent'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_mark_notification_sent'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -155,22 +168,30 @@
           "parameters": [
             {
               "name": "p_appointment_id",
-              "value": "={{$json.appointment_id}}"
+              "value": "={{$node[\"FN_render_notification_message\"].json.appointment_id}}"
+            },
+            {
+              "name": "p_reminder_key",
+              "value": "={{$node[\"FN_render_notification_message\"].json.reminder_key}}"
+            },
+            {
+              "name": "p_notification_type",
+              "value": "={{$node[\"FN_render_notification_message\"].json.notification_type}}"
             },
             {
               "name": "p_rendered_message",
-              "value": "={{$json.rendered_message}}"
+              "value": "={{$node[\"FN_render_notification_message\"].json.rendered_message}}"
             },
             {
               "name": "p_payload",
-              "value": "={{ { wa_to: $json.wa_to, sent_ok: $json.sent_ok } }}"
+              "value": "={{ { wa_to: $node[\"FN_render_notification_message\"].json.wa_to, provider_response: $json } }}"
             }
           ]
         },
         "options": {}
       },
       "id": "1b1aca28-7d36-4635-8f2c-a4af85a37c85",
-      "name": "RPC_mark_confirmation_sent",
+      "name": "RPC_mark_notification_sent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
@@ -184,40 +205,40 @@
       "main": [
         [
           {
-            "node": "RPC_list_confirmation_reminders",
+            "node": "RPC_list_due_notifications",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "RPC_list_confirmation_reminders": {
+    "RPC_list_due_notifications": {
       "main": [
         [
           {
-            "node": "FN_render_confirmation_message",
+            "node": "FN_render_notification_message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "FN_render_confirmation_message": {
+    "FN_render_notification_message": {
       "main": [
         [
           {
-            "node": "HTTP_send_whatsapp_text",
+            "node": "HTTP_send_whatsapp_notification",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP_send_whatsapp_text": {
+    "HTTP_send_whatsapp_notification": {
       "main": [
         [
           {
-            "node": "RPC_mark_confirmation_sent",
+            "node": "RPC_mark_notification_sent",
             "type": "main",
             "index": 0
           }

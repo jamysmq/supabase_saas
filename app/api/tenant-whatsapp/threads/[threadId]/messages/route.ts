@@ -27,6 +27,10 @@ export async function GET(request: Request, context: RouteParams) {
   if (result.error) return result.error
 
   const { threadId } = await context.params
+  const url = new URL(request.url)
+  const requestedLimit = Number.parseInt(url.searchParams.get('limit') ?? '30', 10)
+  const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 10), 50) : 30
+  const before = url.searchParams.get('before')?.trim() || null
 
   const { data: thread, error: threadError } = await result.supabase
     .from('tenant_whatsapp_threads')
@@ -39,13 +43,19 @@ export async function GET(request: Request, context: RouteParams) {
     return errorResponse('Conversa nao encontrada.', 404, threadError?.message)
   }
 
-  const { data, error } = await result.supabase
+  let messagesQuery = result.supabase
     .from('tenant_whatsapp_messages')
     .select('id, direction, sender_type, sender_tenant_user_id, provider_message_id, status, body, created_at')
     .eq('thread_id', threadId)
     .eq('tenant_id', result.tenantUser.tenant_id)
-    .order('created_at', { ascending: true })
-    .limit(500)
+    .order('created_at', { ascending: false })
+    .limit(limit + 1)
+
+  if (before) {
+    messagesQuery = messagesQuery.lt('created_at', before)
+  }
+
+  const { data, error } = await messagesQuery
 
   if (error) {
     return errorResponse('Nao foi possivel carregar as mensagens.', 500, error.message)
@@ -57,7 +67,15 @@ export async function GET(request: Request, context: RouteParams) {
     .eq('id', threadId)
     .eq('tenant_id', result.tenantUser.tenant_id)
 
-  return Response.json({ messages: data ?? [] })
+  const descendingMessages = data ?? []
+  const hasMore = descendingMessages.length > limit
+  const page = descendingMessages.slice(0, limit).reverse()
+
+  return Response.json({
+    messages: page,
+    has_more: hasMore,
+    next_before: page[0]?.created_at ?? null,
+  })
 }
 
 export async function POST(request: Request, context: RouteParams) {
@@ -123,6 +141,7 @@ export async function POST(request: Request, context: RouteParams) {
         last_message_preview: messageBody.slice(0, 240),
         last_message_at: now,
         last_outbound_at: now,
+        human_takeover_until: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
         unread_count: 0,
         updated_at: now,
       })
@@ -190,6 +209,7 @@ export async function DELETE(request: Request, context: RouteParams) {
       last_message_at: null,
       last_inbound_at: null,
       last_outbound_at: null,
+      human_takeover_until: null,
       unread_count: 0,
       updated_at: new Date().toISOString(),
     })

@@ -9,6 +9,7 @@ import { getCurrentTenantUser } from '../../src/services/auth'
 type Tenant = {
   id: string
   legal_name: string
+  public_name: string | null
   email: string
   whatsapp_e164: string
   plan: string
@@ -37,6 +38,12 @@ export default function SettingsPage() {
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [billingSettings, setBillingSettings] = useState<BillingSettings | null>(null)
+  const [profileForm, setProfileForm] = useState({
+    legal_name: '',
+    public_name: '',
+    email: '',
+    whatsapp_e164: '',
+  })
   const [pixForm, setPixForm] = useState({
     pix_key: '',
     pix_key_type: 'cpf',
@@ -49,6 +56,7 @@ export default function SettingsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [savingPix, setSavingPix] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -86,7 +94,7 @@ export default function SettingsPage() {
     const [tenantResult, settingsResult] = await Promise.all([
       supabase
         .from('tenants')
-        .select('id, legal_name, email, whatsapp_e164, plan, status')
+        .select('id, legal_name, public_name, email, whatsapp_e164, plan, status')
         .eq('id', result.tenantUser.tenant_id)
         .single(),
       supabase
@@ -103,6 +111,12 @@ export default function SettingsPage() {
     }
 
     setTenant(tenantResult.data)
+    setProfileForm({
+      legal_name: tenantResult.data.legal_name,
+      public_name: tenantResult.data.public_name ?? tenantResult.data.legal_name,
+      email: tenantResult.data.email ?? '',
+      whatsapp_e164: tenantResult.data.whatsapp_e164 ?? '',
+    })
     setBillingSettings(settingsResult.data ?? null)
     setPixForm({
       pix_key: settingsResult.data?.pix_key ?? '',
@@ -119,6 +133,41 @@ export default function SettingsPage() {
 
     return () => window.clearTimeout(timeoutId)
   }, [load])
+
+  async function saveProfile(event: React.FormEvent) {
+    event.preventDefault()
+    setSavingProfile(true)
+    setError('')
+    setSuccess('')
+
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+      setSavingProfile(false)
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/tenant-profile', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileForm),
+    })
+
+    setSavingProfile(false)
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? 'Não foi possível salvar os dados do negócio.')
+      return
+    }
+
+    setSuccess('Dados do negócio atualizados.')
+    await load()
+  }
 
   async function savePix(event: React.FormEvent) {
     event.preventDefault()
@@ -271,15 +320,78 @@ export default function SettingsPage() {
 
         <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <div className="space-y-4">
+            <form onSubmit={saveProfile} className="bg-white rounded-2xl shadow p-5 space-y-4">
+              <div>
+                <h2 className="font-bold">Identidade e contato do negócio</h2>
+                <p className="text-sm text-gray-500">
+                  O nome fantasia aparece nas mensagens do Jack. O WhatsApp será usado no botão de atendimento humano.
+                </p>
+              </div>
+
+              <label className="block text-sm font-medium">
+                Nome completo ou razão social
+                <input
+                  value={profileForm.legal_name}
+                  onChange={(event) => setProfileForm({ ...profileForm, legal_name: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  required
+                />
+              </label>
+
+              <label className="block text-sm font-medium">
+                Nome fantasia
+                <input
+                  value={profileForm.public_name}
+                  onChange={(event) => setProfileForm({ ...profileForm, public_name: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  required
+                />
+              </label>
+
+              <label className="block text-sm font-medium">
+                E-mail de contato
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(event) => setProfileForm({ ...profileForm, email: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  required
+                />
+              </label>
+
+              <label className="block text-sm font-medium">
+                WhatsApp do estabelecimento
+                <input
+                  inputMode="tel"
+                  value={profileForm.whatsapp_e164}
+                  onChange={(event) => setProfileForm({ ...profileForm, whatsapp_e164: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  placeholder="Ex.: 5583999999999"
+                  required
+                />
+                <span className="mt-1 block text-xs font-normal text-gray-500">
+                  Informe o número com DDI e DDD. Ele abrirá no botão de atendimento humano do WhatsApp.
+                </span>
+              </label>
+
+              <button
+                className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                disabled={savingProfile}
+                type="submit"
+              >
+                {savingProfile ? 'Salvando...' : 'Salvar dados'}
+              </button>
+            </form>
+
             <section className="bg-white rounded-2xl shadow p-5">
               <h2 className="font-bold">Conta</h2>
               <dl className="mt-3 grid gap-3 text-sm md:grid-cols-2">
                 <div>
-                  <dt className="text-gray-500">Nome</dt>
-                  <dd className="font-medium">{tenant?.legal_name ?? '-'}</dd>
+                  <dt className="text-gray-500">Nome fantasia</dt>
+                  <dd className="font-medium">{tenant?.public_name ?? tenant?.legal_name ?? '-'}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Email</dt>
+                  <dt className="text-gray-500">E-mail de contato</dt>
                   <dd className="font-medium">{tenant?.email ?? '-'}</dd>
                 </div>
                 <div>

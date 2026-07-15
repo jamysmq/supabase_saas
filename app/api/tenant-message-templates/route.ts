@@ -10,6 +10,7 @@ type TemplateKey =
   | 'billing_signup_welcome'
   | 'appointment_welcome'
   | 'appointment_confirmation_reminder'
+  | 'appointment_one_hour_reminder'
   | 'restaurant_welcome'
 
 type TemplateDefinition = {
@@ -51,7 +52,15 @@ const templateDefinitions: TemplateDefinition[] = [
     description: 'Mensagem enviada um dia antes do agendamento para confirmar, remarcar ou cancelar.',
     capability: 'appointments',
     defaultContent:
-      'Olá, {{customer_name}}! Aqui é o Assistente Jack, de {{tenant_name}}. Confirmando seu horário em {{appointment_date}} às {{appointment_time}}. Responda 1 para confirmar, 2 para remarcar ou 3 para cancelar.',
+      'Olá, {{customer_name}}! Seu agendamento em {{tenant_name}} está marcado para {{appointment_date}}, às {{appointment_time}}. Serviço: {{service_name}}. Use os botões abaixo para confirmar, remarcar ou cancelar.',
+  },
+  {
+    key: 'appointment_one_hour_reminder',
+    title: 'Lembrete de uma hora',
+    description: 'Mensagem enviada aproximadamente uma hora antes de todo agendamento.',
+    capability: 'appointments',
+    defaultContent:
+      'Olá, {{customer_name}}! Passando para lembrar que seu horário em {{tenant_name}} é hoje, às {{appointment_time}}. Serviço: {{service_name}}. Até já! 😊',
   },
   {
     key: 'restaurant_welcome',

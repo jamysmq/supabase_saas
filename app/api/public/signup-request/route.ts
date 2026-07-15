@@ -24,6 +24,7 @@ export async function POST(request: Request) {
   }
 
   const legalName = String(body.legal_name || '').trim()
+  const publicName = String(body.public_name || '').trim()
   const cpf = String(body.cpf || '').trim()
   const cpfDigits = onlyDigits(cpf)
   const email = String(body.email || '').trim().toLowerCase()
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   const dueDay = Number(body.due_day)
 
   if (!legalName) return errorResponse('Informe o nome legal do cliente.')
+  if (!publicName) return errorResponse('Informe o nome fantasia do negócio.')
 
   if (![11, 14].includes(cpfDigits.length)) {
     return errorResponse('CPF/CNPJ invalido. Informe 11 digitos para CPF ou 14 digitos para CNPJ.')
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
   const payload = {
     source: 'public_signup_request',
     legal_name: legalName,
+    public_name: publicName,
     cpf: cpfDigits,
     email,
     admin_email: adminEmail,

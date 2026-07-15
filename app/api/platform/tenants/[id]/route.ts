@@ -41,6 +41,7 @@ export async function GET(
       business_type,
       plan,
       legal_name,
+      public_name,
       cpf,
       email,
       birth_date,
@@ -120,7 +121,7 @@ export async function PATCH(
 
   const patch: Record<string, string | null> = {}
 
-  for (const key of ['legal_name', 'cpf', 'email', 'birth_date', 'whatsapp_e164']) {
+  for (const key of ['legal_name', 'public_name', 'cpf', 'email', 'birth_date', 'whatsapp_e164']) {
     if (typeof body[key] === 'string') {
       patch[key] = body[key].trim() || null
     }

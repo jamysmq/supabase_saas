@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
@@ -73,6 +73,19 @@ type AppointmentSettingsForm = {
   timezone: string
 }
 
+type AppointmentBlock = {
+  id: string
+  starts_at: string
+  ends_at: string
+  reason: string | null
+}
+
+type AppointmentBlockForm = {
+  starts_at: string
+  ends_at: string
+  reason: string
+}
+
 const defaultAppointmentSettings: AppointmentSettingsForm = {
   opens_at: '08:00',
   closes_at: '18:00',
@@ -94,6 +107,12 @@ const emptyAppointmentForm: AppointmentForm = {
   duration_minutes: '60',
   title: '',
   notes: '',
+}
+
+const emptyAppointmentBlockForm: AppointmentBlockForm = {
+  starts_at: '',
+  ends_at: '',
+  reason: '',
 }
 
 function getDayBounds(date: string) {
@@ -124,12 +143,32 @@ function statusLabel(status: string) {
   const labels: Record<string, string> = {
     scheduled: 'Agendado',
     confirmed: 'Confirmado',
-    completed: 'Concluido',
+    completed: 'Concluído',
     cancelled: 'Cancelado',
     no_show: 'Faltou',
   }
 
   return labels[status] ?? status
+}
+
+const appointmentStatusOptions = [
+  { value: 'scheduled', label: 'Agendado' },
+  { value: 'confirmed', label: 'Confirmado' },
+  { value: 'completed', label: 'Concluído' },
+  { value: 'cancelled', label: 'Cancelado' },
+  { value: 'no_show', label: 'Faltou' },
+]
+
+function statusTone(status: string) {
+  const tones: Record<string, string> = {
+    scheduled: 'border-sky-200 bg-sky-50 text-sky-800',
+    confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    completed: 'border-slate-200 bg-slate-50 text-slate-700',
+    cancelled: 'border-red-200 bg-red-50 text-red-700',
+    no_show: 'border-amber-200 bg-amber-50 text-amber-800',
+  }
+
+  return tones[status] ?? tones.scheduled
 }
 
 export default function AppointmentsPage() {
@@ -149,6 +188,8 @@ export default function AppointmentsPage() {
     staff_member_ids: [],
   })
   const [appointmentSettingsForm, setAppointmentSettingsForm] = useState<AppointmentSettingsForm>(defaultAppointmentSettings)
+  const [appointmentBlocks, setAppointmentBlocks] = useState<AppointmentBlock[]>([])
+  const [appointmentBlockForm, setAppointmentBlockForm] = useState<AppointmentBlockForm>(emptyAppointmentBlockForm)
   const [editingServiceId, setEditingServiceId] = useState('')
   const [staffForm, setStaffForm] = useState({ name: '', role: '' })
   const [editingStaffId, setEditingStaffId] = useState('')
@@ -201,15 +242,16 @@ export default function AppointmentsPage() {
       Authorization: `Bearer ${session.access_token}`,
     }
 
-    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse] =
+    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse, blocksResponse] =
       await Promise.all([
         fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers }),
         fetch('/api/appointment-services', { headers }),
         fetch('/api/appointment-staff', { headers }),
         fetch('/api/tenant-appointment-settings', { headers }),
+        fetch('/api/tenant-appointment-blocks', { headers }),
       ])
 
-    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok) {
+    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok || !blocksResponse.ok) {
       setError('Não foi possível carregar a agenda.')
       setLoading(false)
       return
@@ -219,10 +261,12 @@ export default function AppointmentsPage() {
     const servicesData = await servicesResponse.json()
     const staffData = await staffResponse.json()
     const settingsData = await settingsResponse.json()
+    const blocksData = await blocksResponse.json()
 
     setAppointments(appointmentsData.appointments ?? [])
     setServices(servicesData.services ?? [])
     setStaff(staffData.staff ?? [])
+    setAppointmentBlocks(blocksData.blocks ?? [])
     setAppointmentSettingsForm({
       ...defaultAppointmentSettings,
       ...(settingsData.settings ?? {}),
@@ -344,7 +388,7 @@ export default function AppointmentsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.message || 'Nao foi possivel salvar os horarios de funcionamento.')
+      setError(data?.message || 'Não foi possível salvar os horários de funcionamento.')
       return
     }
 
@@ -354,7 +398,57 @@ export default function AppointmentsPage() {
       ...(data.settings ?? {}),
       break_duration_minutes: String(data.settings?.break_duration_minutes ?? defaultAppointmentSettings.break_duration_minutes),
     })
-    setSuccess('Horarios de funcionamento salvos.')
+    setSuccess('Horários de funcionamento salvos.')
+  }
+
+  async function createAppointmentBlock(event: React.FormEvent) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    const startsAt = new Date(appointmentBlockForm.starts_at)
+    const endsAt = new Date(appointmentBlockForm.ends_at)
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
+      setError('Informe um início e um fim válidos para o bloqueio.')
+      setSaving(false)
+      return
+    }
+    const token = await getToken()
+    if (!token) { setSaving(false); router.push('/login'); return }
+    const response = await fetch('/api/tenant-appointment-blocks', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), reason: appointmentBlockForm.reason }),
+    })
+    setSaving(false)
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Não foi possível bloquear esse período.')
+      return
+    }
+    setAppointmentBlockForm(emptyAppointmentBlockForm)
+    setSuccess('Período bloqueado. Novos agendamentos não serão aceitos nesse intervalo.')
+    await load()
+  }
+
+  async function deleteAppointmentBlock(block: AppointmentBlock) {
+    if (!window.confirm('Liberar novamente este período da agenda?')) return
+    setActingId(block.id)
+    setError('')
+    setSuccess('')
+    const token = await getToken()
+    if (!token) { setActingId(''); router.push('/login'); return }
+    const response = await fetch(`/api/tenant-appointment-blocks?id=${encodeURIComponent(block.id)}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    })
+    setActingId('')
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Não foi possível liberar esse período.')
+      return
+    }
+    setSuccess('Período liberado novamente.')
+    await load()
   }
 
   function selectService(serviceId: string) {
@@ -389,7 +483,7 @@ export default function AppointmentsPage() {
 
     if (!appointmentForm.service_id) {
       setSaving(false)
-      setError('Selecione o servico.')
+      setError('Selecione o serviço.')
       return
     }
 
@@ -451,7 +545,7 @@ export default function AppointmentsPage() {
 
     if (serviceForm.staff_member_ids.length === 0) {
       setSaving(false)
-      setError('Selecione pelo menos um profissional para o servico.')
+      setError('Selecione pelo menos um profissional para o serviço.')
       return
     }
 
@@ -631,6 +725,42 @@ export default function AppointmentsPage() {
     await load()
   }
 
+  function renderStatusControl(appointment: Appointment) {
+    const isUpdating = actingId === appointment.appointment_id
+
+    return (
+      <details className="group relative w-full">
+        <summary
+          onClick={(event) => {
+            if (isUpdating) event.preventDefault()
+          }}
+          aria-disabled={isUpdating}
+          className={`flex h-9 w-full list-none items-center justify-between gap-2 rounded-lg border px-3 text-xs font-semibold shadow-sm transition hover:brightness-[0.98] [&::-webkit-details-marker]:hidden ${statusTone(appointment.status)} ${isUpdating ? 'cursor-wait opacity-60' : ''}`}
+        >
+          <span className="truncate">{isUpdating ? 'Salvando...' : statusLabel(appointment.status)}</span>
+          <span aria-hidden="true" className="text-[10px] transition group-open:rotate-180">▼</span>
+        </summary>
+
+        <div className="absolute right-0 top-full z-30 mt-2 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl">
+          {appointmentStatusOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={(event) => {
+                event.currentTarget.closest('details')?.removeAttribute('open')
+                if (option.value !== appointment.status) void updateStatus(appointment, option.value)
+              }}
+              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium hover:bg-gray-50 ${option.value === appointment.status ? 'text-gray-950' : 'text-gray-600'}`}
+            >
+              <span>{option.label}</span>
+              {option.value === appointment.status && <span aria-hidden="true">✓</span>}
+            </button>
+          ))}
+        </div>
+      </details>
+    )
+  }
+
   async function deleteAppointment(appointment: Appointment) {
     const confirmed = window.confirm('Excluir este agendamento?')
 
@@ -711,6 +841,7 @@ export default function AppointmentsPage() {
                   }}
                   className="mt-1 h-11 w-full cursor-pointer rounded-lg border border-gray-200 px-3 text-base font-normal"
                   type="date"
+                  onClick={openNativePicker}
                 />
               </label>
             </div>
@@ -729,18 +860,18 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_460px]">
-          <div className="space-y-4">
+        <section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="min-w-0 space-y-4">
             <section className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl bg-white p-5 shadow">
+              <div className="rounded-2xl bg-white p-4 shadow">
                 <p className="text-sm text-gray-500">Agendamentos</p>
                 <p className="mt-1 text-2xl font-bold">{appointmentStats.total}</p>
               </div>
-              <div className="rounded-2xl bg-white p-5 shadow">
+              <div className="rounded-2xl bg-white p-4 shadow">
                 <p className="text-sm text-gray-500">Ativos</p>
                 <p className="mt-1 text-2xl font-bold">{appointmentStats.active}</p>
               </div>
-              <div className="rounded-2xl bg-white p-5 shadow">
+              <div className="rounded-2xl bg-white p-4 shadow">
                 <p className="text-sm text-gray-500">Confirmados</p>
                 <p className="mt-1 text-2xl font-bold">{appointmentStats.confirmed}</p>
               </div>
@@ -760,63 +891,92 @@ export default function AppointmentsPage() {
                     Nenhum agendamento neste dia.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[920px] text-sm">
-                      <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                  <>
+                    <div className="space-y-3 md:hidden">
+                      {appointments.map((appointment) => (
+                        <article key={appointment.appointment_id} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold">{formatTime(appointment.starts_at)} – {formatTime(appointment.ends_at)}</p>
+                              <p className="mt-1 truncate text-sm font-medium">
+                                {appointment.customer_name || appointment.title || 'Sem pessoa'}
+                              </p>
+                              <p className="truncate text-xs text-gray-500">
+                                {appointment.customer_phone_e164 || 'Sem contato'}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void deleteAppointment(appointment)}
+                              disabled={actingId === appointment.appointment_id}
+                              className="h-9 shrink-0 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-60"
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_130px] items-end gap-3">
+                            <div className="min-w-0 text-xs text-gray-600">
+                              <p className="truncate font-medium">{appointment.service_name || 'Sem serviço'}</p>
+                              <p className="truncate">
+                                {appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
+                              </p>
+                            </div>
+                            {renderStatusControl(appointment)}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+
+                  <div className="hidden md:block">
+                    <table className="w-full table-fixed text-sm">
+                      <colgroup>
+                        <col className="w-[17%]" />
+                        <col className="w-[29%]" />
+                        <col className="w-[26%]" />
+                        <col className="w-[14%]" />
+                        <col className="w-[14%]" />
+                      </colgroup>
+                      <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
                         <tr>
-                          <th className="py-2 pr-3 font-medium">Horario</th>
-                          <th className="py-2 pr-3 font-medium">Pessoa</th>
-                          <th className="py-2 pr-3 font-medium">Contato</th>
-                          <th className="py-2 pr-3 font-medium">Servico</th>
-                          <th className="py-2 pr-3 font-medium">Profissional</th>
-                          <th className="py-2 pr-3 font-medium">Status</th>
-                          <th className="py-2 text-right font-medium">Acoes</th>
+                          <th className="py-2.5 pr-3 font-semibold">Horário</th>
+                          <th className="py-2.5 pr-3 font-semibold">Cliente</th>
+                          <th className="py-2.5 pr-3 font-semibold">Atendimento</th>
+                          <th className="py-2.5 pr-3 font-semibold">Status</th>
+                          <th className="py-2.5 text-right font-semibold">Ação</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {appointments.map((appointment) => (
-                          <tr key={appointment.appointment_id} className="hover:bg-gray-50">
-                            <td className="whitespace-nowrap py-2 pr-3 font-semibold tabular-nums">
-                              {formatTime(appointment.starts_at)} - {formatTime(appointment.ends_at)}
+                          <tr key={appointment.appointment_id} className="align-middle hover:bg-gray-50">
+                            <td className="whitespace-nowrap py-3 pr-3 font-semibold tabular-nums">
+                              {formatTime(appointment.starts_at)} – {formatTime(appointment.ends_at)}
                             </td>
-                            <td className="max-w-[180px] truncate py-2 pr-3 font-medium">
-                              {appointment.customer_name || appointment.title || 'Sem pessoa'}
+                            <td className="min-w-0 py-3 pr-3 font-medium">
+                              <div className="truncate">{appointment.customer_name || appointment.title || 'Sem pessoa'}</div>
+                              <div className="mt-0.5 truncate text-xs font-normal text-gray-500">
+                                {appointment.customer_phone_e164 ? `WhatsApp: ${appointment.customer_phone_e164}` : 'Sem contato'}
+                              </div>
                               {appointment.notes && (
                                 <div className="mt-0.5 truncate text-xs font-normal text-gray-500">
                                   {appointment.notes}
                                 </div>
                               )}
                             </td>
-                            <td className="whitespace-nowrap py-2 pr-3 text-gray-600">
-                              {appointment.customer_phone_e164 || 'Sem WhatsApp'}
+                            <td className="min-w-0 py-3 pr-3 text-gray-700">
+                              <div className="truncate font-medium">{appointment.service_name || 'Sem serviço'}</div>
+                              <div className="mt-0.5 truncate text-xs text-gray-500">
+                                {appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
+                              </div>
                             </td>
-                            <td className="max-w-[180px] truncate py-2 pr-3 text-gray-700">
-                              {appointment.service_name || 'Sem servico'}
+                            <td className="py-3 pr-2">
+                              {renderStatusControl(appointment)}
                             </td>
-                            <td className="max-w-[160px] truncate py-2 pr-3 text-gray-700">
-                              {appointment.staff_member_name || 'Sem profissional'}
-                            </td>
-                            <td className="py-2 pr-3">
-                              <select
-                                value={appointment.status}
-                                onChange={(event) => void updateStatus(appointment, event.target.value)}
-                                disabled={actingId === appointment.appointment_id}
-                                className="h-9 w-36 rounded-lg border border-gray-200 px-2 text-sm disabled:bg-gray-100"
-                                aria-label={`Status: ${statusLabel(appointment.status)}`}
-                              >
-                                <option value="scheduled">Agendado</option>
-                                <option value="confirmed">Confirmado</option>
-                                <option value="completed">Concluido</option>
-                                <option value="cancelled">Cancelado</option>
-                                <option value="no_show">Faltou</option>
-                              </select>
-                            </td>
-                            <td className="py-2 text-right">
+                            <td className="py-3 text-right">
                               <button
                                 type="button"
                                 onClick={() => void deleteAppointment(appointment)}
                                 disabled={actingId === appointment.appointment_id}
-                                className="h-9 rounded-lg border border-red-200 px-3 text-sm font-medium text-red-700 disabled:opacity-60"
+                                className="h-9 w-full rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-60"
                               >
                                 Excluir
                               </button>
@@ -826,12 +986,13 @@ export default function AppointmentsPage() {
                       </tbody>
                     </table>
                   </div>
+                  </>
                 )}
               </div>
             </section>
           </div>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-4">
             <form onSubmit={saveAppointmentSettings} className="rounded-2xl bg-white p-5 shadow space-y-3">
               <h2 className="font-bold">Funcionamento</h2>
 
@@ -840,9 +1001,10 @@ export default function AppointmentsPage() {
                   Abre
                   <input
                     type="time"
+                    onClick={openNativePicker}
                     value={appointmentSettingsForm.opens_at}
                     onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, opens_at: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     required
                   />
                 </label>
@@ -850,9 +1012,10 @@ export default function AppointmentsPage() {
                   Fecha
                   <input
                     type="time"
+                    onClick={openNativePicker}
                     value={appointmentSettingsForm.closes_at}
                     onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, closes_at: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     required
                   />
                 </label>
@@ -864,23 +1027,24 @@ export default function AppointmentsPage() {
                   checked={appointmentSettingsForm.has_break}
                   onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, has_break: event.target.checked })}
                 />
-                Incluir pausa de almoco/descanso
+                Incluir pausa de almo?o/descanso
               </label>
 
               {appointmentSettingsForm.has_break && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-sm font-medium">
-                    Inicio da pausa
+                    Início da pausa
                     <input
                       type="time"
+                      onClick={openNativePicker}
                       value={appointmentSettingsForm.break_starts_at}
                       onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, break_starts_at: event.target.value })}
-                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                      className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                       required
                     />
                   </label>
                   <label className="text-sm font-medium">
-                    Duracao da pausa
+                    Dura??o da pausa
                     <input
                       type="number"
                       min="15"
@@ -902,6 +1066,31 @@ export default function AppointmentsPage() {
               >
                 Salvar funcionamento
               </button>
+            </form>
+
+            <form onSubmit={createAppointmentBlock} className="rounded-2xl bg-white p-5 shadow space-y-3">
+              <div>
+                <h2 className="font-bold">Fechar agenda temporariamente</h2>
+                <p className="mt-1 text-xs text-gray-500">Bloqueie um intervalo contínuo, inclusive entre dias diferentes. Agendamentos existentes permanecem visíveis.</p>
+              </div>
+              <label className="block text-sm font-medium">
+                Indisponível a partir de
+                <input type="datetime-local" value={appointmentBlockForm.starts_at} onClick={openNativePicker} onChange={(event) => setAppointmentBlockForm({ ...appointmentBlockForm, starts_at: event.target.value })} className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal" required />
+              </label>
+              <label className="block text-sm font-medium">
+                Volta a ficar disponível em
+                <input type="datetime-local" value={appointmentBlockForm.ends_at} onClick={openNativePicker} onChange={(event) => setAppointmentBlockForm({ ...appointmentBlockForm, ends_at: event.target.value })} className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal" required />
+              </label>
+              <label className="block text-sm font-medium">
+                Motivo opcional
+                <input value={appointmentBlockForm.reason} onChange={(event) => setAppointmentBlockForm({ ...appointmentBlockForm, reason: event.target.value })} maxLength={240} placeholder="Ex.: viagem, feriado ou manutenção" className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal" />
+              </label>
+              <button type="submit" disabled={saving} className="w-full rounded-lg bg-gray-950 py-2 text-sm font-medium text-white disabled:opacity-50">Bloquear período</button>
+
+              <div className="border-t border-gray-100 pt-3">
+                <h3 className="text-sm font-semibold">Próximos bloqueios</h3>
+                {appointmentBlocks.length === 0 ? <p className="mt-2 text-xs text-gray-500">Nenhum período bloqueado.</p> : <div className="mt-2 space-y-2">{appointmentBlocks.map((block) => <div key={block.id} className="rounded-lg border border-gray-200 p-3 text-xs"><p className="font-medium">{new Date(block.starts_at).toLocaleString('pt-BR')} até {new Date(block.ends_at).toLocaleString('pt-BR')}</p>{block.reason ? <p className="mt-1 text-gray-500">{block.reason}</p> : null}<button type="button" onClick={() => void deleteAppointmentBlock(block)} disabled={actingId === block.id} className="mt-2 text-red-700 underline disabled:opacity-50">Liberar período</button></div>)}</div>}
+              </div>
             </form>
 
             <form onSubmit={createAppointment} className="rounded-2xl bg-white p-5 shadow space-y-3">
@@ -948,7 +1137,8 @@ export default function AppointmentsPage() {
                   <input
                     value={appointmentForm.birth_date}
                     onChange={(event) => setAppointmentForm({ ...appointmentForm, birth_date: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    onClick={openNativePicker}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     type="date"
                     required
                   />
@@ -963,7 +1153,7 @@ export default function AppointmentsPage() {
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                   required
                 >
-                  <option value="">Selecione um servico</option>
+                  <option value="">Selecione um serviço</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.name}
@@ -996,7 +1186,8 @@ export default function AppointmentsPage() {
                   <input
                     value={appointmentForm.date}
                     onChange={(event) => setAppointmentForm({ ...appointmentForm, date: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    onClick={openNativePicker}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     type="date"
                     required
                   />
@@ -1006,7 +1197,8 @@ export default function AppointmentsPage() {
                   <input
                     value={appointmentForm.time}
                     onChange={(event) => setAppointmentForm({ ...appointmentForm, time: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    onClick={openNativePicker}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     type="time"
                     required
                   />
@@ -1047,7 +1239,7 @@ export default function AppointmentsPage() {
               </button>
             </form>
 
-            <section className="rounded-2xl bg-white p-5 shadow">
+            <section className="min-w-0 rounded-2xl bg-white p-4 shadow">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-bold">Serviços</h2>
                 <button
@@ -1096,7 +1288,7 @@ export default function AppointmentsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl bg-white p-5 shadow">
+            <section className="min-w-0 rounded-2xl bg-white p-5 shadow">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-bold">Profissionais</h2>
                 <button
@@ -1311,4 +1503,15 @@ export default function AppointmentsPage() {
       </div>
     </main>
   )
+}
+
+function openNativePicker(event: MouseEvent<HTMLInputElement>) {
+  const input = event.currentTarget as HTMLInputElement & { showPicker?: () => void }
+  input.focus()
+
+  try {
+    input.showPicker?.()
+  } catch {
+    // Browsers without programmatic picker support keep the native input behavior.
+  }
 }

@@ -17,6 +17,7 @@ export class PlatformTenantCreationError extends Error {
 
 export type PlatformTenantCreationInput = {
   legal_name: unknown
+  public_name: unknown
   cpf: unknown
   email: unknown
   birth_date: unknown
@@ -57,6 +58,7 @@ export async function createPlatformTenant(
   input: PlatformTenantCreationInput
 ) {
   const legalName = String(input.legal_name || '').trim()
+  const publicName = String(input.public_name || '').trim()
   const cpf = String(input.cpf || '').trim()
   const cpfDigits = onlyDigits(cpf)
   const email = String(input.email || '').trim().toLowerCase()
@@ -72,6 +74,10 @@ export async function createPlatformTenant(
 
   if (!legalName) {
     throw new PlatformTenantCreationError('Informe o nome legal do cliente.')
+  }
+
+  if (!publicName) {
+    throw new PlatformTenantCreationError('Informe o nome fantasia do negócio.')
   }
 
   if (![11, 14].includes(cpfDigits.length)) {
@@ -134,6 +140,7 @@ export async function createPlatformTenant(
     .from('tenants')
     .insert({
       legal_name: legalName,
+      public_name: publicName,
       cpf: cpfDigits,
       email,
       birth_date: birthDate,
@@ -142,7 +149,7 @@ export async function createPlatformTenant(
       status,
       business_type: businessType,
     })
-    .select('id, legal_name, email, plan, status, business_type')
+    .select('id, legal_name, public_name, email, plan, status, business_type')
     .single()
 
   if (tenantError || !tenant) {

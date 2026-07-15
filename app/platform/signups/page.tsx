@@ -179,9 +179,9 @@ export default function PlatformSignupsPage() {
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Cadastros pendentes</h1>
+              <h1 className="text-2xl font-bold">Novas contas pendentes</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Confirme pagamentos de signup ou cancele solicitacoes paradas.
+                Revise solicitações institucionais para criar novas contas na plataforma.
               </p>
             </div>
 
@@ -205,7 +205,7 @@ export default function PlatformSignupsPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-            placeholder="Buscar em cadastros pendentes"
+            placeholder="Buscar em novas contas pendentes"
           />
 
           <div className="overflow-x-auto">

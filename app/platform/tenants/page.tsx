@@ -12,6 +12,7 @@ type Tenant = {
   business_type: string | null
   plan: string
   legal_name: string
+  public_name: string | null
   cpf: string
   email: string
   birth_date: string
@@ -41,6 +42,7 @@ type Plan = {
 
 type TenantForm = {
   legal_name: string
+  public_name: string
   cpf: string
   email: string
   admin_email: string
@@ -55,6 +57,7 @@ type TenantForm = {
 
 const emptyTenantForm: TenantForm = {
   legal_name: '',
+  public_name: '',
   cpf: '',
   email: '',
   admin_email: '',
@@ -390,7 +393,7 @@ export default function PlatformTenantsPage() {
                 onClick={() => router.push('/platform/signups')}
                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
               >
-                Cadastros pendentes
+                Novas contas pendentes
               </button>
 
               <button
@@ -405,6 +408,13 @@ export default function PlatformTenantsPage() {
                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
               >
                 Mensagens
+              </button>
+
+              <button
+                onClick={() => router.push('/platform/whatsapp-inbox')}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
+              >
+                WhatsApp do Jack
               </button>
 
               <button
@@ -498,9 +508,9 @@ export default function PlatformTenantsPage() {
                   filteredTenants.map((tenant) => (
                     <tr key={tenant.id} className="border-b border-gray-100">
                       <td className="py-2 pr-2 font-medium">
-                        <div>{tenant.legal_name}</div>
+                        <div>{tenant.public_name || tenant.legal_name}</div>
                         <div className="text-xs font-normal text-gray-400">
-                          {tenant.cpf}
+                          {tenant.legal_name} · {tenant.cpf}
                         </div>
                       </td>
                       <td className="py-2 pr-2 text-gray-600">
@@ -626,11 +636,22 @@ export default function PlatformTenantsPage() {
               )}
 
               <label className="text-sm font-medium">
-                Nome legal
+                Nome completo ou razão social
                 <input
                   value={form.legal_name}
                   onChange={(event) => setForm({ ...form, legal_name: event.target.value })}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  required
+                />
+              </label>
+
+              <label className="text-sm font-medium">
+                Nome fantasia
+                <input
+                  value={form.public_name}
+                  onChange={(event) => setForm({ ...form, public_name: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  placeholder="Nome exibido aos clientes no WhatsApp"
                   required
                 />
               </label>

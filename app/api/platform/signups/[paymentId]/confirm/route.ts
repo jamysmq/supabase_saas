@@ -65,6 +65,7 @@ export async function POST(
     try {
       const created = await createPlatformTenant(result.supabase, {
         legal_name: payload.legal_name,
+        public_name: payload.public_name,
         cpf: payload.cpf,
         email: payload.email,
         birth_date: payload.birth_date,

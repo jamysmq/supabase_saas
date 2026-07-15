@@ -6,6 +6,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "wa-inbound-router-v1",
+        "authentication": "headerAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -14,24 +15,53 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "webhookId": "f97fd090-f87f-4ce4-86c0-dc78e69a6e62",
-      "position": [
-        -520,
-        0
-      ]
+      "position": [-600, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZPBjPrT60neI8jVC",
+          "name": "Assistente Jack - inbound router bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_whatsapp_router_step'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "p_customer_phone_e164", "value": "={{$json.body.customer_phone_e164 ?? $json.body.from ?? $json.body.chat_id}}" },
+            { "name": "p_message", "value": "={{$json.body.text ?? $json.body.message ?? ''}}" },
+            { "name": "p_message_id", "value": "={{$json.body.message_id ?? null}}" },
+            { "name": "p_inbox_thread_id", "value": "={{$json.body.inbox_routed ? $json.body.inbox_thread_id : null}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e8060230-6bf3-4a05-94f3-cce5276ba59c",
+      "name": "Route with Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-340, 0]
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const headers = $json.headers ?? {};\nconst body = $json.body ?? {};\nconst auth = String(headers.authorization ?? headers.Authorization ?? '').trim();\nconst expectedToken = String($env.WHATSAPP_INBOUND_N8N_TOKEN ?? '').trim();\nconst dispatchEnabled = String($env.WA_INBOUND_ROUTER_DISPATCH_ENABLED ?? '').trim().toLowerCase() === 'true';\nconst authorized = !expectedToken || auth === `Bearer ${expectedToken}`;\nconst rawText = String(body.text ?? body.message ?? '').replace(/\\s+/g, ' ').trim();\nconst text = rawText.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();\nconst selectedNumber = text.match(/^(\\d+)\\b/)?.[1] ?? null;\nconst hasAny = (words) => words.some((word) => text.includes(word));\nconst menuText = 'Olá! Sou o Assistente Jack. Escolha uma opção:\\n\\n1 - Agendar, remarcar ou cancelar agendamento\\n2 - Cadastro ou mensalidades\\n3 - Falar com atendimento humano';\nlet route = 'menu';\nlet target_workflow = null;\nlet target_webhook_path = null;\nlet reason = 'show_numbered_menu';\nlet reply_text = menuText;\nif (!authorized) {\n  route = 'unauthorized';\n  reason = 'invalid_authorization_header';\n  reply_text = 'Não foi possível validar esta integração.';\n} else if (selectedNumber === '1') {\n  route = 'appointments';\n  target_workflow = 'WA_TENANT_APPOINTMENTS_INBOUND_v1';\n  target_webhook_path = 'wa-tenant-appointments-inbound-v1';\n  reason = 'numbered_option_1';\n  reply_text = null;\n} else if (selectedNumber === '2') {\n  route = 'billing_signup';\n  target_workflow = 'WA_TENANT_BILLING_SIGNUP_INBOUND_v1';\n  target_webhook_path = 'wa-tenant-billing-signup-inbound-v1';\n  reason = 'numbered_option_2';\n  reply_text = null;\n} else if (selectedNumber === '3') {\n  route = 'human_handoff';\n  reason = 'numbered_option_3';\n  reply_text = 'Certo, vou encaminhar sua conversa para atendimento humano.';\n} else if (hasAny(['agendar', 'agenda', 'horario', 'remarcar', 'reagendar', 'cancelar agendamento', 'profissional', 'servico'])) {\n  route = 'appointments';\n  target_workflow = 'WA_TENANT_APPOINTMENTS_INBOUND_v1';\n  target_webhook_path = 'wa-tenant-appointments-inbound-v1';\n  reason = 'appointment_intent_keyword_fallback';\n  reply_text = null;\n} else if (hasAny(['cadastro', 'cadastrar', 'matricula', 'aluno', 'mensalidade', 'turma', 'vencimento'])) {\n  route = 'billing_signup';\n  target_workflow = 'WA_TENANT_BILLING_SIGNUP_INBOUND_v1';\n  target_webhook_path = 'wa-tenant-billing-signup-inbound-v1';\n  reason = 'billing_signup_intent_keyword_fallback';\n  reply_text = null;\n} else if (hasAny(['humano', 'atendente', 'falar conosco', 'atendimento'])) {\n  route = 'human_handoff';\n  reason = 'human_handoff_keyword_fallback';\n  reply_text = 'Certo, vou encaminhar sua conversa para atendimento humano.';\n}\nreturn {\n  ok: authorized,\n  route,\n  reason,\n  target_workflow,\n  target_webhook_path,\n  dispatch_to_module: Boolean(authorized && dispatchEnabled && target_webhook_path),\n  reply_text,\n  menu: [\n    { number: '1', label: 'Agendar, remarcar ou cancelar agendamento', route: 'appointments' },\n    { number: '2', label: 'Cadastro ou mensalidades', route: 'billing_signup' },\n    { number: '3', label: 'Falar com atendimento humano', route: 'human_handoff' }\n  ],\n  provider: body.provider ?? 'whatsapp_cloud',\n  message_id: body.message_id ?? null,\n  inbox_thread_id: body.inbox_thread_id ?? null,\n  inbox_routed: Boolean(body.inbox_routed),\n  customer_phone_e164: body.customer_phone_e164 ?? body.from ?? body.chat_id ?? null,\n  tenant_phone_e164: body.tenant_phone_e164 ?? body.to ?? null,\n  text: rawText,\n  received_at: new Date().toISOString()\n};"
+        "jsCode": "return { ...$json, dispatch_to_module: Boolean($json.request_dispatch) };"
       },
-      "id": "e8060230-6bf3-4a05-94f3-cce5276ba59c",
-      "name": "Classify route",
+      "id": "a1795e03-a9fb-41b8-a4cd-c260f6760b03",
+      "name": "Apply dispatch gate",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -260,
-        0
-      ]
+      "position": [-80, 0]
     },
     {
       "parameters": {},
@@ -39,35 +69,13 @@
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        0,
-        0
-      ]
+      "position": [180, 0]
     }
   ],
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Classify route",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Classify route": {
-      "main": [
-        [
-          {
-            "node": "Respond",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Webhook": { "main": [[{ "node": "Route with Supabase", "type": "main", "index": 0 }]] },
+    "Route with Supabase": { "main": [[{ "node": "Apply dispatch gate", "type": "main", "index": 0 }]] },
+    "Apply dispatch gate": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
   },
   "settings": {
     "executionOrder": "v1",
@@ -76,7 +84,5 @@
     "callerPolicy": "workflowsFromSameOwner"
   },
   "staticData": null,
-  "meta": {
-    "templateCredsSetupCompleted": true
-  }
+  "meta": { "templateCredsSetupCompleted": true }
 }

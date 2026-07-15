@@ -32,6 +32,7 @@ export async function GET(request: Request) {
       business_type,
       plan,
       legal_name,
+      public_name,
       cpf,
       email,
       birth_date,

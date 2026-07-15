@@ -12,6 +12,7 @@ type Tenant = {
   business_type: string | null
   plan: string
   legal_name: string
+  public_name: string | null
   cpf: string
   email: string
   birth_date: string
@@ -67,6 +68,7 @@ type Plan = {
 
 type FormState = {
   legal_name: string
+  public_name: string
   cpf: string
   email: string
   birth_date: string
@@ -90,6 +92,7 @@ export default function PlatformTenantDetailPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [form, setForm] = useState<FormState>({
     legal_name: '',
+    public_name: '',
     cpf: '',
     email: '',
     birth_date: '',
@@ -168,6 +171,7 @@ export default function PlatformTenantDetailPage() {
 
     setForm({
       legal_name: loadedTenant.legal_name,
+      public_name: loadedTenant.public_name ?? loadedTenant.legal_name,
       cpf: loadedTenant.cpf,
       email: loadedTenant.email,
       birth_date: loadedTenant.birth_date,
@@ -413,6 +417,20 @@ export default function PlatformTenantDetailPage() {
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                 required
               />
+            </label>
+
+            <label className="block text-sm font-medium">
+              Nome fantasia
+              <input
+                value={form.public_name}
+                onChange={(event) => setForm({ ...form, public_name: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                placeholder="Nome curto exibido aos clientes no WhatsApp"
+                required
+              />
+              <span className="mt-1 block text-xs font-normal text-gray-500">
+                Este é o nome mostrado na busca e nas mensagens do Assistente Jack.
+              </span>
             </label>
 
             <div className="grid gap-4 md:grid-cols-2">

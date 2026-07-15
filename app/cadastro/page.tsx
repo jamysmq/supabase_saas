@@ -12,6 +12,7 @@ type Plan = {
 
 type SignupForm = {
   legal_name: string
+  public_name: string
   cpf: string
   email: string
   admin_email: string
@@ -24,6 +25,7 @@ type SignupForm = {
 
 const emptyForm: SignupForm = {
   legal_name: '',
+  public_name: '',
   cpf: '',
   email: '',
   admin_email: '',
@@ -228,11 +230,22 @@ export default function SignupPage() {
               )}
 
               <label className="text-sm font-medium">
-                Nome legal
+                Nome completo ou razão social
                 <input
                   value={form.legal_name}
                   onChange={(event) => setForm({ ...form, legal_name: event.target.value })}
                   className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
+                  required
+                />
+              </label>
+
+              <label className="text-sm font-medium">
+                Nome fantasia
+                <input
+                  value={form.public_name}
+                  onChange={(event) => setForm({ ...form, public_name: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
+                  placeholder="Nome que seus clientes verão no WhatsApp"
                   required
                 />
               </label>

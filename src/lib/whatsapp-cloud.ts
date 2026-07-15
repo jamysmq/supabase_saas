@@ -35,6 +35,13 @@ export type SendWhatsAppListInput = {
   }>
 }
 
+export type SendWhatsAppCtaUrlInput = {
+  to: string
+  body: string
+  buttonText: string
+  url: string
+}
+
 export type WhatsAppCloudSendResponse = {
   messaging_product?: string
   contacts?: Array<{
@@ -202,6 +209,42 @@ export function buildWhatsAppCloudListPayload(input: SendWhatsAppListInput) {
   }
 }
 
+export function buildWhatsAppCloudCtaUrlPayload(input: SendWhatsAppCtaUrlInput) {
+  const to = normalizeWhatsAppRecipient(input.to)
+  const body = validateInteractiveText(input.body, 'CTA body', 1024)
+  const buttonText = validateInteractiveText(input.buttonText, 'CTA button text', 20)
+  const url = String(input.url ?? '').trim()
+
+  if (to.length < 8 || to.length > 15) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp recipient.')
+  }
+
+  try {
+    const parsedUrl = new URL(url)
+    if (parsedUrl.protocol !== 'https:') throw new Error('Invalid protocol')
+  } catch {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp CTA URL.')
+  }
+
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'cta_url',
+      body: { text: body },
+      action: {
+        name: 'cta_url',
+        parameters: {
+          display_text: buttonText,
+          url,
+        },
+      },
+    },
+  }
+}
+
 export function getWhatsAppCloudConfigFromEnv(env: NodeJS.ProcessEnv = process.env): WhatsAppCloudConfig {
   const accessToken = env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim()
   const phoneNumberId = env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()
@@ -272,6 +315,10 @@ export function createWhatsAppCloudClient(config: WhatsAppCloudConfig, fetchImpl
     },
     async sendList(input: SendWhatsAppListInput): Promise<WhatsAppCloudSendResponse> {
       const payload = buildWhatsAppCloudListPayload(input)
+      return sendPayload(payload)
+    },
+    async sendCtaUrl(input: SendWhatsAppCtaUrlInput): Promise<WhatsAppCloudSendResponse> {
+      const payload = buildWhatsAppCloudCtaUrlPayload(input)
       return sendPayload(payload)
     },
   }

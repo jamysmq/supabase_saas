@@ -387,6 +387,9 @@ export default function WhatsAppInboxPage() {
   const [reply, setReply] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false)
+  const [hasMoreMessages, setHasMoreMessages] = useState(false)
+  const [nextMessagesBefore, setNextMessagesBefore] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [clearingMessages, setClearingMessages] = useState(false)
   const [error, setError] = useState('')
@@ -402,6 +405,8 @@ export default function WhatsAppInboxPage() {
   const [hasCoarsePointer, setHasCoarsePointer] = useState(false)
   const templateEditorRefs = useRef(new Map<string, TemplateEditorHandle>())
   const skipNextVariableClickRef = useRef(false)
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null)
+  const shouldScrollToLatestRef = useRef(false)
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -422,19 +427,47 @@ export default function WhatsAppInboxPage() {
     return () => query.removeEventListener('change', update)
   }, [])
 
-  const loadMessages = useCallback(async function loadMessages(threadId: string, token = accessToken) {
+  useEffect(() => {
+    if (!shouldScrollToLatestRef.current || loadingMessages || messages.length === 0) return
+
+    const frame = window.requestAnimationFrame(() => {
+      const viewport = messagesViewportRef.current
+      if (viewport) viewport.scrollTop = viewport.scrollHeight
+      shouldScrollToLatestRef.current = false
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [loadingMessages, messages])
+
+  const loadMessages = useCallback(async function loadMessages(
+    threadId: string,
+    token = accessToken,
+    options: { before?: string; prepend?: boolean } = {}
+  ) {
     if (!token) return
 
-    setLoadingMessages(true)
+    if (options.prepend) {
+      setLoadingOlderMessages(true)
+    } else {
+      shouldScrollToLatestRef.current = true
+      setLoadingMessages(true)
+    }
     setError('')
 
-    const response = await fetch(`/api/tenant-whatsapp/threads/${threadId}/messages`, {
+    const query = new URLSearchParams({ limit: '30' })
+    if (options.before) query.set('before', options.before)
+
+    const response = await fetch(`/api/tenant-whatsapp/threads/${threadId}/messages?${query}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
 
-    setLoadingMessages(false)
+    if (options.prepend) {
+      setLoadingOlderMessages(false)
+    } else {
+      setLoadingMessages(false)
+    }
 
     if (!response.ok) {
       const payload = await response.json().catch(() => null)
@@ -443,7 +476,14 @@ export default function WhatsAppInboxPage() {
     }
 
     const payload = await response.json()
-    setMessages(payload.messages ?? [])
+    const nextMessages: Message[] = payload.messages ?? []
+    setMessages((current) => {
+      if (!options.prepend) return nextMessages
+      const currentIds = new Set(current.map((message) => message.id))
+      return [...nextMessages.filter((message) => !currentIds.has(message.id)), ...current]
+    })
+    setHasMoreMessages(payload.has_more === true)
+    setNextMessagesBefore(payload.next_before ?? null)
     setThreads((current) =>
       current.map((thread) =>
         thread.id === threadId ? { ...thread, unread_count: 0 } : thread
@@ -451,12 +491,20 @@ export default function WhatsAppInboxPage() {
     )
   }, [accessToken])
 
+  async function loadOlderMessages() {
+    if (!selectedThreadId || !nextMessagesBefore || loadingOlderMessages) return
+    await loadMessages(selectedThreadId, accessToken, {
+      before: nextMessagesBefore,
+      prepend: true,
+    })
+  }
+
   const loadThreads = useCallback(async function loadThreads(token = accessToken) {
     if (!token) return []
 
     setError('')
 
-    const response = await fetch('/api/tenant-whatsapp/threads', {
+    const response = await fetch('/api/tenant-whatsapp/threads?status=all', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -731,7 +779,7 @@ export default function WhatsAppInboxPage() {
     }
 
     setReply('')
-    setSuccess('Mensagem enviada.')
+    setSuccess('Mensagem enviada. O atendimento automático ficará pausado por duas horas.')
     await Promise.all([
       loadThreads(),
       loadMessages(selectedThread.id),
@@ -762,6 +810,8 @@ export default function WhatsAppInboxPage() {
     setSuccess('Conversa encerrada.')
     setSelectedThreadId(null)
     setMessages([])
+    setHasMoreMessages(false)
+    setNextMessagesBefore(null)
     await loadThreads()
   }
 
@@ -792,6 +842,8 @@ export default function WhatsAppInboxPage() {
     }
 
     setMessages([])
+    setHasMoreMessages(false)
+    setNextMessagesBefore(null)
     setSuccess('Conversa limpa.')
     await loadThreads()
   }
@@ -880,10 +932,10 @@ export default function WhatsAppInboxPage() {
           </div>
         )}
 
-        <section className="grid min-h-[620px] gap-4 lg:grid-cols-[360px_1fr]">
-          <aside className="overflow-hidden rounded-2xl bg-white shadow">
+        <section className="grid gap-4 lg:h-[680px] lg:grid-cols-[360px_1fr]">
+          <aside className="flex max-h-[680px] flex-col overflow-hidden rounded-2xl bg-white shadow">
             <div className="border-b border-gray-100 p-4">
-              <h2 className="font-bold">Conversas abertas</h2>
+              <h2 className="font-bold">Conversas</h2>
             </div>
 
             {threads.length === 0 ? (
@@ -891,7 +943,7 @@ export default function WhatsAppInboxPage() {
                 Nenhuma conversa aberta.
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 overflow-y-auto">
                 {threads.map((thread) => (
                   <button
                     key={thread.id}
@@ -907,6 +959,11 @@ export default function WhatsAppInboxPage() {
                       {thread.unread_count > 0 && (
                         <span className="rounded-full bg-gray-950 px-2 py-0.5 text-xs font-semibold text-white">
                           {thread.unread_count}
+                        </span>
+                      )}
+                      {thread.unread_count === 0 && thread.status === 'closed' && (
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                          Encerrada
                         </span>
                       )}
                     </div>
@@ -925,7 +982,7 @@ export default function WhatsAppInboxPage() {
             )}
           </aside>
 
-          <section className="flex min-h-[620px] flex-col overflow-hidden rounded-2xl bg-white shadow">
+          <section className="flex h-[680px] min-h-0 flex-col overflow-hidden rounded-2xl bg-white shadow">
             {!selectedThread ? (
               <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-500">
                 Selecione uma conversa.
@@ -960,13 +1017,26 @@ export default function WhatsAppInboxPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-3 overflow-y-auto bg-gray-50 p-4">
+                <div ref={messagesViewportRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gray-50 p-4">
                   {loadingMessages ? (
                     <div className="text-sm text-gray-500">Carregando mensagens...</div>
                   ) : messages.length === 0 ? (
                     <div className="text-sm text-gray-500">Nenhuma mensagem registrada.</div>
                   ) : (
-                    messages.map((message) => (
+                    <>
+                      {hasMoreMessages && (
+                        <div className="flex justify-center pb-1">
+                          <button
+                            type="button"
+                            onClick={loadOlderMessages}
+                            disabled={loadingOlderMessages}
+                            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm disabled:opacity-60"
+                          >
+                            {loadingOlderMessages ? 'Carregando...' : 'Mais mensagens'}
+                          </button>
+                        </div>
+                      )}
+                      {messages.map((message) => (
                       <div
                         key={message.id}
                         className={`flex ${
@@ -990,7 +1060,8 @@ export default function WhatsAppInboxPage() {
                           </p>
                         </div>
                       </div>
-                    ))
+                      ))}
+                    </>
                   )}
                 </div>
 
@@ -1000,7 +1071,7 @@ export default function WhatsAppInboxPage() {
                     <textarea
                       value={reply}
                       onChange={(event) => setReply(event.target.value)}
-                      className="mt-2 min-h-28 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                      className="mt-2 min-h-20 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 font-normal"
                       maxLength={4096}
                       required
                     />

@@ -752,7 +752,88 @@ export default function StudentsPage() {
               </select>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="space-y-3 md:hidden">
+              {filteredStudents.length === 0 ? (
+                <p className="py-8 text-center text-sm text-gray-500">
+                  Nenhum {labels.customerSingular.toLowerCase()} ativo encontrado.
+                </p>
+              ) : (
+                filteredStudents.map((student) => {
+                  const billing = student.customer_billing_profiles?.[0]
+
+                  return (
+                    <article key={student.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="break-words font-semibold">{student.full_name}</h3>
+                          <p className="mt-1 text-xs text-gray-500">{student.cpf || 'CPF não informado'}</p>
+                        </div>
+                        <span className="shrink-0 text-sm font-semibold">
+                          {formatCurrencyFromCents(billing?.amount_cents)}
+                        </span>
+                      </div>
+
+                      <dl className="mt-3 grid gap-2 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-gray-500">Telefone</dt>
+                          <dd className="text-right">{student.phone_e164 || '-'}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-gray-500">{labels.groupSingular}</dt>
+                          <dd className="text-right">
+                            {firstRelation(student.tenant_customer_groups)?.name || `Sem ${labels.groupSingular.toLowerCase()}`}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-gray-500">Cobrança</dt>
+                          <dd className="text-right">{billing ? `${billing.status ?? '-'} · dia ${billing.due_day ?? '-'}` : '-'}</dd>
+                        </div>
+                      </dl>
+
+                      {billing && (
+                        <button
+                          onClick={() => void updateBillingStatus(
+                            billing,
+                            billing.status === 'active' ? 'paused' : 'active'
+                          )}
+                          disabled={billingStatusSavingId === billing.id}
+                          className="mt-3 text-xs font-medium text-gray-950 underline disabled:opacity-50"
+                        >
+                          {billingStatusSavingId === billing.id
+                            ? 'Salvando...'
+                            : billing.status === 'active'
+                              ? 'Pausar cobrança'
+                              : 'Ativar cobrança'}
+                        </button>
+                      )}
+
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => openEditor(student)}
+                          className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => router.push(`/students/${student.id}/move`)}
+                          className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
+                        >
+                          Mover
+                        </button>
+                        <button
+                          onClick={() => deactivateStudent(student)}
+                          className="h-9 rounded-lg bg-red-50 px-2 text-xs font-medium text-red-700"
+                        >
+                          Desativar
+                        </button>
+                      </div>
+                    </article>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[840px] text-sm">
                 <thead className="border-b border-gray-200 text-left text-gray-500">
                   <tr>

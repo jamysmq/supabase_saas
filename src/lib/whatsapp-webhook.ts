@@ -8,6 +8,7 @@ export type WhatsAppWebhookMessageEvent = {
   timestamp: string | null
   type: string
   text: string | null
+  interactiveReplyId: string | null
 }
 
 export type WhatsAppWebhookStatusEvent = {
@@ -31,6 +32,15 @@ type WhatsAppWebhookChangeValue = {
     type?: string
     text?: {
       body?: string
+    }
+    interactive?: {
+      type?: string
+      button_reply?: { id?: string; title?: string }
+      list_reply?: { id?: string; title?: string; description?: string }
+    }
+    button?: {
+      payload?: string
+      text?: string
     }
   }>
   statuses?: Array<{
@@ -82,6 +92,33 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
       for (const message of value?.messages ?? []) {
         if (!message.from || !message.id) continue
 
+        const interactiveReply = message.interactive?.button_reply ?? message.interactive?.list_reply
+        const interactiveReplyId = interactiveReply?.id ?? message.button?.payload ?? null
+        const interactiveTextById: Record<string, string> = {
+          platform_about: 'Conhecer os planos',
+          platform_signup: 'Quero me cadastrar',
+          tenant_search: 'Procurar serviço ou produto de um cliente',
+          human_handoff: 'Atendimento humano',
+          main_menu: 'menu principal',
+          tenant_appointments: 'Agendamento',
+          tenant_billing: 'Cadastro ou mensalidades',
+          tenant_handoff: 'Atendimento humano',
+          appointment_schedule: '1',
+          appointment_reschedule: '2',
+          appointment_cancel: '3',
+          appointment_confirm_yes: 'sim',
+          appointment_restart: '0',
+          appointment_more: 'mais',
+          tenant_confirm_yes: 'Sim',
+          tenant_confirm_no: 'Não',
+        }
+        const interactiveText = interactiveReplyId
+          ? interactiveTextById[interactiveReplyId]
+            ?? (interactiveReplyId.startsWith('tenant_choice_') ? interactiveReplyId.slice('tenant_choice_'.length) : null)
+            ?? (interactiveReplyId.startsWith('appointment_choice_') ? interactiveReplyId.slice('appointment_choice_'.length) : null)
+            ?? interactiveReply?.title ?? message.button?.text ?? interactiveReplyId
+          : null
+
         messages.push({
           phoneNumberId,
           displayPhoneNumber,
@@ -89,7 +126,8 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
           messageId: message.id,
           timestamp: message.timestamp ?? null,
           type: message.type ?? 'unknown',
-          text: message.type === 'text' ? message.text?.body ?? null : null,
+          text: message.type === 'text' ? message.text?.body ?? null : interactiveText,
+          interactiveReplyId,
         })
       }
 

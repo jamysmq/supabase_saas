@@ -60,7 +60,7 @@ Payload que o n8n recebe do app:
 
 - `DAILY_BILLING_REMINDERS` (`YbD6NHWbgz9vLe33w_UU-`): ativo.
 - `WA_INBOUND_ROUTER_v1` (`JSlq95lyTAVjZjtz`): ativo para receber/testar a entrada central.
-- `WA_TENANT_APPOINTMENTS_INBOUND_v1` (`X1lUop6Q5fh9uxTG`): manter inativo ate teste controlado.
+- `WA_TENANT_APPOINTMENTS_INBOUND_v1` (`X1lUop6Q5fh9uxTG`): ativo em teste controlado desde 2026-07-14; nao desativar sem registrar incidente ou rollback.
 - `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` (`zWflZZXKn2XIlHEc`): manter inativo ate teste controlado.
 - `DAILY_TENANT_AGENDA_REMINDERS` (`dcKARQX6GDCBPo3W`): manter inativo ate teste controlado.
 - `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` (`A4XOl16nkcIYOre1`): manter inativo ate teste controlado.
@@ -70,6 +70,7 @@ Payload que o n8n recebe do app:
 1. Confirmar que envio manual pela inbox funciona.
 2. Confirmar que resposta real chega em `/api/whatsapp/webhook` e aparece na inbox.
 3. Configurar `WHATSAPP_INBOUND_N8N_WEBHOOK_URL` na Vercel apontando para `/webhook/wa-inbound-router-v1`.
-4. Ativar primeiro um tenant de teste com `salaoteste@teste.com`.
-5. Ativar workflows de modulo um por vez, testando logs e mensagens reais antes de liberar para mais tenants.
-6. Depois dos modulos ativos, ligar `WA_INBOUND_ROUTER_DISPATCH_ENABLED=true` no n8n e testar novamente com um tenant controlado.
+4. Manter `salaoteste@teste.com` como tenant de validacao da agenda antes de liberar mudancas amplas.
+5. Repetir o fluxo real de criar, remarcar e cancelar apos mudancas no roteador, no adaptador ou no workflow de agenda.
+6. Ativar os demais workflows de modulo um por vez, testando logs e mensagens reais antes de liberar para mais tenants.
+7. Manter o dispatch do roteador limitado aos modulos ja validados e registrar qualquer nova ativacao neste runbook.

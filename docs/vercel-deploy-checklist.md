@@ -4,21 +4,23 @@ Decisao de arquitetura: o app Next.js sera publicado na Vercel Pro para evitar u
 
 ## Dominios
 
-Estrutura recomendada:
+Estrutura em producao:
 
-- `app.seudominio.com`: SaaS principal.
-- `seudominio.com` e `www.seudominio.com`: site institucional/landing futura.
+- `app.meuassistentevirtual.com.br`: SaaS principal.
+- `meuassistentevirtual.com.br` e `www.meuassistentevirtual.com.br`: site institucional/landing.
 
 O webhook oficial da Meta deve usar:
 
 ```text
-https://app.seudominio.com/api/whatsapp/webhook
+https://app.meuassistentevirtual.com.br/api/whatsapp/webhook
 ```
 
 ## Projeto Vercel
 
-1. Criar uma conta/time Pro na Vercel.
-2. Importar o repositorio GitHub `jamysmq/supabase_saas`.
+Estado verificado em 2026-07-14: projeto `gerente/supabase-saas` publicado, dominio oficial com HTTPS e `/api/health` respondendo HTTP 200.
+
+1. Manter a conta/time Pro na Vercel.
+2. Manter vinculado o repositorio GitHub `jamysmq/supabase_saas`.
 3. Usar os defaults do framework Next.js:
    - build command: `npm run build`;
    - install command: `npm install`;
@@ -28,7 +30,7 @@ https://app.seudominio.com/api/whatsapp/webhook
 6. Validar:
 
 ```text
-https://app.seudominio.com/api/health
+https://app.meuassistentevirtual.com.br/api/health
 ```
 
 Resposta esperada:
@@ -89,7 +91,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 Adicionar quando o app estiver publicado:
 
 ```env
-APP_BASE_URL=https://app.seudominio.com
+APP_BASE_URL=https://app.meuassistentevirtual.com.br
 WHATSAPP_INTERNAL_SEND_TOKEN=
 ```
 
@@ -107,7 +109,7 @@ WHATSAPP_INTERNAL_SEND_TOKEN=
 8. Importar/atualizar workflows n8n versionados somente depois que `APP_BASE_URL` estiver respondendo.
 9. Quando a Meta liberar:
    - configurar token/phone number id/app secret;
-   - cadastrar webhook `https://app.seudominio.com/api/whatsapp/webhook`;
+   - cadastrar webhook `https://app.meuassistentevirtual.com.br/api/whatsapp/webhook`;
    - testar challenge da Meta;
    - testar uma mensagem real de entrada;
    - testar envio real pelo endpoint interno.
@@ -120,3 +122,4 @@ WHATSAPP_INTERNAL_SEND_TOKEN=
 - Manter app Next.js como camada publica, API segura e receptor oficial dos webhooks Meta.
 - Manter Vercel como plataforma do app enquanto o produto cresce; evitar VPS temporario para o app principal.
 - Nao gravar tokens no codigo, workflow JSON ou chat; usar somente envs.
+- Manter headers defensivos globais no Next.js (`nosniff`, `SAMEORIGIN` e politica de referenciador) e validar sua presenca apos cada alteracao de infraestrutura.

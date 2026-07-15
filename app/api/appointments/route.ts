@@ -133,6 +133,9 @@ export async function POST(request: Request) {
   })
 
   if (error) {
+    if (error.message.includes('appointment_time_unavailable')) {
+      return errorResponse('Esse horario esta ocupado ou bloqueado na agenda.', 409)
+    }
     return errorResponse('Não foi possível criar o agendamento.', 500, error.message)
   }
 

@@ -15,15 +15,19 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url)
   const status = url.searchParams.get('status') || 'open'
-  const normalizedStatus = status === 'closed' ? 'closed' : 'open'
 
-  const { data, error } = await result.supabase
+  let threadsQuery = result.supabase
     .from('tenant_whatsapp_threads')
     .select('id, customer_phone_e164, customer_name_snapshot, status, last_message_preview, last_message_at, last_inbound_at, last_outbound_at, unread_count, updated_at')
     .eq('tenant_id', result.tenantUser.tenant_id)
-    .eq('status', normalizedStatus)
     .order('last_message_at', { ascending: false, nullsFirst: false })
     .limit(100)
+
+  if (status !== 'all') {
+    threadsQuery = threadsQuery.eq('status', status === 'closed' ? 'closed' : 'open')
+  }
+
+  const { data, error } = await threadsQuery
 
   if (error) {
     return errorResponse('Nao foi possivel carregar as conversas.', 500, error.message)

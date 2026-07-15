@@ -40,6 +40,12 @@ export default function DashboardPage() {
   const navigationItems = [
     ...(canUseBilling
       ? [{
+          href: '/pending-signups',
+          title: 'Cadastros pendentes',
+          description: 'Revise os alunos que solicitaram cadastro pelo WhatsApp.',
+          teacherOnly: true,
+        },
+        {
           href: '/pending-payments',
           title: 'Pagamentos pendentes',
           description: 'Confirme mensalidades recebidas e acompanhe cobranças.',
@@ -179,7 +185,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {navigationItems.map((item) => (
+          {navigationItems
+            .filter((item) => !('teacherOnly' in item) || businessType === 'teacher')
+            .map((item) => (
             <Link
               key={item.href}
               className="group block rounded-lg border border-sky-100 bg-white p-5 text-slate-950 shadow hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-200"
