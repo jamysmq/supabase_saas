@@ -21,7 +21,17 @@ function buildWaMeUrl(phone: string, text: string) {
 
 function buildPrefilledText(tenant: TenantInfo | null, code: string) {
   const businessName = tenant?.public_name?.trim() || tenant?.legal_name?.trim() || 'este estabelecimento'
-  return `Olá! Quero iniciar um atendimento com ${businessName} pelo Assistente Jack. Meu código de acesso é ${code}.`
+  const articleByBusinessType: Record<string, 'o' | 'a'> = {
+    clinic: 'a',
+    loja_material: 'a',
+    salon: 'o',
+    restaurant: 'o',
+    petshop: 'o',
+  }
+  const article = articleByBusinessType[String(tenant?.business_type ?? '').toLowerCase()]
+  const displayedName = article ? `${article} ${businessName}` : businessName
+
+  return `Olá! Quero iniciar um atendimento com ${displayedName} pelo Assistente Jack. Meu código de acesso é ${code}.`
 }
 
 export async function GET(request: Request) {

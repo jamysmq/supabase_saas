@@ -60,7 +60,7 @@ export async function requireTenantUser(request: Request) {
 
   const { data: tenant, error: tenantError } = await supabase
     .from('tenants')
-    .select('id, plan, status, business_type')
+    .select('id, legal_name, public_name, plan, status, business_type')
     .eq('id', tenantUser.tenant_id)
     .single()
 
