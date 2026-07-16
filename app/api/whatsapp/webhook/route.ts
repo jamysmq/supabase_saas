@@ -200,6 +200,16 @@ function billingSignupUnavailableReply(body: string, tenantName: string): Appoin
   }
 }
 
+function contextualizeBillingSignupWelcome(body: string, tenantName: string) {
+  const normalized = body.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const isSignupIntroduction = normalized.includes('eu sou o jack') &&
+    (normalized.includes('qual e o seu nome completo') || normalized.includes('envie seu nome completo'))
+
+  if (!isSignupIntroduction) return body
+
+  return `Vamos começar! Vou receber seus dados e encaminhá-los para análise de *${tenantName}*.\n\nQual é o seu nome completo?`
+}
+
 function shortInteractiveTitle(value: string, maxLength: number) {
   const title = value.replace(/\s+/g, ' ').trim()
   return title.length <= maxLength ? title : `${title.slice(0, Math.max(1, maxLength - 1)).trim()}…`
@@ -917,8 +927,9 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                 try {
                   const client = createWhatsAppCloudClient(getWhatsAppCloudConfigFromEnv())
                   const tenantName = normalizeShortLabel(routerResponse.tenant_name, 'este estabelecimento')
-                  const interactiveReply = billingSignupUnavailableReply(moduleReplyText, tenantName) ??
-                    appointmentInteractiveReply(moduleReplyText)
+                  const contextualModuleReplyText = contextualizeBillingSignupWelcome(moduleReplyText, tenantName)
+                  const interactiveReply = billingSignupUnavailableReply(contextualModuleReplyText, tenantName) ??
+                    appointmentInteractiveReply(contextualModuleReplyText)
                   const moduleSendResult = isAppointmentActionMenu(moduleReplyText)
                     ? await client.sendButtons({
                       to: message.from,
@@ -945,12 +956,12 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                             rows: interactiveReply.options,
                           }],
                         })
-                        : await client.sendText({ to: message.from, body: moduleReplyText, previewUrl: false })
+                        : await client.sendText({ to: message.from, body: contextualModuleReplyText, previewUrl: false })
 
                   await recordAutomatedReply(
                     effectiveThreadId,
                     effectiveScope,
-                    moduleReplyText,
+                    contextualModuleReplyText,
                     moduleSendResult.messages?.[0]?.id ?? null,
                     {
                       source: 'n8n_module_reply',
