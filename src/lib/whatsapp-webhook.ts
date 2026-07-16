@@ -116,6 +116,7 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
           ? interactiveTextById[interactiveReplyId]
             ?? (interactiveReplyId.startsWith('tenant_choice_') ? interactiveReplyId.slice('tenant_choice_'.length) : null)
             ?? (interactiveReplyId.startsWith('appointment_choice_') ? interactiveReplyId.slice('appointment_choice_'.length) : null)
+            ?? (interactiveReplyId.startsWith('billing_signup_choice_') ? interactiveReplyId.slice('billing_signup_choice_'.length) : null)
             ?? interactiveReply?.title ?? message.button?.text ?? interactiveReplyId
           : null
 
