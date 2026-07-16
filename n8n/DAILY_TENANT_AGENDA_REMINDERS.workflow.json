@@ -84,14 +84,12 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.APP_BASE_URL.replace(/\\/$/, '') + '/api/internal/whatsapp/send'}}",
+        "url": "https://app.meuassistentevirtual.com.br/api/internal/whatsapp/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{'Bearer ' + $env.WHATSAPP_INTERNAL_SEND_TOKEN}}"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -124,7 +122,13 @@
       "position": [
         0,
         0
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Z4CAOHz1vk10Tghh",
+          "name": "Assistente Jack - Envio interno WhatsApp"
+        }
+      }
     },
     {
       "parameters": {
@@ -152,23 +156,23 @@
           "parameters": [
             {
               "name": "p_tenant_id",
-              "value": "={{$json.tenant_id}}"
+              "value": "={{$node[\"FN_prepare_message\"].json.tenant_id}}"
             },
             {
               "name": "p_reminder_date",
-              "value": "={{$json.reminder_date}}"
+              "value": "={{$node[\"FN_prepare_message\"].json.reminder_date}}"
             },
             {
               "name": "p_recipient_e164",
-              "value": "={{$json.wa_to}}"
+              "value": "={{$node[\"FN_prepare_message\"].json.wa_to}}"
             },
             {
               "name": "p_rendered_message",
-              "value": "={{$json.rendered_message}}"
+              "value": "={{$node[\"FN_prepare_message\"].json.rendered_message}}"
             },
             {
               "name": "p_payload",
-              "value": "={{$json.payload}}"
+              "value": "={{$node[\"FN_prepare_message\"].json.payload}}"
             }
           ]
         },

@@ -1028,7 +1028,7 @@ export default function AppointmentsPage() {
                   checked={appointmentSettingsForm.has_break}
                   onChange={(event) => setAppointmentSettingsForm({ ...appointmentSettingsForm, has_break: event.target.checked })}
                 />
-                Incluir pausa de almo?o/descanso
+                Incluir pausa de almoço/descanso
               </label>
 
               {appointmentSettingsForm.has_break && (
@@ -1045,7 +1045,7 @@ export default function AppointmentsPage() {
                     />
                   </label>
                   <label className="text-sm font-medium">
-                    Dura??o da pausa
+                    Duração da pausa
                     <input
                       type="number"
                       min="15"
