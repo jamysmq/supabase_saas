@@ -263,8 +263,8 @@ export default function Home() {
       <footer className="bg-[#03142f] text-white">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-6 text-xs leading-6 text-white/70 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <p>
-            Meu Assistente Virtual e Assistente Jack são operados por
-            67.015.907/0001-03 JAMYS MEDEIROS QUARESMA.
+            © 2026 Soft Ink. Assistente Jack é um produto da Soft Ink.
+            meuassistentevirtual.com.br é o domínio oficial.
           </p>
           <div className="flex flex-wrap gap-4 font-semibold text-white/82">
             <Link href="/empresa" className="hover:text-white">

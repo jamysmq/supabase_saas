@@ -9,7 +9,7 @@ export default function TermsPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Termos de Uso</h1>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          O Assistente Jack é um produto da Meu Assistente Virtual para gestão
+          O Assistente Jack é um produto da Soft Ink para gestão
           de clientes, cobranças, agenda, pedidos e comunicações operacionais.
           O uso do sistema depende de acesso autorizado e do plano contratado
           por cada negócio.
@@ -25,7 +25,7 @@ export default function TermsPage() {
           serviço.
         </p>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          Meu Assistente Virtual e Assistente Jack são operados por
+          O Assistente Jack é operado pela Soft Ink, sob o nome empresarial
           67.015.907/0001-03 JAMYS MEDEIROS QUARESMA. Consulte também os{" "}
           <Link className="font-semibold text-[#073a86]" href="/empresa">
             dados da empresa

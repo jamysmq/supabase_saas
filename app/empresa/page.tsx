@@ -23,7 +23,7 @@ export default function CompanyPage() {
             <div>
               <dt className="font-bold text-[#073a86]">Marca e produto</dt>
               <dd className="mt-1 text-[#25364a]">
-                Meu Assistente Virtual e Assistente Jack
+                Empresa: Soft Ink · Produto: Assistente Jack
               </dd>
             </div>
             <div>
@@ -42,8 +42,8 @@ export default function CompanyPage() {
         </section>
 
         <p className="mt-6 text-sm leading-7 text-[#44546a]">
-          O domínio, a marca Meu Assistente Virtual e o produto Assistente Jack
-          são mantidos pelo nome empresarial informado acima.
+          A Soft Ink é a empresa responsável pelo produto Assistente Jack.
+          meuassistentevirtual.com.br é somente o domínio oficial do produto.
         </p>
       </article>
     </main>

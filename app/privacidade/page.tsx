@@ -9,7 +9,7 @@ export default function PrivacyPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Política de Privacidade</h1>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          O Assistente Jack, produto da Meu Assistente Virtual, trata dados de
+          O Assistente Jack, produto da Soft Ink, trata dados de
           contato, cadastro, cobrança, agenda, pedidos e mensagens operacionais
           para prestar o serviço aos negócios contratantes. Os dados são usados
           para autenticar usuários, operar os painéis, registrar históricos e
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           contato@meuassistentevirtual.com.br.
         </p>
         <p className="mt-4 text-sm leading-7 text-[#4a463f]">
-          Meu Assistente Virtual e Assistente Jack são operados por
+          O Assistente Jack é operado pela Soft Ink, sob o nome empresarial
           67.015.907/0001-03 JAMYS MEDEIROS QUARESMA. Consulte também os{" "}
           <Link className="font-semibold text-[#073a86]" href="/empresa">
             dados da empresa

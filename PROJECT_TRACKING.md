@@ -1,6 +1,8 @@
 # Billing App Tracking
 
-Atualizado em: 2026-07-14
+Atualizado em: 2026-07-16
+
+Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
 
 ## Visao Geral
 
