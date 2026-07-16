@@ -527,7 +527,7 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
   - Plano 5: R$ 179,90.
 - Descricoes dos cinco planos atualizadas para os novos precos e oito perfis de cobranca existentes sincronizados, inclusive os que tinham valor individual.
 - API administrativa publicada para propagar toda alteracao futura de preco aos negocios vinculados e atualizar automaticamente o valor exibido na descricao.
-- Migration `041_platform_plan_price_propagation.sql` preparada; falta executa-la no Supabase alvo para instalar o trigger que garante a mesma regra diretamente no banco.
+- Migration `041_platform_plan_price_propagation.sql` executada no Supabase alvo em 2026-07-16; os cinco precos e descricoes foram conferidos e os oito perfis vinculados ficaram sem divergencias.
 - Migration `040_teacher_signup_identity_and_guardian.sql` aplicada no Supabase alvo:
   - cadastro do aluno passou a exigir e-mail, CPF e data de nascimento;
   - menores de 14 anos exigem nome completo e CPF do responsavel;

@@ -96,7 +96,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 ## Operação de produção
 
-- [ ] Aplicar a migration 041 para garantir no banco a propagação dos preços dos planos.
+- [x] Aplicar a migration 041 para garantir no banco a propagação dos preços dos planos.
 - [ ] Comparar migrations consolidadas com o schema de produção.
 - [ ] Preparar staging ou procedimento reversível equivalente.
 - [ ] Monitorar crons de D-1, H-1 e retenção.
