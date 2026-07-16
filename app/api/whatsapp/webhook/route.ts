@@ -304,7 +304,8 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   const isSlotMenu = body.includes('Encontrei estes horarios') || body.includes('Encontrei estes horários')
   const normalizedBody = body.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const isBillingSignupMenu = normalizedBody.includes('plano de mensalidade') ||
-    normalizedBody.includes('turma desejada') || normalizedBody.includes('turma com vaga')
+    normalizedBody.includes('turma desejada') || normalizedBody.includes('turma com vaga') ||
+    normalizedBody.includes('turma disponivel')
   const isSignupPlanMenu = normalizedBody.includes('plano de mensalidade')
   const options = numbered.map((option) => {
     const compactSlotTitle = compactAppointmentSlotTitle(option.title)
@@ -323,8 +324,8 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   if (isBillingSignupMenu && !isSignupPlanMenu && !numbered.some((option) => option.number === '0')) {
     options.push({
       id: 'billing_signup_choice_0',
-      title: 'Sem turma',
-      description: 'Deixar a escolha para o professor',
+      title: 'Professor seleciona',
+      description: 'O professor seleciona a turma antes de aprovar',
     })
   }
 
