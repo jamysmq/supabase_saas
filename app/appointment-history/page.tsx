@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseAppointments } from '../../src/lib/plan-features'
+import { openNativePicker } from '../../src/lib/open-native-picker'
 
 type HistoryAppointment = {
   appointment_id: string
@@ -211,7 +212,8 @@ export default function AppointmentHistoryPage() {
                 <input
                   value={from}
                   onChange={(event) => setFrom(event.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                  onClick={openNativePicker}
+                  className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-gray-200 px-3 font-normal"
                   type="date"
                 />
               </label>
@@ -221,7 +223,8 @@ export default function AppointmentHistoryPage() {
                 <input
                   value={to}
                   onChange={(event) => setTo(event.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                  onClick={openNativePicker}
+                  className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-gray-200 px-3 font-normal"
                   type="date"
                 />
               </label>

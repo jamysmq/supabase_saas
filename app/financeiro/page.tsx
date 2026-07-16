@@ -6,6 +6,7 @@ import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseAppointments, tenantCanUseCatalog } from '../../src/lib/plan-features'
 import { formatCurrencyFromCents } from '../../src/lib/money'
+import { openNativePicker } from '../../src/lib/open-native-picker'
 
 // Entrada financeira normalizada, vinda de pedidos (catálogo) ou atendimentos/estoque (agenda).
 type FinanceEntry = {
@@ -363,7 +364,8 @@ export default function FinancePage() {
                 <input
                   value={from}
                   onChange={(event) => setFrom(event.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                  onClick={openNativePicker}
+                  className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-gray-200 px-3 font-normal"
                   type="date"
                 />
               </label>
@@ -373,7 +375,8 @@ export default function FinancePage() {
                 <input
                   value={to}
                   onChange={(event) => setTo(event.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                  onClick={openNativePicker}
+                  className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-gray-200 px-3 font-normal"
                   type="date"
                 />
               </label>

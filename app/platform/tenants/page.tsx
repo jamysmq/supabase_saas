@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
 import { getAllowedPlanCodesForBusinessType } from '../../../src/lib/plan-features'
+import { openNativePicker } from '../../../src/lib/open-native-picker'
 
 type Tenant = {
   id: string
@@ -672,7 +673,8 @@ export default function PlatformTenantsPage() {
                   <input
                     value={form.birth_date}
                     onChange={(event) => setForm({ ...form, birth_date: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    onClick={openNativePicker}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     type="date"
                     required
                   />

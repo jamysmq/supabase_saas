@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { getAllowedPlanCodesForBusinessType } from '../../src/lib/plan-features'
+import { openNativePicker } from '../../src/lib/open-native-picker'
 
 type Plan = {
   code: string
@@ -265,7 +266,8 @@ export default function SignupPage() {
                   <input
                     value={form.birth_date}
                     onChange={(event) => setForm({ ...form, birth_date: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
+                    onClick={openNativePicker}
+                    className="mt-1 w-full cursor-pointer rounded-lg border border-sky-100 px-3 py-2 font-normal"
                     type="date"
                     required
                   />

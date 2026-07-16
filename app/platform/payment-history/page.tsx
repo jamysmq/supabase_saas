@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import { openNativePicker } from '../../../src/lib/open-native-picker'
 
 type PaymentTenant = {
   legal_name: string
@@ -285,7 +286,8 @@ export default function PlatformPaymentHistoryPage() {
                 <input
                   value={from}
                   onChange={(event) => setFrom(event.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                  onClick={openNativePicker}
+                  className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-gray-200 px-3 font-normal"
                   type="date"
                 />
               </label>
@@ -295,7 +297,8 @@ export default function PlatformPaymentHistoryPage() {
                 <input
                   value={to}
                   onChange={(event) => setTo(event.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                  onClick={openNativePicker}
+                  className="mt-1 h-10 w-full cursor-pointer rounded-lg border border-gray-200 px-3 font-normal"
                   type="date"
                 />
               </label>

@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import { tenantCanUseAppointments } from '../../src/lib/plan-features'
 import { formatCurrencyFromCents, formatMoneyInput } from '../../src/lib/money'
+import { openNativePicker } from '../../src/lib/open-native-picker'
 
 type Appointment = {
   appointment_id: string
@@ -1503,15 +1504,4 @@ export default function AppointmentsPage() {
       </div>
     </main>
   )
-}
-
-function openNativePicker(event: MouseEvent<HTMLInputElement>) {
-  const input = event.currentTarget as HTMLInputElement & { showPicker?: () => void }
-  input.focus()
-
-  try {
-    input.showPicker?.()
-  } catch {
-    // Browsers without programmatic picker support keep the native input behavior.
-  }
 }
