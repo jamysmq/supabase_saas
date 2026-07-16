@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await result.supabase
     .from('tenant_customer_signup_requests')
-    .select('id, full_name, customer_phone_e164, cpf, email, group_id, group_name_snapshot, amount_cents, due_day, notes, source, status, created_at')
+    .select('id, full_name, customer_phone_e164, cpf, email, birth_date, guardian_full_name, guardian_cpf, group_id, group_name_snapshot, amount_cents, due_day, notes, source, status, created_at')
     .eq('tenant_id', result.tenantUser.tenant_id)
     .eq('status', 'pending')
     .order('created_at', { ascending: false })

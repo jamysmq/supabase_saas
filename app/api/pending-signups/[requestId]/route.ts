@@ -25,7 +25,7 @@ export async function POST(
   }
 
   const rpcName = action === 'approve'
-    ? 'admin_approve_teacher_customer_signup_with_group'
+    ? 'admin_approve_teacher_customer_signup_with_group_v2'
     : 'admin_reject_teacher_customer_signup'
 
   const rpcArgs: Record<string, string | null> = {
@@ -43,6 +43,10 @@ export async function POST(
   if (error) {
     if (action === 'approve' && error.message.includes('group_is_full')) {
       return errorResponse('A turma escolhida acabou de atingir a capacidade máxima. Selecione outra turma ou aprove sem turma.', 409)
+    }
+
+    if (action === 'approve' && error.message.includes('customer_cpf_already_registered')) {
+      return errorResponse('Já existe um aluno cadastrado com este CPF. Confira o cadastro existente antes de continuar.', 409)
     }
 
     return errorResponse(

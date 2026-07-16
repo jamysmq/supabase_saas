@@ -11,6 +11,11 @@ type Signup = {
   id: string
   full_name: string
   customer_phone_e164: string
+  cpf: string | null
+  email: string | null
+  birth_date: string | null
+  guardian_full_name: string | null
+  guardian_cpf: string | null
   group_name_snapshot: string | null
   amount_cents: number
   due_day: number
@@ -30,6 +35,16 @@ const money = (value: number) => (value / 100).toLocaleString('pt-BR', {
   style: 'currency',
   currency: 'BRL',
 })
+
+const formatCpf = (value: string | null) => {
+  const digits = String(value ?? '').replace(/\D/g, '')
+  if (digits.length !== 11) return value || 'Não informado'
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+}
+
+const formatDate = (value: string | null) => value
+  ? new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR')
+  : 'Não informada'
 
 export default function PendingSignupsPage() {
   const router = useRouter()
@@ -112,7 +127,7 @@ export default function PendingSignupsPage() {
 
   const normalized = query.trim().toLocaleLowerCase('pt-BR')
   const filtered = items.filter((item) => {
-    const searchable = `${item.full_name} ${item.customer_phone_e164} ${item.group_name_snapshot ?? ''}`
+    const searchable = `${item.full_name} ${item.customer_phone_e164} ${item.email ?? ''} ${item.cpf ?? ''} ${item.guardian_full_name ?? ''} ${item.group_name_snapshot ?? ''}`
       .toLocaleLowerCase('pt-BR')
     return !normalized || searchable.includes(normalized)
   })
@@ -147,10 +162,21 @@ export default function PendingSignupsPage() {
           {filtered.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-500">Nenhum cadastro aguardando análise.</p>
           ) : filtered.map((item) => (
-            <article key={item.id} className="grid gap-4 rounded-lg border border-slate-200 p-4 lg:grid-cols-[1.4fr_1fr_auto] lg:items-center">
-              <div>
+            <article key={item.id} className="grid gap-4 rounded-lg border border-slate-200 p-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,0.65fr)_112px] lg:items-stretch">
+              <div className="min-w-0">
                 <h2 className="font-semibold">{item.full_name}</h2>
-                <p className="mt-1 text-sm text-slate-600">WhatsApp: {item.customer_phone_e164}</p>
+                <dl className="mt-2 grid gap-x-4 gap-y-1 text-sm text-slate-600 sm:grid-cols-2">
+                  <div><dt className="inline font-medium text-slate-700">WhatsApp: </dt><dd className="inline">{item.customer_phone_e164}</dd></div>
+                  <div><dt className="inline font-medium text-slate-700">E-mail: </dt><dd className="inline break-all">{item.email || 'Não informado'}</dd></div>
+                  <div><dt className="inline font-medium text-slate-700">CPF: </dt><dd className="inline">{formatCpf(item.cpf)}</dd></div>
+                  <div><dt className="inline font-medium text-slate-700">Nascimento: </dt><dd className="inline">{formatDate(item.birth_date)}</dd></div>
+                  {item.guardian_full_name && (
+                    <div className="sm:col-span-2">
+                      <dt className="inline font-medium text-slate-700">Responsável: </dt>
+                      <dd className="inline">{item.guardian_full_name} · CPF {formatCpf(item.guardian_cpf)}</dd>
+                    </div>
+                  )}
+                </dl>
                 <label className="mt-3 block text-sm font-medium text-slate-700">
                   Turma antes da aprovação
                   <select
@@ -169,17 +195,17 @@ export default function PendingSignupsPage() {
                 </label>
                 <p className="mt-1 text-xs text-slate-500">Recebido em {new Date(item.created_at).toLocaleString('pt-BR')}</p>
               </div>
-              <div className="rounded-lg bg-sky-50 p-3 text-sm">
+              <div className="flex h-full min-h-24 flex-col justify-center rounded-lg bg-sky-50 p-4 text-sm">
                 <p className="font-semibold text-sky-950">{money(item.amount_cents)} por mês</p>
                 <p className="mt-1 text-slate-600">Vencimento: dia {item.due_day}</p>
               </div>
-              <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+              <div className="grid grid-cols-2 gap-2 lg:h-full lg:grid-cols-1 lg:grid-rows-2">
                 <button disabled={acting === item.id} onClick={() => void review(item, 'approve')}
-                  className="h-10 rounded-lg bg-sky-700 px-4 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50">
+                  className="h-10 rounded-lg bg-sky-700 px-4 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50 lg:h-auto lg:min-h-10">
                   Aprovar
                 </button>
                 <button disabled={acting === item.id} onClick={() => void review(item, 'reject')}
-                  className="h-10 rounded-lg border border-red-200 px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
+                  className="h-10 rounded-lg border border-red-200 px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 lg:h-auto lg:min-h-10">
                   Recusar
                 </button>
               </div>
