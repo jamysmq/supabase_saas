@@ -74,7 +74,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = {\n  tenant_name: $json.tenant_name ?? '',\n  customer_name: $json.customer_name ?? '',\n  appointment_date: $json.appointment_date ?? '',\n  appointment_time: $json.appointment_time ?? '',\n  service_name: $json.service_name ?? '',\n  staff_member_name: $json.staff_member_name ?? ''\n};\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) {\n  rendered = rendered.replaceAll('{{' + key + '}}', String(value || '-'));\n}\nconst isConfirmation = $json.notification_type === 'confirmation';\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered,\n  message_type: isConfirmation ? 'buttons' : 'text',\n  buttons: isConfirmation ? [\n    { id: 'appointment_confirm_yes', title: 'Confirmar' },\n    { id: 'appointment_reschedule', title: 'Remarcar' },\n    { id: 'appointment_cancel', title: 'Cancelar' }\n  ] : []\n};"
+        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = { tenant_name: $json.tenant_name ?? '', customer_name: $json.customer_name ?? '', appointment_date: $json.appointment_date ?? '', appointment_time: $json.appointment_time ?? '', service_name: $json.service_name ?? '', staff_member_name: $json.staff_member_name ?? '' };\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) rendered = rendered.replaceAll('{{' + key + '}}', String(value || '-'));\nconst isConfirmation = $json.notification_type === 'confirmation';\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered,\n  message_type: 'template',\n  template_name: isConfirmation ? 'jack_appointment_confirmation_d1' : 'jack_appointment_reminder_h1',\n  template_language: 'pt_BR',\n  template_body_parameters: isConfirmation ? [replacements.customer_name, replacements.tenant_name, replacements.appointment_date, replacements.appointment_time, replacements.service_name] : [replacements.customer_name, replacements.tenant_name, replacements.appointment_time, replacements.service_name],\n  template_button_payloads: isConfirmation ? ['appointment_confirm_yes', 'appointment_reschedule', 'appointment_cancel'] : []\n};"
       },
       "id": "56db307d-733f-4b2c-af31-fddbf3d18299",
       "name": "FN_render_notification_message",
@@ -120,6 +120,22 @@
             {
               "name": "preview_url",
               "value": "false"
+            },
+            {
+              "name": "template_name",
+              "value": "={{$json.template_name}}"
+            },
+            {
+              "name": "template_language",
+              "value": "={{$json.template_language}}"
+            },
+            {
+              "name": "template_body_parameters",
+              "value": "={{$json.template_body_parameters}}"
+            },
+            {
+              "name": "template_button_payloads",
+              "value": "={{$json.template_button_payloads}}"
             }
           ]
         },

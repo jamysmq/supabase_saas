@@ -18,6 +18,12 @@ export type WhatsAppWebhookStatusEvent = {
   messageId: string
   status: string
   timestamp: string | null
+  errors: Array<{
+    code: number | null
+    title: string | null
+    message: string | null
+    details: string | null
+  }>
 }
 
 type WhatsAppWebhookChangeValue = {
@@ -48,6 +54,12 @@ type WhatsAppWebhookChangeValue = {
     recipient_id?: string
     status?: string
     timestamp?: string
+    errors?: Array<{
+      code?: number
+      title?: string
+      message?: string
+      error_data?: { details?: string }
+    }>
   }>
 }
 
@@ -142,6 +154,12 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
           messageId: status.id,
           status: status.status,
           timestamp: status.timestamp ?? null,
+          errors: (status.errors ?? []).map((error) => ({
+            code: typeof error.code === 'number' ? error.code : null,
+            title: error.title ?? null,
+            message: error.message ?? null,
+            details: error.error_data?.details ?? null,
+          })),
         })
       }
     }

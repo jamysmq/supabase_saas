@@ -42,6 +42,14 @@ export type SendWhatsAppCtaUrlInput = {
   url: string
 }
 
+export type SendWhatsAppTemplateInput = {
+  to: string
+  name: string
+  languageCode?: string
+  bodyParameters?: string[]
+  quickReplyPayloads?: string[]
+}
+
 export type WhatsAppCloudSendResponse = {
   messaging_product?: string
   contacts?: Array<{
@@ -245,6 +253,58 @@ export function buildWhatsAppCloudCtaUrlPayload(input: SendWhatsAppCtaUrlInput) 
   }
 }
 
+export function buildWhatsAppCloudTemplatePayload(input: SendWhatsAppTemplateInput) {
+  const to = normalizeWhatsAppRecipient(input.to)
+  const name = String(input.name ?? '').trim()
+  const languageCode = String(input.languageCode ?? 'pt_BR').trim()
+  const bodyParameters = Array.isArray(input.bodyParameters) ? input.bodyParameters : []
+  const quickReplyPayloads = Array.isArray(input.quickReplyPayloads) ? input.quickReplyPayloads : []
+
+  if (to.length < 8 || to.length > 15) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp recipient.')
+  }
+  if (!/^[a-z0-9_]{1,512}$/.test(name)) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp template name.')
+  }
+  if (!/^[a-z]{2,3}(?:_[A-Z]{2})?$/.test(languageCode)) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp template language.')
+  }
+  if (bodyParameters.some((value) => !String(value ?? '').trim())) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp template body parameter.')
+  }
+  if (quickReplyPayloads.length > 3 || quickReplyPayloads.some((value) => {
+    const payload = String(value ?? '').trim()
+    return !payload || payload.length > 256
+  })) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp template quick reply payload.')
+  }
+
+  const components = [
+    ...(bodyParameters.length > 0 ? [{
+      type: 'body',
+      parameters: bodyParameters.map((value) => ({ type: 'text', text: String(value) })),
+    }] : []),
+    ...quickReplyPayloads.map((payload, index) => ({
+      type: 'button',
+      sub_type: 'quick_reply',
+      index: String(index),
+      parameters: [{ type: 'payload', payload: String(payload) }],
+    })),
+  ]
+
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'template',
+    template: {
+      name,
+      language: { code: languageCode },
+      ...(components.length > 0 ? { components } : {}),
+    },
+  }
+}
+
 export function getWhatsAppCloudConfigFromEnv(env: NodeJS.ProcessEnv = process.env): WhatsAppCloudConfig {
   const accessToken = env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim()
   const phoneNumberId = env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()
@@ -319,6 +379,10 @@ export function createWhatsAppCloudClient(config: WhatsAppCloudConfig, fetchImpl
     },
     async sendCtaUrl(input: SendWhatsAppCtaUrlInput): Promise<WhatsAppCloudSendResponse> {
       const payload = buildWhatsAppCloudCtaUrlPayload(input)
+      return sendPayload(payload)
+    },
+    async sendTemplate(input: SendWhatsAppTemplateInput): Promise<WhatsAppCloudSendResponse> {
+      const payload = buildWhatsAppCloudTemplatePayload(input)
       return sendPayload(payload)
     },
   }

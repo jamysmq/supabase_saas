@@ -8,6 +8,7 @@ import {
 } from '../../../../src/lib/whatsapp-cloud'
 import {
   type WhatsAppWebhookMessageEvent,
+  type WhatsAppWebhookStatusEvent,
   normalizeWhatsAppWebhookPayload,
   verifyMetaWebhookSignature,
 } from '../../../../src/lib/whatsapp-webhook'
@@ -46,6 +47,46 @@ type N8nForwardReply = {
 function normalizeN8nReplyText(value: unknown) {
   const text = typeof value === 'string' ? value.trim() : ''
   return text && text.length <= 4096 ? text : ''
+}
+
+async function recordAppointmentReminderStatuses(statuses: WhatsAppWebhookStatusEvent[]) {
+  if (!statuses.length) return { updated: 0, failed: 0 }
+
+  const supabase = createTenantAdminClient()
+  let updated = 0
+  let failed = 0
+
+  for (const status of statuses) {
+    const timestampSeconds = Number(status.timestamp)
+    const statusUpdatedAt = Number.isFinite(timestampSeconds)
+      ? new Date(timestampSeconds * 1000).toISOString()
+      : new Date().toISOString()
+
+    const { data, error } = await supabase
+      .from('appointment_reminder_events')
+      .update({
+        delivery_status: status.status,
+        delivery_status_updated_at: statusUpdatedAt,
+        delivery_recipient_id: status.recipientId,
+        delivery_error: status.errors.length ? status.errors : null,
+      })
+      .eq('provider_message_id', status.messageId)
+      .select('id')
+
+    if (error) {
+      failed += 1
+      console.error('Could not record appointment reminder delivery status.', {
+        providerMessageId: status.messageId,
+        status: status.status,
+        error: error.message,
+      })
+      continue
+    }
+
+    updated += data?.length ?? 0
+  }
+
+  return { updated, failed }
 }
 
 async function loadPlatformPlansReply() {
@@ -1097,12 +1138,15 @@ export async function POST(request: Request) {
   }
 
   const events = normalizeWhatsAppWebhookPayload(payload)
+  const reminderStatuses = await recordAppointmentReminderStatuses(events.statuses)
   const inbox = await recordMessagesInInbox(events.messages)
   const forward = await forwardMessagesToN8n(events.messages, inbox.routes)
 
   console.info('WhatsApp webhook received.', {
     messages: events.messages.length,
     statuses: events.statuses.length,
+    reminderStatusesUpdated: reminderStatuses.updated,
+    reminderStatusFailures: reminderStatuses.failed,
     inboxRecorded: inbox.recorded,
     inboxFailures: inbox.failed,
     inboxUnrouted: inbox.unrouted,
@@ -1119,6 +1163,8 @@ export async function POST(request: Request) {
     ok: true,
     messages: events.messages.length,
     statuses: events.statuses.length,
+    reminder_statuses_updated: reminderStatuses.updated,
+    reminder_status_failures: reminderStatuses.failed,
     inbox_recorded: inbox.recorded,
     inbox_failed: inbox.failed,
     inbox_unrouted: inbox.unrouted,

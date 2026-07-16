@@ -32,6 +32,12 @@ function parsePreviewUrl(value: unknown) {
   return false
 }
 
+function parseStringArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.map((item) => String(item ?? '').trim()).filter(Boolean)
+    : []
+}
+
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
     return errorResponse('Unauthorized', 401)
@@ -42,7 +48,15 @@ export async function POST(request: Request) {
   try {
     const client = createWhatsAppCloudClient(getWhatsAppCloudConfigFromEnv())
     const messageType = String(body?.type ?? 'text').trim().toLowerCase()
-    const result = messageType === 'buttons'
+    const result = messageType === 'template'
+      ? await client.sendTemplate({
+        to: String(body?.to ?? ''),
+        name: String(body?.template_name ?? ''),
+        languageCode: String(body?.template_language ?? 'pt_BR'),
+        bodyParameters: parseStringArray(body?.template_body_parameters),
+        quickReplyPayloads: parseStringArray(body?.template_button_payloads),
+      })
+      : messageType === 'buttons'
       ? await client.sendButtons({
         to: String(body?.to ?? ''),
         body: String(body?.body ?? ''),
