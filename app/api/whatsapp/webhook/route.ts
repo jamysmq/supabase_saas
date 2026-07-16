@@ -183,6 +183,23 @@ type AppointmentInteractiveReply = {
   options: AppointmentInteractiveOption[]
 }
 
+function billingSignupUnavailableReply(body: string, tenantName: string): AppointmentInteractiveReply | null {
+  const normalized = body.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const unavailable = normalized.includes('nao esta recebendo novos cadastros') ||
+    normalized.includes('cadastro pelo whatsapp esta temporariamente indisponivel')
+
+  if (!unavailable) return null
+
+  return {
+    kind: 'buttons',
+    body: `O cadastro automático pelo WhatsApp de *${tenantName}* está pausado no momento.\n\nPara mais informações, fale diretamente com a equipe pelo botão abaixo.`,
+    options: [
+      { id: 'tenant_handoff', title: humanHandoffButtonTitle },
+      { id: 'main_menu', title: 'Menu do Jack' },
+    ],
+  }
+}
+
 function shortInteractiveTitle(value: string, maxLength: number) {
   const title = value.replace(/\s+/g, ' ').trim()
   return title.length <= maxLength ? title : `${title.slice(0, Math.max(1, maxLength - 1)).trim()}…`
@@ -629,6 +646,19 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
           routerResponse = null
         }
 
+        if (
+          /\bjack-[a-z0-9]{8}\b/i.test(message.text) &&
+          typeof routerResponse?.tenant_id === 'string'
+        ) {
+          routerResponse = {
+            ...routerResponse,
+            route: 'tenant_menu',
+            reason: 'tenant_entry_link',
+            reply_text: null,
+            dispatch_to_module: false,
+          }
+        }
+
         const plansReply = routerResponse?.route === 'platform_plans'
           ? await loadPlatformPlansReply()
           : ''
@@ -885,7 +915,8 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                 try {
                   const client = createWhatsAppCloudClient(getWhatsAppCloudConfigFromEnv())
                   const tenantName = normalizeShortLabel(routerResponse.tenant_name, 'este estabelecimento')
-                  const interactiveReply = appointmentInteractiveReply(moduleReplyText)
+                  const interactiveReply = billingSignupUnavailableReply(moduleReplyText, tenantName) ??
+                    appointmentInteractiveReply(moduleReplyText)
                   const moduleSendResult = isAppointmentActionMenu(moduleReplyText)
                     ? await client.sendButtons({
                       to: message.from,

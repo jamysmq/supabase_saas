@@ -23,8 +23,8 @@ export async function GET(request: Request) {
 
   const { data, error } = await result.supabase.from('tenant_customer_signup_plans')
     .select('id, name, description, amount_cents, due_day, is_active, sort_order')
-    .eq('tenant_id', result.tenantUser.tenant_id).eq('is_active', true)
-    .order('sort_order').order('name')
+    .eq('tenant_id', result.tenantUser.tenant_id)
+    .order('is_active', { ascending: false }).order('sort_order').order('name')
   if (error) return errorResponse('Não foi possível carregar os planos.', 500, error.message)
   return Response.json({ plans: data ?? [] })
 }

@@ -31,7 +31,7 @@ function buildPrefilledText(tenant: TenantInfo | null, code: string) {
   const article = articleByBusinessType[String(tenant?.business_type ?? '').toLowerCase()]
   const displayedName = article ? `${article} ${businessName}` : businessName
 
-  return `Olá! Quero iniciar um atendimento com ${displayedName} pelo Assistente Jack. Meu código de acesso é ${code}.`
+  return `Olá! Quero acessar ${displayedName} pelo Assistente Jack. Meu código de acesso é ${code}.`
 }
 
 export async function GET(request: Request) {

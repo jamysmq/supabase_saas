@@ -19,6 +19,7 @@ type SignupPlan = {
   description: string | null
   amount_cents: number
   due_day: number
+  is_active: boolean
 }
 
 type PlanForm = {
@@ -175,10 +176,30 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
       const response = await authorizedFetch(`/api/whatsapp-signup-plans/${plan.id}`, { method: 'DELETE' })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.message)
-      setPlans((current) => current.filter((item) => item.id !== plan.id))
       setSuccess('Plano desativado.')
+      await load()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível desativar o plano.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function reactivatePlan(plan: SignupPlan) {
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    try {
+      const response = await authorizedFetch(`/api/whatsapp-signup-plans/${plan.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: true }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.message)
+      setSuccess('Plano reativado e disponível para novos cadastros.')
+      await load()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Não foi possível reativar o plano.')
     } finally {
       setSaving(false)
     }
@@ -203,8 +224,8 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
         <section className="rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-bold">Receber novos cadastros</h2>
-              <p className="text-sm text-slate-600">Quando desativado, o Jack informa que os cadastros estão temporariamente fechados.</p>
+              <h2 className="font-bold">Cadastro automático pelo WhatsApp</h2>
+              <p className="text-sm text-slate-600">Quando estiver desativado, o Jack não coletará os dados do aluno e oferecerá o botão de atendimento humano.</p>
             </div>
             <button
               type="button"
@@ -212,7 +233,7 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
               onClick={() => void updateSettings({ enabled: !settings?.whatsapp_customer_signup_enabled }, settings?.whatsapp_customer_signup_enabled ? 'Cadastros pausados.' : 'Cadastros ativados.')}
               className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${settings?.whatsapp_customer_signup_enabled ? 'bg-emerald-700' : 'bg-slate-600'}`}
             >
-              {settings?.whatsapp_customer_signup_enabled ? 'Ativo · pausar' : 'Pausado · ativar'}
+              {settings?.whatsapp_customer_signup_enabled ? 'Automático ativo · pausar' : 'Automático pausado · ativar'}
             </button>
           </div>
         </section>
@@ -256,9 +277,9 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
           <>
             <section className="rounded-2xl bg-white p-5 shadow-sm">
               <h2 className="font-bold">Planos disponíveis</h2>
-              {plans.length === 0 ? <p className="mt-3 text-sm text-amber-700">Crie ao menos um plano para liberar o cadastro.</p> : (
+              {plans.filter((plan) => plan.is_active).length === 0 ? <p className="mt-3 text-sm text-amber-700">Crie ou reative ao menos um plano para liberar o cadastro automático.</p> : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {plans.map((plan) => (
+                  {plans.filter((plan) => plan.is_active).map((plan) => (
                     <article key={plan.id} className="rounded-xl border border-slate-200 p-4">
                       <h3 className="font-semibold">{plan.name}</h3>
                       {plan.description && <p className="mt-1 text-sm text-slate-600">{plan.description}</p>}
@@ -272,6 +293,26 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
                 </div>
               )}
             </section>
+
+            {plans.some((plan) => !plan.is_active) && (
+              <section className="rounded-2xl bg-white p-5 shadow-sm">
+                <h2 className="font-bold">Planos inativos</h2>
+                <p className="mt-1 text-sm text-slate-600">Eles continuam registrados, mas não aparecem para novos alunos. Você pode reativá-los quando quiser.</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {plans.filter((plan) => !plan.is_active).map((plan) => (
+                    <article key={plan.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-semibold">{plan.name}</h3>
+                        <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-600">Inativo</span>
+                      </div>
+                      {plan.description && <p className="mt-1 text-sm text-slate-600">{plan.description}</p>}
+                      <p className="mt-3 text-sm"><strong>{formatCurrencyFromCents(plan.amount_cents)}</strong> · vence dia {plan.due_day}</p>
+                      <button type="button" disabled={saving} onClick={() => void reactivatePlan(plan)} className="mt-3 rounded-lg border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 disabled:opacity-50">Reativar plano</button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <form onSubmit={savePlan} className="rounded-2xl bg-white p-5 shadow-sm">
               <h2 className="font-bold">{editingPlanId ? 'Editar plano' : 'Criar plano'}</h2>

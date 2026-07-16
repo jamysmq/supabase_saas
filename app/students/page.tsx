@@ -23,6 +23,15 @@ type BillingProfile = {
   status: string | null
   amount_cents: number | null
   due_day: number | null
+  plan_code: string | null
+  plan_label: string | null
+}
+
+type SignupPlan = {
+  id: string
+  name: string
+  amount_cents: number
+  due_day: number
 }
 
 type CreatedCustomerResult =
@@ -53,6 +62,7 @@ type StudentForm = {
   cpf: string
   phone: string
   group_id: string
+  signup_plan_id: string
   amount: string
   billing_day: string
 }
@@ -62,6 +72,7 @@ const emptyForm: StudentForm = {
   cpf: '',
   phone: '',
   group_id: '',
+  signup_plan_id: '',
   amount: '',
   billing_day: '',
 }
@@ -103,6 +114,7 @@ export default function StudentsPage() {
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [groups, setGroups] = useState<Group[]>([])
+  const [signupPlans, setSignupPlans] = useState<SignupPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [groupSaving, setGroupSaving] = useState(false)
@@ -149,7 +161,7 @@ export default function StudentsPage() {
     setTenantId(result.tenantUser.tenant_id)
     setBusinessType(result.tenant?.business_type ?? null)
 
-    const [groupsResult, studentsResult] = await Promise.all([
+    const [groupsResult, studentsResult, signupPlansResult] = await Promise.all([
       supabase
         .from('tenant_customer_groups')
         .select('id, name')
@@ -173,15 +185,24 @@ export default function StudentsPage() {
             id,
             status,
             amount_cents,
-            due_day
+            due_day,
+            plan_code,
+            plan_label
           )
         `)
         .eq('tenant_id', result.tenantUser.tenant_id)
         .eq('is_active', true)
         .order('full_name', { ascending: true }),
+      supabase
+        .from('tenant_customer_signup_plans')
+        .select('id, name, amount_cents, due_day')
+        .eq('tenant_id', result.tenantUser.tenant_id)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true }),
     ])
 
-    if (groupsResult.error || studentsResult.error) {
+    if (groupsResult.error || studentsResult.error || signupPlansResult.error) {
       setError(`Não foi possível carregar ${labels.customerPluralLower} e ${labels.groupPluralLower}.`)
       setLoading(false)
       return
@@ -189,6 +210,7 @@ export default function StudentsPage() {
 
     setGroups((groupsResult.data ?? []) as Group[])
     setStudents((studentsResult.data ?? []) as Student[])
+    setSignupPlans((signupPlansResult.data ?? []) as SignupPlan[])
     setLoading(false)
   }, [labels.customerPluralLower, labels.groupPluralLower, router])
 
@@ -228,6 +250,7 @@ export default function StudentsPage() {
       cpf: student.cpf ?? '',
       phone: student.phone_e164,
       group_id: student.group_id ?? '',
+      signup_plan_id: signupPlans.some((plan) => plan.id === billing?.plan_code) ? billing?.plan_code ?? '' : '',
       amount: formatCentsAsMoneyInput(billing?.amount_cents),
       billing_day: billing?.due_day ? String(billing.due_day) : '',
     })
@@ -246,7 +269,10 @@ export default function StudentsPage() {
   }
 
   async function saveBillingProfile(customerId: string, billingProfileId?: string) {
-    const billingFields = parseBillingFields(form)
+    const selectedPlan = signupPlans.find((plan) => plan.id === form.signup_plan_id)
+    const billingFields = selectedPlan
+      ? { amount_cents: selectedPlan.amount_cents, due_day: selectedPlan.due_day }
+      : parseBillingFields(form)
 
     if (!billingFields) {
       return {
@@ -257,7 +283,11 @@ export default function StudentsPage() {
     if (billingProfileId) {
       const { error: billingError } = await supabase
         .from('customer_billing_profiles')
-        .update(billingFields)
+        .update({
+          ...billingFields,
+          plan_code: selectedPlan?.id ?? null,
+          plan_label: selectedPlan?.name ?? null,
+        })
         .eq('id', billingProfileId)
 
       return {
@@ -272,8 +302,8 @@ export default function StudentsPage() {
         p_customer_id: customerId,
         p_amount_cents: billingFields.amount_cents,
         p_due_day: billingFields.due_day,
-        p_plan_code: null,
-        p_plan_label: null,
+        p_plan_code: selectedPlan?.id ?? null,
+        p_plan_label: selectedPlan?.name ?? null,
       }
     )
 
@@ -314,7 +344,7 @@ export default function StudentsPage() {
       return
     }
 
-    if (!parseBillingFields(form)) {
+    if (!signupPlans.some((plan) => plan.id === form.signup_plan_id) && !parseBillingFields(form)) {
       setError('Informe uma mensalidade valida e um dia de vencimento entre 1 e 31.')
       setSaving(false)
       return
@@ -1104,6 +1134,34 @@ export default function StudentsPage() {
                 </select>
               </label>
 
+              {businessType === 'teacher' && (
+                <label className="text-sm font-medium">
+                  Plano de mensalidade
+                  <select
+                    value={form.signup_plan_id}
+                    onChange={(event) => {
+                      const signupPlanId = event.target.value
+                      const selectedPlan = signupPlans.find((plan) => plan.id === signupPlanId)
+                      setForm({
+                        ...form,
+                        signup_plan_id: signupPlanId,
+                        amount: selectedPlan ? formatCentsAsMoneyInput(selectedPlan.amount_cents) : form.amount,
+                        billing_day: selectedPlan ? String(selectedPlan.due_day) : form.billing_day,
+                      })
+                    }}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  >
+                    <option value="">Sem plano — definir valor manualmente</option>
+                    {signupPlans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} · {formatCurrencyFromCents(plan.amount_cents)} · vence dia {plan.due_day}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-xs font-normal text-gray-500">Ao selecionar um plano, valor e vencimento são preenchidos automaticamente.</span>
+                </label>
+              )}
+
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="text-sm font-medium">
                   Mensalidade
@@ -1114,6 +1172,7 @@ export default function StudentsPage() {
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     inputMode="decimal"
                     placeholder="R$ 0,00"
+                    disabled={Boolean(form.signup_plan_id)}
                     required={creatingStudent}
                   />
                 </label>
@@ -1128,6 +1187,7 @@ export default function StudentsPage() {
                     min="1"
                     max="31"
                     type="number"
+                    disabled={Boolean(form.signup_plan_id)}
                     required={creatingStudent}
                   />
                 </label>
