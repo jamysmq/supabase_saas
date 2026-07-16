@@ -808,7 +808,7 @@ export default function StudentsPage() {
                   const billing = student.customer_billing_profiles?.[0]
 
                   return (
-                    <article key={student.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <article key={student.id} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className="break-words font-semibold">{student.full_name}</h3>
@@ -819,7 +819,7 @@ export default function StudentsPage() {
                         </span>
                       </div>
 
-                      <dl className="mt-3 grid gap-2 text-sm">
+                      <dl className="mt-2 grid gap-1.5 text-sm">
                         <div className="flex justify-between gap-3">
                           <dt className="text-gray-500">Telefone</dt>
                           <dd className="text-right">{student.phone_e164 || '-'}</dd>
@@ -853,7 +853,7 @@ export default function StudentsPage() {
                         </button>
                       )}
 
-                      <div className="mt-4 grid grid-cols-3 gap-2">
+                      <div className="mt-3 grid grid-cols-3 gap-2">
                         <button
                           onClick={() => openEditor(student)}
                           className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
@@ -911,7 +911,7 @@ export default function StudentsPage() {
 
                       return (
                         <tr key={student.id} className="border-b border-gray-100 align-middle hover:bg-gray-50">
-                          <td className="min-w-0 py-3 pr-3 font-medium">
+                          <td className="min-w-0 py-2 pr-3 font-medium">
                             <div className="truncate">{student.full_name}</div>
                             <div className="mt-0.5 truncate text-xs font-normal text-gray-500">
                               {student.phone_e164 || 'Sem telefone'}
@@ -920,13 +920,13 @@ export default function StudentsPage() {
                               {student.cpf || 'CPF não informado'}
                             </div>
                           </td>
-                          <td className="min-w-0 py-3 pr-3 text-gray-600">
+                          <td className="min-w-0 py-2 pr-3 text-gray-600">
                             <div className="truncate">{firstRelation(student.tenant_customer_groups)?.name || `Sem ${labels.groupSingular.toLowerCase()}`}</div>
                           </td>
-                          <td className="whitespace-nowrap py-3 pr-3 font-medium text-gray-700">
+                          <td className="whitespace-nowrap py-2 pr-3 font-medium text-gray-700">
                             {formatCurrencyFromCents(billing?.amount_cents)}
                           </td>
-                          <td className="py-3 pr-3 text-gray-600">
+                          <td className="py-2 pr-3 text-gray-600">
                             {billing ? (
                               <div>
                                 <div>{billing.status ?? '-'} · dia {billing.due_day ?? '-'}</div>
@@ -949,23 +949,23 @@ export default function StudentsPage() {
                               '-'
                             )}
                           </td>
-                          <td className="py-3 text-right">
-                            <div className="grid gap-1.5">
+                          <td className="py-2 text-right">
+                            <div className="flex flex-wrap justify-end gap-1.5">
                               <button
                                 onClick={() => openEditor(student)}
-                                className="h-8 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
+                                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs font-medium"
                               >
                                 Editar
                               </button>
                               <button
                                 onClick={() => router.push(`/students/${student.id}/move`)}
-                                className="h-8 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
+                                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs font-medium"
                               >
                                 Mover
                               </button>
                               <button
                                 onClick={() => deactivateStudent(student)}
-                                className="h-8 w-full rounded-lg border border-red-100 bg-red-50 px-2 text-xs font-medium text-red-700"
+                                className="h-7 rounded-md border border-red-100 bg-red-50 px-2 text-xs font-medium text-red-700"
                               >
                                 Desativar
                               </button>

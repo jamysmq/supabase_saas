@@ -63,7 +63,7 @@ Payload que o n8n recebe do app:
 - `WA_TENANT_APPOINTMENTS_INBOUND_v1` (`X1lUop6Q5fh9uxTG`): ativo em teste controlado desde 2026-07-14; nao desativar sem registrar incidente ou rollback.
 - `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` (`zWflZZXKn2XIlHEc`): manter inativo ate teste controlado.
 - `DAILY_TENANT_AGENDA_REMINDERS` (`dcKARQX6GDCBPo3W`): manter inativo ate teste controlado.
-- `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` (`A4XOl16nkcIYOre1`): manter inativo ate teste controlado.
+- `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` (`A4XOl16nkcIYOre1`): ativo em teste controlado; nao desativar sem registrar incidente ou rollback.
 
 ## 4. Sequencia segura de ativacao
 

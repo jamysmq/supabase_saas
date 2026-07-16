@@ -320,6 +320,14 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
     }
   })
 
+  if (isBillingSignupMenu && !isSignupPlanMenu && !numbered.some((option) => option.number === '0')) {
+    options.push({
+      id: 'billing_signup_choice_0',
+      title: 'Sem turma',
+      description: 'Deixar a escolha para o professor',
+    })
+  }
+
   if (isSlotMenu) {
     options.push({ id: 'appointment_more', title: 'Ver mais horários' })
   }
