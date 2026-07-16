@@ -64,10 +64,7 @@ export async function DELETE(
 
   const { data, error } = await result.supabase
     .from('tenant_staff_members')
-    .update({
-      is_active: false,
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq('id', staffMemberId)
     .eq('tenant_id', result.tenantUser.tenant_id)
     .select('id')

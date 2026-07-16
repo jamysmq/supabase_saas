@@ -103,10 +103,7 @@ export async function DELETE(
 
   const { error: groupError } = await result.supabase
     .from('tenant_customer_groups')
-    .update({
-      is_active: false,
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq('id', groupId)
     .eq('tenant_id', result.tenantUser.tenant_id)
 

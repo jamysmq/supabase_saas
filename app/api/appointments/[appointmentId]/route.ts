@@ -21,52 +21,21 @@ export async function DELETE(
   }
 
   const { appointmentId } = await context.params
-  const deletedAt = new Date().toISOString()
-
-  const { data: appointment, error: appointmentError } = await result.supabase
+  const { data, error } = await result.supabase
     .from('appointments')
-    .select('id, status')
-    .eq('id', appointmentId)
-    .eq('tenant_id', result.tenantUser.tenant_id)
-    .is('deleted_at', null)
-    .maybeSingle()
-
-  if (appointmentError || !appointment) {
-    return errorResponse('Agendamento não encontrado.', 404, appointmentError?.message)
-  }
-
-  const { error } = await result.supabase
-    .from('appointments')
-    .update({
-      status: 'cancelled',
-      cancelled_at: deletedAt,
-      deleted_at: deletedAt,
-      updated_at: deletedAt,
-    })
+    .delete()
     .eq('id', appointmentId)
     .eq('tenant_id', result.tenantUser.tenant_id)
     .is('deleted_at', null)
     .select('id')
     .single()
 
-  if (error) {
-    return errorResponse('Não foi possível excluir o agendamento.', 500, error.message)
-  }
-
-  const { error: eventError } = await result.supabase
-    .from('appointment_status_events')
-    .insert({
-      appointment_id: appointmentId,
-      tenant_id: result.tenantUser.tenant_id,
-      tenant_user_id: result.tenantUser.id,
-      old_status: appointment.status,
-      new_status: 'cancelled',
-      source: 'panel_delete',
-      note: 'Agendamento excluído pelo painel.',
-    })
-
-  if (eventError) {
-    console.error('Não foi possível registrar histórico de exclusão do agendamento.', eventError.message)
+  if (error || !data) {
+    return errorResponse(
+      'Não foi possível excluir o agendamento.',
+      error?.code === 'PGRST116' ? 404 : 500,
+      error?.message
+    )
   }
 
   return Response.json({ ok: true })

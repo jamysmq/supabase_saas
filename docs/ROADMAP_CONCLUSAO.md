@@ -22,9 +22,9 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Confirmar que valor e vencimento vêm do tenant, sem digitação pelo aluno.
 - [ ] Selecionar turma por botão ou lista.
 - [ ] Confirmar os dados por botões.
-- [ ] Confirmar a solicitação em Cadastros pendentes.
-- [ ] Editar a turma antes da aprovação.
-- [ ] Aprovar e conferir aluno, perfil de cobrança e ciclo inicial.
+- [x] Confirmar a solicitação em Cadastros pendentes.
+- [x] Editar a turma antes da aprovação.
+- [x] Aprovar e conferir aluno, perfil de cobrança e ciclo inicial.
 - [ ] Rejeitar outra solicitação e confirmar que nenhum registro financeiro foi criado.
 
 ### Planos de mensalidade

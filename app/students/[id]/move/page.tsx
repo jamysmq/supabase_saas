@@ -60,6 +60,7 @@ export default function MoveStudentPage() {
         .from('tenant_customer_groups')
         .select('id, name')
         .eq('tenant_id', result.tenantUser.tenant_id)
+        .eq('is_active', true)
         .order('name', { ascending: true }),
       supabase
         .from('tenant_customers')
@@ -77,9 +78,15 @@ export default function MoveStudentPage() {
 
     const loadedStudent = studentResult.data as Student
 
-    setGroups((groupsResult.data ?? []) as Group[])
+    const activeGroups = (groupsResult.data ?? []) as Group[]
+
+    setGroups(activeGroups)
     setStudent(loadedStudent)
-    setGroupId(loadedStudent.group_id ?? '')
+    setGroupId(
+      activeGroups.some((group) => group.id === loadedStudent.group_id)
+        ? loadedStudent.group_id ?? ''
+        : ''
+    )
     setLoading(false)
   }, [labels.customerSingular, router, studentId])
 
