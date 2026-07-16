@@ -135,7 +135,7 @@ function normalizeTenantCandidates(value: unknown) {
 function tenantMenuButtons(plan: unknown) {
   if (plan === 'plan1') {
     return [
-      { id: 'tenant_billing', title: 'Cadastro e cobranças' },
+      { id: 'tenant_billing', title: 'Fazer cadastro' },
       { id: 'tenant_handoff', title: humanHandoffButtonTitle },
       { id: 'main_menu', title: 'Menu do Jack' },
     ]
@@ -152,7 +152,7 @@ function tenantMenuButtons(plan: unknown) {
   if (plan === 'plan3') {
     return [
       { id: 'tenant_appointments', title: 'Agendamentos' },
-      { id: 'tenant_billing', title: 'Cadastro e cobranças' },
+      { id: 'tenant_billing', title: 'Fazer cadastro' },
       { id: 'tenant_handoff', title: humanHandoffButtonTitle },
     ]
   }
@@ -305,14 +305,18 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   const normalizedBody = body.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const isBillingSignupMenu = normalizedBody.includes('plano de mensalidade') ||
     normalizedBody.includes('turma desejada') || normalizedBody.includes('turma com vaga')
+  const isSignupPlanMenu = normalizedBody.includes('plano de mensalidade')
   const options = numbered.map((option) => {
     const compactSlotTitle = compactAppointmentSlotTitle(option.title)
-    const title = isBillingSignupMenu ? `${option.number}. ${option.title}` : option.title
+    const signupOptionTitle = option.number === '0'
+      ? 'Sem turma'
+      : `${isSignupPlanMenu ? 'Plano' : 'Turma'} ${option.number}`
+    const title = isBillingSignupMenu ? signupOptionTitle : option.title
 
     return {
       id: `${isBillingSignupMenu ? 'billing_signup_choice' : 'appointment_choice'}_${option.number}`,
       title: compactSlotTitle ?? title,
-      ...(compactSlotTitle ? { description: shortInteractiveTitle(option.title, 72) } : {}),
+      ...((compactSlotTitle || isBillingSignupMenu) ? { description: shortInteractiveTitle(option.title, 72) } : {}),
     }
   })
 
@@ -323,7 +327,7 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   if (options.length <= 3) {
     return {
       kind: 'buttons',
-      body: cleanBody,
+      body: isBillingSignupMenu ? body : cleanBody,
       options: options.map((option) => ({
         ...option,
         title: shortInteractiveTitle(option.title, 20),
