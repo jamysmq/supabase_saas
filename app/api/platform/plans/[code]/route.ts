@@ -1,5 +1,6 @@
 import { requirePlatformAdmin } from '../../../../../src/lib/platform-admin'
 import { parseMoneyToCents } from '../../../../../src/lib/money'
+import { syncMonthlyPriceInPlanDescription } from '../../../../../src/lib/platform-plan-description'
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -31,6 +32,7 @@ export async function PATCH(
   const patch: Record<string, string | number | boolean | null> = {
     updated_at: new Date().toISOString(),
   }
+  let amountCents: number | null = null
 
   if (typeof body.name === 'string') {
     const name = body.name.trim()
@@ -43,11 +45,18 @@ export async function PATCH(
   }
 
   if (body.monthly_amount !== undefined) {
-    const amountCents = parseAmountCents(body.monthly_amount)
+    amountCents = parseAmountCents(body.monthly_amount)
     if (!Number.isFinite(amountCents) || amountCents < 0) {
       return errorResponse('Mensalidade inválida.')
     }
     patch.monthly_amount_cents = amountCents
+  }
+
+  if (amountCents !== null) {
+    patch.description = syncMonthlyPriceInPlanDescription(
+      typeof body.description === 'string' ? body.description : '',
+      amountCents
+    )
   }
 
   if (body.max_customer_groups !== undefined) {
@@ -67,6 +76,16 @@ export async function PATCH(
     patch.is_active = body.is_active
   }
 
+  const { data: currentPlan, error: currentPlanError } = await result.supabase
+    .from('platform_plans')
+    .select('code, name, description, monthly_amount_cents, max_customer_groups, sort_order, is_active')
+    .eq('code', code)
+    .maybeSingle()
+
+  if (currentPlanError || !currentPlan) {
+    return errorResponse('Plano não encontrado.', 404, currentPlanError?.message)
+  }
+
   const { data, error } = await result.supabase
     .from('platform_plans')
     .update(patch)
@@ -78,5 +97,47 @@ export async function PATCH(
     return errorResponse('Não foi possível salvar o plano.', 500, error?.message)
   }
 
-  return Response.json({ ok: true })
+  let updatedBillingProfiles = 0
+
+  if (amountCents !== null && amountCents !== currentPlan.monthly_amount_cents) {
+    const { data: tenants, error: tenantsError } = await result.supabase
+      .from('tenants')
+      .select('id')
+      .eq('plan', code)
+
+    if (tenantsError) {
+      await result.supabase.from('platform_plans').update(currentPlan).eq('code', code)
+      return errorResponse(
+        'Não foi possível localizar os clientes vinculados ao plano.',
+        500,
+        tenantsError.message
+      )
+    }
+
+    const tenantIds = (tenants ?? []).map((tenant) => tenant.id)
+
+    if (tenantIds.length > 0) {
+      const { data: profiles, error: profilesError } = await result.supabase
+        .from('platform_tenant_billing_profiles')
+        .update({
+          amount_cents: amountCents,
+          updated_at: new Date().toISOString(),
+        })
+        .in('tenant_id', tenantIds)
+        .select('id')
+
+      if (profilesError) {
+        await result.supabase.from('platform_plans').update(currentPlan).eq('code', code)
+        return errorResponse(
+          'Não foi possível aplicar o novo valor aos clientes do plano.',
+          500,
+          profilesError.message
+        )
+      }
+
+      updatedBillingProfiles = profiles?.length ?? 0
+    }
+  }
+
+  return Response.json({ ok: true, updated_billing_profiles: updatedBillingProfiles })
 }

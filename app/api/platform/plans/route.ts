@@ -1,5 +1,6 @@
 import { requirePlatformAdmin } from '../../../../src/lib/platform-admin'
 import { parseMoneyToCents } from '../../../../src/lib/money'
+import { syncMonthlyPriceInPlanDescription } from '../../../../src/lib/platform-plan-description'
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -85,7 +86,10 @@ export async function POST(request: Request) {
     .insert({
       code,
       name,
-      description: String(body.description || '').trim() || null,
+      description: syncMonthlyPriceInPlanDescription(
+        String(body.description || '').trim(),
+        amountCents
+      ),
       monthly_amount_cents: amountCents,
       currency: 'BRL',
       billing_interval: 'monthly',

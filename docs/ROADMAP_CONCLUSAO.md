@@ -96,6 +96,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 ## Operação de produção
 
+- [ ] Aplicar a migration 041 para garantir no banco a propagação dos preços dos planos.
 - [ ] Comparar migrations consolidadas com o schema de produção.
 - [ ] Preparar staging ou procedimento reversível equivalente.
 - [ ] Monitorar crons de D-1, H-1 e retenção.
@@ -130,6 +131,8 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Mensalidade fixa configurada no Professor Teste.
 - [x] Campos nativos de data e hora aceitam digitação e abertura do seletor.
 - [x] Texto da pausa de almoço/descanso corrigido na agenda.
+- [x] Descrições comerciais atualizadas para os preços vigentes dos cinco planos.
+- [x] Mensalidades dos oito negócios existentes sincronizadas com seus planos.
 
 ## Depois do lançamento
 
