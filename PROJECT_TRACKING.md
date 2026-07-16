@@ -150,7 +150,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Workflow base `WA_TENANT_INBOUND_Assistant_v1` foi localizado no n8n.
 - Workflow inativo `WA_TENANT_APPOINTMENTS_INBOUND_v1` foi criado no n8n com id `X1lUop6Q5fh9uxTG`.
 - Workflow inativo `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS` foi criado no n8n com id `zWflZZXKn2XIlHEc`.
-- Workflow inativo `DAILY_TENANT_AGENDA_REMINDERS` foi criado no n8n com id `dcKARQX6GDCBPo3W`.
+- Workflow ativo `DAILY_TENANT_AGENDA_REMINDERS` está no n8n com id `dcKARQX6GDCBPo3W`.
 - Workflow ativo `DAILY_BILLING_REMINDERS` foi localizado no n8n com id `YbD6NHWbgz9vLe33w_UU-`.
 - Rascunho versionado em `n8n/WA_TENANT_APPOINTMENTS_INBOUND_v1.workflow.json`.
 - Rascunho versionado em `n8n/DAILY_APPOINTMENT_CONFIRMATION_REMINDERS.workflow.json`.
@@ -170,6 +170,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Inbound `WA_TENANT_APPOINTMENTS_INBOUND_v1` passou a abrir com menu de agenda: agendar, remarcar ou cancelar. Remarcacao/cancelamento usam os proximos agendamentos do WhatsApp e confirmam identidade por data de nascimento quando disponivel.
 - Lembrete diario tenant-side de agenda foi criado em `DAILY_TENANT_AGENDA_REMINDERS`: a cada 15 minutos busca tenants cujo expediente inicia em 30 minutos e envia resumo dos agendamentos do dia para o WhatsApp do tenant.
 - Em 2026-06-06, SQLs de apoio da agenda/lembrete diario foram reaplicados no Supabase alvo e os workflows remotos `WA_TENANT_APPOINTMENTS_INBOUND_v1` e `DAILY_TENANT_AGENDA_REMINDERS` foram atualizados no n8n mantendo status inativo.
+- Em 2026-07-16, `DAILY_TENANT_AGENDA_REMINDERS` recebeu credencial Header Auth dedicada, passou a usar o dominio oficial e foi corrigido para preservar os dados do lembrete ao registrar o envio depois da resposta da Meta.
+- Em 2026-07-16, o resumo diario foi disparado para o WhatsApp de teste do Salao de Beleza com dois agendamentos reais, recebido pelo usuario e registrado uma unica vez em `tenant_daily_agenda_reminder_events`; o workflow ficou ativo.
 - O workflow remoto `DAILY_BILLING_REMINDERS` passou a usar `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do ambiente do n8n, em vez de credenciais fixas nos nos HTTP.
 - O no de renderizacao de cobranca do `DAILY_BILLING_REMINDERS` passou a usar `template_content` retornado pelo Supabase, mantendo a mensagem editavel por tenant.
 - SQL de apoio criado em `supabase/whatsapp_billing_workflow_support.sql` para geracao idempotente de ciclos mensais, listagem de ciclos vencidos e baixa de lembrete enviado.
@@ -459,21 +461,20 @@ Fluxo agenda:
    - `/webhook/wa-inbound-router-v1`.
 3. Confirmar/rotacionar credenciais sensiveis usadas em testes antes de producao:
    - `WHATSAPP_CLOUD_ACCESS_TOKEN`;
-   - `WHATSAPP_INTERNAL_SEND_TOKEN`;
    - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`;
    - `WHATSAPP_APP_SECRET`;
    - `SUPABASE_SERVICE_ROLE_KEY`, se tiver sido exposta fora dos ambientes seguros.
 4. Manter `WA_INBOUND_ROUTER_DISPATCH_ENABLED` desligado ate o teste controlado com tenant real.
 
+Concluido em 2026-07-16: `WHATSAPP_INTERNAL_SEND_TOKEN` foi rotacionado e sincronizado com uma credencial segura do n8n.
+
 ### Go-live Controlado WhatsApp
 
 1. Usar `salaoteste@teste.com` como tenant inicial de validacao.
 2. Confirmar que mensagem inbound aparece na inbox e que resposta automatica do roteador e registrada como bot quando houver `reply_text`.
-3. Ativar, um por vez, os workflows de modulo que hoje ficam inativos:
-   - `WA_TENANT_APPOINTMENTS_INBOUND_v1`;
+3. Ativar, um por vez, os workflows de modulo que ainda ficam inativos:
    - `WA_TENANT_BILLING_SIGNUP_INBOUND_v1`;
-   - `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS`;
-   - `DAILY_TENANT_AGENDA_REMINDERS`.
+   - `DAILY_APPOINTMENT_CONFIRMATION_REMINDERS`.
 4. Somente depois dos modulos validados, ligar `WA_INBOUND_ROUTER_DISPATCH_ENABLED=true` no n8n.
 5. Testar fluxo de agenda completo em tenant `plan2`/`plan3`:
    - menu numerado;
@@ -482,6 +483,8 @@ Fluxo agenda:
    - sugestao de horarios;
    - criacao, remarcacao e cancelamento.
 6. Testar fluxo de cadastro/mensalidade em tenant `plan1`/`plan3`.
+
+Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DAILY_TENANT_AGENDA_REMINDERS` foi validado e ativado em 2026-07-16.
 
 ### Produto / Proximas Evolucoes
 
@@ -514,6 +517,23 @@ Fluxo agenda:
 - Nao tratar SQL solto como produto final; ele e etapa de desenvolvimento antes das migrations.
 
 ## Prompt Para Continuar em Outra Task
+
+### Atualizacao operacional de 2026-07-16
+
+- Migration `040_teacher_signup_identity_and_guardian.sql` aplicada no Supabase alvo:
+  - cadastro do aluno passou a exigir e-mail, CPF e data de nascimento;
+  - menores de 14 anos exigem nome completo e CPF do responsavel;
+  - o mesmo WhatsApp pode representar mais de um aluno, mas CPF nao pode se repetir no mesmo tenant;
+  - duplicidade de CPF cadastrado ou pendente retorna estado explicito ao fluxo.
+- Campos nativos de data e hora foram padronizados para aceitar digitacao direta e manter o seletor nativo como atalho.
+- Textos corrompidos da pausa de agenda foram corrigidos para `Incluir pausa de almoço/descanso` e `Duração da pausa`.
+- Resumo diario da agenda validado com dois agendamentos reais no Salao de Beleza:
+  - mensagem recebida no WhatsApp de teste terminado em 6994;
+  - envio registrado uma unica vez no Supabase;
+  - workflow `DAILY_TENANT_AGENDA_REMINDERS` ativo no n8n;
+  - token interno de envio rotacionado na Vercel e armazenado em credencial Header Auth do n8n;
+  - workflow versionado em `n8n/DAILY_TENANT_AGENDA_REMINDERS.workflow.json`.
+- Validacoes tecnicas do fechamento: JSON do workflow, ESLint, TypeScript e build Next.js aprovados; deploy de producao e push no Git concluidos no commit `59fa5a6`.
 
 ### Atualizacao operacional de 2026-07-14
 

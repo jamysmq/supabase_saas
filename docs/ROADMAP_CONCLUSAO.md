@@ -40,11 +40,14 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 - [ ] Desativar o cadastro via WhatsApp e validar a mensagem.
 - [ ] Reativar o cadastro e confirmar que o fluxo volta.
-- [ ] Preencher a última vaga de uma turma.
-- [ ] Confirmar que turma lotada não aparece em novos cadastros.
+- [x] Preencher a última vaga de uma turma.
+- [x] Confirmar que turma lotada não aparece em novos cadastros.
 - [ ] Garantir que duas aprovações não ocupem a mesma última vaga.
 - [ ] Repetir cadastro com o mesmo WhatsApp e validar a solicitação duplicada.
 - [ ] Validar retorno ao menu e atendimento humano.
+- [ ] Validar cadastro completo com e-mail, CPF e data de nascimento.
+- [ ] Validar nome e CPF do responsável para aluno menor de 14 anos.
+- [ ] Validar mensagem de CPF já cadastrado e CPF com solicitação pendente.
 
 ## Bloqueadores do lançamento
 
@@ -117,12 +120,16 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Agendar, remarcar e cancelar pelo WhatsApp.
 - [x] Bloqueio temporário de agenda.
 - [x] Confirmação D-1 e lembrete H-1.
+- [x] Resumo diário da agenda enviado 30 minutos antes do expediente.
+- [x] Idempotência do resumo diário validada com dois agendamentos reais.
 - [x] Continuidade e reset do WhatsApp.
 - [x] Inboxes de tenant e plataforma.
 - [x] Janela de atendimento humano.
 - [x] Retenção de mensagens por seis meses.
 - [x] Gerenciamento unificado de alunos.
 - [x] Mensalidade fixa configurada no Professor Teste.
+- [x] Campos nativos de data e hora aceitam digitação e abertura do seletor.
+- [x] Texto da pausa de almoço/descanso corrigido na agenda.
 
 ## Depois do lançamento
 
