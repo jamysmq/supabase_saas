@@ -654,7 +654,7 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
             ...routerResponse,
             route: 'tenant_menu',
             reason: 'tenant_entry_link',
-            reply_text: null,
+            reply_text: 'Abrindo o atendimento do negócio.',
             dispatch_to_module: false,
           }
         }
@@ -830,9 +830,11 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                   ],
                 })
               } else {
+                const tenantMenuBody = `Tudo certo! 😊 Agora você está no atendimento de *${tenantName}*.\n\nEu sou o Jack e vou ajudar você por aqui. Escolha abaixo o que deseja fazer.\n\nQuer atendimento de outro estabelecimento? Toque em *Menu do Jack*.`
+                recordedReply = tenantMenuBody
                 sendResult = await client.sendButtons({
                   to: message.from,
-                  body: `Tudo certo! 😊 Agora você está no atendimento de *${tenantName}*.\n\nEu sou o Jack e vou ajudar você por aqui. Escolha abaixo o que deseja fazer.\n\nQuer atendimento de outro estabelecimento? Toque em *Menu do Jack*.`,
+                  body: tenantMenuBody,
                   buttons: tenantMenuButtons(routerResponse.tenant_plan),
                 })
               }
