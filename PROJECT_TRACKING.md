@@ -520,6 +520,12 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 
 ### Atualizacao operacional de 2026-07-16
 
+- Incidente do lembrete H-1 identificado e corrigido:
+  - `APPOINTMENT_CUSTOMER_NOTIFICATIONS` estava ativo, mas ainda usava a credencial anterior ao giro de `WHATSAPP_INTERNAL_SEND_TOKEN`;
+  - execucoes falharam com `Authorization failed` e o H-1 das 19h nao foi enviado nem marcado;
+  - workflow remoto e arquivo versionado passaram a usar a credencial Header Auth vigente;
+  - execucao real das 19h35 concluiu ate `RPC_mark_notification_sent`;
+  - H-1 do agendamento das 20h foi enviado ao WhatsApp terminado em 6994 e registrado uma unica vez.
 - Precos comerciais vigentes sincronizados em producao:
   - Planos 1 e 2: R$ 49,90;
   - Plano 3: R$ 79,90;
