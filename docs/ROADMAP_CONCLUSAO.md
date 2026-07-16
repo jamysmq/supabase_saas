@@ -129,7 +129,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Retenção de mensagens por seis meses.
 - [x] Gerenciamento unificado de alunos.
 - [x] Mensalidade fixa configurada no Professor Teste.
-- [x] Campos nativos de data e hora aceitam digitação e abertura do seletor.
+- [ ] Confirmar em produção a digitação numérica nos campos nativos de data e hora.
 - [x] Texto da pausa de almoço/descanso corrigido na agenda.
 - [x] Descrições comerciais atualizadas para os preços vigentes dos cinco planos.
 - [x] Mensalidades dos oito negócios existentes sincronizadas com seus planos.

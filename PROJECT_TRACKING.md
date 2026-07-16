@@ -520,6 +520,12 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 
 ### Atualizacao operacional de 2026-07-16
 
+- Auditoria complementar de notificacoes D-1/H-1:
+  - ambos os tipos usam o mesmo workflow e a mesma credencial corrigida;
+  - todos os nos remotos que chamam `/api/internal/whatsapp/send` usam a credencial vigente;
+  - simulacao D-1 retornou dois agendamentos de 20/07 para o WhatsApp terminado em 6994, com botoes de confirmar, remarcar e cancelar;
+  - nenhum envio foi realizado durante a simulacao.
+- A abertura automatica de `showPicker()` foi removida dos campos de data e hora porque ainda bloqueava a digitacao; clicar no campo agora apenas da foco, enquanto o icone nativo continua abrindo o calendario. Pendente validacao visual do usuario em producao.
 - Incidente do lembrete H-1 identificado e corrigido:
   - `APPOINTMENT_CUSTOMER_NOTIFICATIONS` estava ativo, mas ainda usava a credencial anterior ao giro de `WHATSAPP_INTERNAL_SEND_TOKEN`;
   - execucoes falharam com `Authorization failed` e o H-1 das 19h nao foi enviado nem marcado;
