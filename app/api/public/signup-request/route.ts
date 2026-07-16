@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     return errorResponse('CPF/CNPJ invalido. Informe 11 digitos para CPF ou 14 digitos para CNPJ.')
   }
 
-  if (!email || !isValidEmail(email)) return errorResponse('E-mail do tenant invalido.')
+  if (!email || !isValidEmail(email)) return errorResponse('E-mail do negócio inválido.')
   if (!adminEmail || !isValidEmail(adminEmail)) return errorResponse('E-mail admin invalido.')
   if (!birthDate) return errorResponse('Informe a data de nascimento ou abertura.')
 

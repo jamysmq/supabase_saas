@@ -212,7 +212,7 @@ export default function PlatformPaymentsPage() {
             <div>
               <h1 className="text-2xl font-bold">Pagamentos pendentes</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Confirme ou exclua cobrancas mensais pendentes dos tenants.
+                Confirme ou exclua cobranças mensais pendentes dos negócios.
               </p>
             </div>
 
@@ -237,7 +237,7 @@ export default function PlatformPaymentsPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm md:max-w-md"
-              placeholder="Buscar por tenant, CPF, email ou pagamento"
+              placeholder="Buscar por negócio, CPF, e-mail ou pagamento"
             />
 
             <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800">
@@ -249,7 +249,7 @@ export default function PlatformPaymentsPage() {
             <table className="w-full min-w-[960px] text-sm">
               <thead className="border-b border-gray-200 text-left text-gray-500">
                 <tr>
-                  <th className="py-3 pr-4 font-medium">Tenant</th>
+                  <th className="py-3 pr-4 font-medium">Negócio</th>
                   <th className="py-3 pr-4 font-medium">Contato</th>
                   <th className="py-3 pr-4 font-medium">Valor</th>
                   <th className="py-3 pr-4 font-medium">Vencimento</th>
@@ -269,7 +269,7 @@ export default function PlatformPaymentsPage() {
                   filteredPayments.map((payment) => (
                     <tr key={payment.id} className="border-b border-gray-100">
                       <td className="py-3 pr-4 font-medium">
-                        <div>{payment.tenants?.legal_name ?? 'Tenant sem nome'}</div>
+                        <div>{payment.tenants?.legal_name ?? 'Negócio sem nome'}</div>
                         <div className="text-xs font-normal text-gray-400">
                           {payment.tenants?.cpf ?? payment.tenant_id}
                         </div>

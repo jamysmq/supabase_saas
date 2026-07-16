@@ -1044,7 +1044,7 @@ export default function StudentsPage() {
                 <p className="text-sm text-gray-500">
                   {creatingStudent
                     ? `Cadastre o ${labels.customerSingular.toLowerCase()} ja com ${labels.groupSingular.toLowerCase()} e mensalidade.`
-                    : 'Alterações ficam vinculadas ao tenant atual.'}
+                    : 'As alterações ficam vinculadas ao seu negócio.'}
                 </p>
               </div>
               <button

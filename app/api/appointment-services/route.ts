@@ -158,7 +158,7 @@ export async function POST(request: Request) {
   }
 
   if ((staffCount ?? 0) !== staffMemberIds.length) {
-    return errorResponse('Selecione apenas profissionais ativos deste tenant.')
+    return errorResponse('Selecione apenas profissionais ativos deste negócio.')
   }
 
   const { data, error } = await result.supabase

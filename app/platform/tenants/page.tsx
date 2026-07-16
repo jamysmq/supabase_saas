@@ -125,7 +125,7 @@ export default function PlatformTenantsPage() {
     }
 
     if (!response.ok) {
-      setError('Não foi possível carregar os tenants.')
+      setError('Não foi possível carregar os negócios.')
       setLoading(false)
       return
     }
@@ -248,7 +248,7 @@ export default function PlatformTenantsPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      const message = data?.message || data?.error || 'Não foi possível criar o tenant.'
+      const message = data?.message || data?.error || 'Não foi possível criar o negócio.'
       const details = data?.details ? ` Detalhe: ${data.details}` : ''
 
       setCreateError(`${message}${details}`)
@@ -270,7 +270,7 @@ export default function PlatformTenantsPage() {
 
   async function deleteTenant(tenant: Tenant) {
     const confirmed = confirm(
-      `Excluir o tenant ${tenant.legal_name}? Esta acao remove a conta e os dados vinculados.`
+      `Excluir o negócio ${tenant.legal_name}? Esta ação remove a conta e os dados vinculados.`
     )
 
     if (!confirmed) return
@@ -297,7 +297,7 @@ export default function PlatformTenantsPage() {
     setDeletingTenantId('')
 
     if (!response.ok) {
-      setError('Não foi possível excluir o tenant.')
+      setError('Não foi possível excluir o negócio.')
       return
     }
 
@@ -311,7 +311,7 @@ export default function PlatformTenantsPage() {
     const profile = tenant.platform_billing_profile
 
     if (!profile) {
-      setError('Este tenant ainda não tem cobrança da plataforma configurada.')
+      setError('Este negócio ainda não tem cobrança da plataforma configurada.')
       return
     }
 
@@ -372,7 +372,7 @@ export default function PlatformTenantsPage() {
         <section className="bg-white rounded-2xl shadow p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Tenants</h1>
+              <h1 className="text-2xl font-bold">Negócios</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Gerencie professores, clinicas, saloes, restaurantes, lojas, petshops e demais contas da plataforma.
               </p>
@@ -386,7 +386,7 @@ export default function PlatformTenantsPage() {
                 }}
                 className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-medium text-white"
               >
-                Adicionar tenant
+                Adicionar negócio
               </button>
 
               <button
@@ -449,7 +449,7 @@ export default function PlatformTenantsPage() {
 
         {createdCredentials && (
           <div className="bg-emerald-50 text-emerald-800 rounded-xl p-4 text-sm">
-            <p className="font-medium">Tenant criado.</p>
+            <p className="font-medium">Negócio criado.</p>
             <p>Email admin: {createdCredentials.email}</p>
             {createdCredentials.password ? (
               <p>Senha temporaria: {createdCredentials.password}</p>
@@ -485,7 +485,7 @@ export default function PlatformTenantsPage() {
             <table className="w-full text-xs">
               <thead className="border-b border-gray-200 text-left text-gray-500">
                 <tr>
-                  <th className="py-2 pr-2 font-medium">Tenant</th>
+                  <th className="py-2 pr-2 font-medium">Negócio</th>
                   <th className="py-2 pr-2 font-medium">Contato</th>
                   <th className="py-2 pr-2 font-medium">Tipo</th>
                   <th className="py-2 pr-2 font-medium">Plano</th>
@@ -501,7 +501,7 @@ export default function PlatformTenantsPage() {
                 {filteredTenants.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-8 text-center text-gray-500">
-                      Nenhum tenant encontrado.
+                      Nenhum negócio encontrado.
                     </td>
                   </tr>
                 ) : (
@@ -610,7 +610,7 @@ export default function PlatformTenantsPage() {
           >
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold">Adicionar tenant</h2>
+                <h2 className="text-xl font-bold">Adicionar negócio</h2>
                 <p className="text-sm text-gray-500">
                   Crie a conta do cliente e a regra de cobrança mensal.
                 </p>
@@ -681,7 +681,7 @@ export default function PlatformTenantsPage() {
 
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="text-sm font-medium">
-                  Email do tenant
+                  E-mail do negócio
                   <input
                     value={form.email}
                     onChange={(event) => setForm({ ...form, email: event.target.value })}
@@ -698,7 +698,7 @@ export default function PlatformTenantsPage() {
                     onChange={(event) => setForm({ ...form, admin_email: event.target.value })}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
                     type="email"
-                    placeholder="Se vazio, usa o email do tenant"
+                    placeholder="Se vazio, usa o e-mail do negócio"
                   />
                 </label>
               </div>
@@ -803,7 +803,7 @@ export default function PlatformTenantsPage() {
               disabled={saving}
               className="mt-5 w-full rounded-lg bg-gray-950 py-2 font-medium text-white disabled:opacity-50"
             >
-              {saving ? 'Criando...' : 'Criar tenant'}
+              {saving ? 'Criando...' : 'Criar negócio'}
             </button>
           </form>
         </div>

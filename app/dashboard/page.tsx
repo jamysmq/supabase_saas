@@ -154,7 +154,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
-                Painel do tenant
+                Painel do seu negócio
               </p>
 
               <h1 className="mt-1 text-2xl font-bold text-slate-950">
@@ -166,7 +166,7 @@ export default function DashboardPage() {
               </p>
 
               <p className="mt-2 break-all text-xs text-slate-500">
-                Tenant: {tenantUser?.tenant_id}
+                Código do negócio: {tenantUser?.tenant_id}
               </p>
             </div>
 

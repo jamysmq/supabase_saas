@@ -114,7 +114,7 @@ function sourceLabel(source: string | null | undefined) {
 }
 
 function eventTenantName(event: BillingEvent) {
-  return event.tenants?.legal_name ?? event.tenant_legal_name_snapshot ?? 'Tenant sem nome'
+  return event.tenants?.legal_name ?? event.tenant_legal_name_snapshot ?? 'Negócio sem nome'
 }
 
 function eventTenantContact(event: BillingEvent) {
@@ -345,7 +345,7 @@ export default function PlatformPaymentHistoryPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm md:max-w-md"
-              placeholder="Buscar por tenant, CPF, email ou pagamento"
+              placeholder="Buscar por negócio, CPF, e-mail ou pagamento"
             />
           </div>
 
@@ -362,7 +362,7 @@ export default function PlatformPaymentHistoryPage() {
                 >
                   <div className="min-w-0">
                     <div className="break-words text-sm font-semibold">
-                      {payment.tenants?.legal_name ?? 'Tenant sem nome'}
+                      {payment.tenants?.legal_name ?? 'Negócio sem nome'}
                     </div>
                     <div className="mt-1 break-words text-sm text-gray-500">
                       {payment.tenants?.email ?? '-'} - {payment.tenants?.cpf ?? payment.tenant_id}
@@ -433,7 +433,7 @@ export default function PlatformPaymentHistoryPage() {
                   <div className="flex flex-wrap gap-2 lg:justify-end">
                     <span className="h-7 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
                       {event.event_type === 'tenant_deleted'
-                        ? 'Tenant excluído'
+                        ? 'Negócio excluído'
                         : `${statusLabel(event.old_status || '')} para ${statusLabel(event.new_status)}`}
                     </span>
                     <span className="h-7 rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500">

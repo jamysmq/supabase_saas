@@ -149,7 +149,7 @@ export default function PlatformTenantDetailPage() {
     }
 
     if (!response.ok) {
-      setError('Não foi possível carregar o tenant.')
+      setError('Não foi possível carregar o negócio.')
       setLoading(false)
       return
     }
@@ -253,14 +253,14 @@ export default function PlatformTenantDetailPage() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      const message = data?.message || data?.error || 'Não foi possível salvar o tenant.'
+      const message = data?.message || data?.error || 'Não foi possível salvar o negócio.'
       const details = data?.details ? ` Detalhe: ${data.details}` : ''
 
       setError(`${message}${details}`)
       return
     }
 
-    setSuccess('Tenant atualizado.')
+    setSuccess('Negócio atualizado.')
     await load()
   }
 
@@ -311,14 +311,14 @@ export default function PlatformTenantDetailPage() {
 
   async function updateBillingStatus(nextStatus: 'active' | 'paused') {
     if (!billingProfile) {
-      setError('Este tenant ainda não tem cobrança da plataforma configurada.')
+      setError('Este negócio ainda não tem cobrança da plataforma configurada.')
       return
     }
 
     const confirmed = confirm(
       nextStatus === 'active'
-        ? 'Ativar a cobrança deste tenant?'
-        : 'Pausar a cobrança deste tenant?'
+        ? 'Ativar a cobrança deste negócio?'
+        : 'Pausar a cobrança deste negócio?'
     )
 
     if (!confirmed) return
@@ -381,7 +381,7 @@ export default function PlatformTenantDetailPage() {
 
           <h1 className="text-2xl font-bold">{tenant?.legal_name}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Tenant: {tenant?.id}
+            Código do negócio: {tenant?.id}
           </p>
         </section>
 
@@ -407,7 +407,7 @@ export default function PlatformTenantDetailPage() {
 
         <section className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <form onSubmit={save} className="bg-white rounded-2xl shadow p-5 space-y-4">
-            <h2 className="font-bold">Dados do tenant</h2>
+            <h2 className="font-bold">Dados do negócio</h2>
 
             <label className="block text-sm font-medium">
               Nome legal
@@ -561,7 +561,7 @@ export default function PlatformTenantDetailPage() {
               disabled={saving}
               className="w-full rounded-lg bg-gray-950 py-2 font-medium text-white disabled:opacity-50"
             >
-              {saving ? 'Salvando...' : 'Salvar tenant'}
+              {saving ? 'Salvando...' : 'Salvar negócio'}
             </button>
           </form>
 
@@ -636,7 +636,7 @@ export default function PlatformTenantDetailPage() {
         </section>
 
         <section className="bg-white rounded-2xl shadow p-5">
-          <h2 className="font-bold mb-3">Usuários do tenant</h2>
+          <h2 className="font-bold mb-3">Usuários do negócio</h2>
           <div className="divide-y divide-gray-100">
             {users.length === 0 ? (
               <p className="py-6 text-sm text-gray-500">

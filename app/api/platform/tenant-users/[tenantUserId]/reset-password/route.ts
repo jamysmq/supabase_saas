@@ -26,7 +26,7 @@ export async function POST(
     .single()
 
   if (tenantUserError || !tenantUser) {
-    return Response.json({ error: 'Usuário do tenant não encontrado.' }, { status: 404 })
+    return Response.json({ error: 'Usuário do negócio não encontrado.' }, { status: 404 })
   }
 
   const temporaryPassword = generateTemporaryPassword()
@@ -74,7 +74,7 @@ export async function POST(
 
   if (updateTenantUserError) {
     return Response.json(
-      { error: 'Não foi possível atualizar o usuário do tenant.' },
+      { error: 'Não foi possível atualizar o usuário do negócio.' },
       { status: 500 }
     )
   }

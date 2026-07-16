@@ -57,7 +57,7 @@ const templateVariables: TemplateVariable[] = [
   {
     token: '{{tenant_name}}',
     label: 'Nome do negócio',
-    description: 'Nome público do tenant na mensagem.',
+    description: 'Nome público do seu negócio na mensagem.',
   },
   {
     token: '{{customer_name}}',
@@ -78,16 +78,6 @@ const templateVariables: TemplateVariable[] = [
     token: '{{pix_key}}',
     label: 'Chave Pix',
     description: 'Chave Pix configurada em Configurações.',
-  },
-  {
-    token: '{{appointment_date}}',
-    label: 'Data do horário',
-    description: 'Data do agendamento.',
-  },
-  {
-    token: '{{appointment_time}}',
-    label: 'Hora do horário',
-    description: 'Horário do agendamento.',
   },
 ]
 
@@ -1098,7 +1088,7 @@ export default function WhatsAppInboxPage() {
                 <div>
                   <h2 className="text-lg font-bold">Configurações do WhatsApp</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    Ajuste as mensagens automáticas usadas pelos fluxos do tenant.
+                    Personalize a mensagem de cobrança enviada aos seus clientes.
                   </p>
                 </div>
                 <button
@@ -1156,7 +1146,7 @@ export default function WhatsAppInboxPage() {
                   </div>
                 ) : messageTemplates.length === 0 ? (
                   <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-500">
-                    Nenhuma mensagem disponível para o plano atual.
+                    A mensagem de cobrança não está disponível no plano atual.
                   </div>
                 ) : (
                   <>

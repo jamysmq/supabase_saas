@@ -350,7 +350,7 @@ export async function DELETE(
 
   if (usersError) {
     return errorResponse(
-      'Não foi possível localizar os usuários do tenant.',
+      'Não foi possível localizar os usuários do negócio.',
       500,
       usersError.message
     )

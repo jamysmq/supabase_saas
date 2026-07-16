@@ -1,24 +1,15 @@
 import {
   requireTenantUser,
-  tenantCanUseAppointments,
   tenantCanUseBilling,
-  tenantCanUseRestaurant,
 } from '../../../src/lib/tenant-admin'
 
-type TemplateKey =
-  | 'billing_reminder_due_today'
-  | 'billing_signup_welcome'
-  | 'appointment_welcome'
-  | 'appointment_confirmation_reminder'
-  | 'appointment_one_hour_reminder'
-  | 'restaurant_welcome'
+type TemplateKey = 'billing_reminder_due_today'
 
 type TemplateDefinition = {
   key: TemplateKey
   title: string
   description: string
   defaultContent: string
-  capability: 'billing' | 'appointments' | 'restaurant'
 }
 
 const templateDefinitions: TemplateDefinition[] = [
@@ -26,49 +17,8 @@ const templateDefinitions: TemplateDefinition[] = [
     key: 'billing_reminder_due_today',
     title: 'Cobrança mensal',
     description: 'Mensagem usada para avisar clientes sobre mensalidades pendentes.',
-    capability: 'billing',
     defaultContent:
       'Olá, {{customer_name}}! Aqui é o Assistente Jack, de {{tenant_name}}. Sua mensalidade de {{amount}} vence em {{due_date}}. Pix: {{pix_key}}.',
-  },
-  {
-    key: 'billing_signup_welcome',
-    title: 'Cadastro pelo WhatsApp',
-    description: 'Mensagem inicial para cadastrar novos clientes pelo WhatsApp.',
-    capability: 'billing',
-    defaultContent:
-      'Olá! Eu sou o Assistente Jack, de {{tenant_name}}. Vou fazer seu cadastro. Para começar, envie seu nome completo.',
-  },
-  {
-    key: 'appointment_welcome',
-    title: 'Boas-vindas da agenda',
-    description: 'Mensagem inicial para clientes que vão marcar horários pelo WhatsApp.',
-    capability: 'appointments',
-    defaultContent:
-      'Olá! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga o serviço e o melhor dia para você.',
-  },
-  {
-    key: 'appointment_confirmation_reminder',
-    title: 'Confirmação de agendamento',
-    description: 'Mensagem enviada um dia antes do agendamento para confirmar, remarcar ou cancelar.',
-    capability: 'appointments',
-    defaultContent:
-      'Olá, {{customer_name}}! Seu agendamento em {{tenant_name}} está marcado para {{appointment_date}}, às {{appointment_time}}. Serviço: {{service_name}}. Use os botões abaixo para confirmar, remarcar ou cancelar.',
-  },
-  {
-    key: 'appointment_one_hour_reminder',
-    title: 'Lembrete de uma hora',
-    description: 'Mensagem enviada aproximadamente uma hora antes de todo agendamento.',
-    capability: 'appointments',
-    defaultContent:
-      'Olá, {{customer_name}}! Passando para lembrar que seu horário em {{tenant_name}} é hoje, às {{appointment_time}}. Serviço: {{service_name}}. Até já! 😊',
-  },
-  {
-    key: 'restaurant_welcome',
-    title: 'Mensagem inicial do restaurante',
-    description: 'Mensagem futura para iniciar pedidos e consulta de cardápio pelo WhatsApp.',
-    capability: 'restaurant',
-    defaultContent:
-      'Olá! Eu sou o Assistente Jack, de {{tenant_name}}. Me diga se você quer ver o cardápio ou fazer um pedido.',
   },
 ]
 
@@ -80,19 +30,8 @@ function errorResponse(message: string, status = 400, details?: string) {
   return Response.json({ error: message, message }, { status })
 }
 
-function tenantCanUseTemplate(
-  tenant: { plan?: string | null },
-  definition: TemplateDefinition
-) {
-  if (definition.capability === 'billing') return tenantCanUseBilling(tenant)
-  if (definition.capability === 'appointments') return tenantCanUseAppointments(tenant)
-  return tenantCanUseRestaurant(tenant)
-}
-
 function availableDefinitions(tenant: { plan?: string | null }) {
-  return templateDefinitions.filter((definition) =>
-    tenantCanUseTemplate(tenant, definition)
-  )
+  return tenantCanUseBilling(tenant) ? templateDefinitions : []
 }
 
 export async function GET(request: Request) {
