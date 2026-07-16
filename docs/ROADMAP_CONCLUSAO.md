@@ -17,11 +17,11 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 - [x] Configurar valor e vencimento fixos no Professor Teste.
 - [x] Confirmar que a configuração é salva e reaparece no painel.
-- [ ] Resetar o contexto do WhatsApp antes da rodada definitiva.
-- [ ] Iniciar cadastro pelo link do Professor Teste.
-- [ ] Confirmar que valor e vencimento vêm do tenant, sem digitação pelo aluno.
-- [ ] Selecionar turma por botão ou lista.
-- [ ] Confirmar os dados por botões.
+- [x] Resetar o contexto do WhatsApp antes da rodada definitiva.
+- [x] Iniciar cadastro pelo link do Professor Teste.
+- [x] Confirmar que valor e vencimento vêm do tenant, sem digitação pelo aluno.
+- [x] Selecionar turma por botão ou lista.
+- [x] Confirmar os dados por botões.
 - [x] Confirmar a solicitação em Cadastros pendentes.
 - [x] Editar a turma antes da aprovação.
 - [x] Aprovar e conferir aluno, perfil de cobrança e ciclo inicial.
