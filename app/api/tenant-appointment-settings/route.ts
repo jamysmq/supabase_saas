@@ -3,6 +3,7 @@ import { requireTenantUser, tenantCanUseAppointments } from '../../../src/lib/te
 const DEFAULT_SETTINGS = {
   opens_at: '08:00',
   closes_at: '18:00',
+  working_weekdays: [1, 2, 3, 4, 5],
   has_break: false,
   break_starts_at: '12:00',
   break_duration_minutes: 60,
@@ -41,6 +42,11 @@ function timeToMinutes(value: string) {
 function normalizeSettings(body: Record<string, unknown> | null) {
   const opensAt = normalizeTime(body?.opens_at)
   const closesAt = normalizeTime(body?.closes_at)
+  const workingWeekdays = Array.from(new Set(
+    (Array.isArray(body?.working_weekdays) ? body.working_weekdays : [])
+      .map(Number)
+      .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+  )).sort((left, right) => left - right)
   const hasBreak = Boolean(body?.has_break)
   const breakStartsAt = normalizeTime(body?.break_starts_at)
   const breakDurationMinutes = Number(body?.break_duration_minutes)
@@ -48,6 +54,10 @@ function normalizeSettings(body: Record<string, unknown> | null) {
 
   if (!opensAt || !closesAt) {
     return { error: 'Informe os horarios de abertura e fechamento.' }
+  }
+
+  if (workingWeekdays.length === 0) {
+    return { error: 'Selecione pelo menos um dia da semana para o expediente.' }
   }
 
   if (timeToMinutes(closesAt) <= timeToMinutes(opensAt)) {
@@ -63,6 +73,7 @@ function normalizeSettings(body: Record<string, unknown> | null) {
       settings: {
         opens_at: opensAt,
         closes_at: closesAt,
+        working_weekdays: workingWeekdays,
         has_break: false,
         break_starts_at: null,
         break_duration_minutes: null,
@@ -86,6 +97,7 @@ function normalizeSettings(body: Record<string, unknown> | null) {
     settings: {
       opens_at: opensAt,
       closes_at: closesAt,
+      working_weekdays: workingWeekdays,
       has_break: true,
       break_starts_at: breakStartsAt,
       break_duration_minutes: breakDurationMinutes,
@@ -103,6 +115,9 @@ function serializeSettings(settings: typeof DEFAULT_SETTINGS | null) {
     break_starts_at: settings?.break_starts_at ? String(settings.break_starts_at).slice(0, 5) : DEFAULT_SETTINGS.break_starts_at,
     break_duration_minutes: settings?.break_duration_minutes ?? DEFAULT_SETTINGS.break_duration_minutes,
     has_break: Boolean(settings?.has_break),
+    working_weekdays: Array.isArray(settings?.working_weekdays)
+      ? settings.working_weekdays.map(Number)
+      : DEFAULT_SETTINGS.working_weekdays,
   }
 }
 
@@ -117,7 +132,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await result.supabase
     .from('tenant_appointment_settings')
-    .select('opens_at, closes_at, has_break, break_starts_at, break_duration_minutes, timezone')
+    .select('opens_at, closes_at, working_weekdays, has_break, break_starts_at, break_duration_minutes, timezone')
     .eq('tenant_id', result.tenantUser.tenant_id)
     .maybeSingle()
 
@@ -151,7 +166,7 @@ export async function PUT(request: Request) {
       ...normalized.settings,
       updated_at: new Date().toISOString(),
     })
-    .select('opens_at, closes_at, has_break, break_starts_at, break_duration_minutes, timezone')
+    .select('opens_at, closes_at, working_weekdays, has_break, break_starts_at, break_duration_minutes, timezone')
     .single()
 
   if (error || !data) {

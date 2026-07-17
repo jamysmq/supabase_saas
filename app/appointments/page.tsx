@@ -68,6 +68,7 @@ type AppointmentForm = {
 type AppointmentSettingsForm = {
   opens_at: string
   closes_at: string
+  working_weekdays: number[]
   has_break: boolean
   break_starts_at: string
   break_duration_minutes: string
@@ -90,11 +91,22 @@ type AppointmentBlockForm = {
 const defaultAppointmentSettings: AppointmentSettingsForm = {
   opens_at: '08:00',
   closes_at: '18:00',
+  working_weekdays: [1, 2, 3, 4, 5],
   has_break: false,
   break_starts_at: '12:00',
   break_duration_minutes: '60',
   timezone: 'America/Fortaleza',
 }
+
+const weekdayOptions = [
+  { value: 1, label: 'Seg' },
+  { value: 2, label: 'Ter' },
+  { value: 3, label: 'Qua' },
+  { value: 4, label: 'Qui' },
+  { value: 5, label: 'Sex' },
+  { value: 6, label: 'Sáb' },
+  { value: 7, label: 'Dom' },
+]
 
 const emptyAppointmentForm: AppointmentForm = {
   full_name: '',
@@ -996,6 +1008,46 @@ export default function AppointmentsPage() {
           <aside className="min-w-0 space-y-4">
             <form onSubmit={saveAppointmentSettings} className="rounded-2xl bg-white p-5 shadow space-y-3">
               <h2 className="font-bold">Funcionamento</h2>
+
+              <fieldset>
+                <legend className="text-sm font-medium">Dias de expediente</legend>
+                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7">
+                  {weekdayOptions.map((day) => {
+                    const selected = appointmentSettingsForm.working_weekdays.includes(day.value)
+
+                    return (
+                      <label
+                        key={day.value}
+                        className={`flex cursor-pointer items-center justify-center rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                          selected
+                            ? 'border-blue-600 bg-blue-50 text-blue-800'
+                            : 'border-gray-200 bg-white text-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={selected}
+                          onChange={(event) => {
+                            const nextDays = event.target.checked
+                              ? [...appointmentSettingsForm.working_weekdays, day.value]
+                              : appointmentSettingsForm.working_weekdays.filter((value) => value !== day.value)
+
+                            setAppointmentSettingsForm({
+                              ...appointmentSettingsForm,
+                              working_weekdays: Array.from(new Set(nextDays)).sort((left, right) => left - right),
+                            })
+                          }}
+                        />
+                        {day.label}
+                      </label>
+                    )
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  O Jack só oferecerá horários nos dias selecionados.
+                </p>
+              </fieldset>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-medium">
