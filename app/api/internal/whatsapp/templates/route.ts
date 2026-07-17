@@ -3,6 +3,9 @@ type MetaErrorBody = {
     code?: number
     message?: string
     error_subcode?: number
+    error_user_title?: string
+    error_user_msg?: string
+    error_data?: { details?: string }
   }
 }
 
@@ -68,6 +71,9 @@ async function metaRequest(url: string, accessToken: string, init?: RequestInit)
       code: body.error?.code ?? null,
       subcode: body.error?.error_subcode ?? null,
       message: body.error?.message ?? 'Meta API request failed.',
+      title: body.error?.error_user_title ?? null,
+      userMessage: body.error?.error_user_msg ?? null,
+      details: body.error?.error_data?.details ?? null,
     }))
   }
 
