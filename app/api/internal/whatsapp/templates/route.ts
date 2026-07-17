@@ -74,6 +74,49 @@ async function metaRequest(url: string, accessToken: string, init?: RequestInit)
   return body
 }
 
+async function resolveWabaId(graphVersion: string, phoneNumberId: string, accessToken: string) {
+  const baseUrl = `https://graph.facebook.com/${encodeURIComponent(graphVersion)}`
+  const accounts: Array<{ id?: string; phone_numbers?: { data?: Array<{ id?: string }> } }> = []
+
+  const me = await metaRequest(`${baseUrl}/me?fields=id`, accessToken)
+  const meId = typeof me.id === 'string' ? me.id : ''
+
+  if (meId) {
+    try {
+      const assigned = await metaRequest(
+        `${baseUrl}/${encodeURIComponent(meId)}/assigned_whatsapp_business_accounts?fields=id,phone_numbers{id}`,
+        accessToken
+      )
+      if (Array.isArray(assigned.data)) accounts.push(...assigned.data as typeof accounts)
+    } catch {
+      // A user token may expose businesses instead of assigned system-user assets.
+    }
+  }
+
+  try {
+    const businesses = await metaRequest(`${baseUrl}/me/businesses?fields=id`, accessToken)
+    const businessRows = Array.isArray(businesses.data) ? businesses.data as Array<{ id?: string }> : []
+    for (const business of businessRows) {
+      if (!business.id) continue
+      const owned = await metaRequest(
+        `${baseUrl}/${encodeURIComponent(business.id)}/owned_whatsapp_business_accounts?fields=id,phone_numbers{id}`,
+        accessToken
+      )
+      if (Array.isArray(owned.data)) accounts.push(...owned.data as typeof accounts)
+    }
+  } catch {
+    // System-user tokens commonly resolve through assigned assets above.
+  }
+
+  const matchingAccount = accounts.find((account) =>
+    account.phone_numbers?.data?.some((phone) => phone.id === phoneNumberId)
+  )
+  if (matchingAccount?.id) return matchingAccount.id
+
+  const uniqueAccountIds = [...new Set(accounts.map((account) => account.id).filter(Boolean))]
+  return uniqueAccountIds.length === 1 ? uniqueAccountIds[0] : null
+}
+
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -88,12 +131,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const phone = await metaRequest(
-      `https://graph.facebook.com/${encodeURIComponent(graphVersion)}/${encodeURIComponent(phoneNumberId)}?fields=whatsapp_business_account`,
-      accessToken
-    )
-    const account = phone.whatsapp_business_account as { id?: string } | undefined
-    const wabaId = account?.id
+    const wabaId = await resolveWabaId(graphVersion, phoneNumberId, accessToken)
 
     if (!wabaId) {
       return Response.json({ error: 'WhatsApp Business Account was not returned by Meta.' }, { status: 502 })
