@@ -25,6 +25,9 @@ type Tenant = {
   platform_billing_profile: {
     id: string
     amount_cents: number
+    base_amount_cents: number | null
+    additional_staff_count: number
+    additional_staff_amount_cents: number
     due_day: number
     status: string
   } | null
@@ -76,6 +79,7 @@ export default function PlatformTenantsPage() {
 
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [plans, setPlans] = useState<Plan[]>([])
+  const [pendingStaffRequestsCount, setPendingStaffRequestsCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
@@ -109,9 +113,10 @@ export default function PlatformTenantsPage() {
       Authorization: `Bearer ${session.access_token}`,
     }
 
-    const [response, plansResponse] = await Promise.all([
+    const [response, plansResponse, staffRequestsResponse] = await Promise.all([
       fetch('/api/platform/tenants', { headers }),
       fetch('/api/platform/plans', { headers }),
+      fetch('/api/platform/staff-addition-requests', { headers }),
     ])
 
     if (response.status === 401) {
@@ -153,6 +158,11 @@ export default function PlatformTenantsPage() {
           }
         })
       }
+    }
+
+    if (staffRequestsResponse.ok) {
+      const staffRequestsData = await staffRequestsResponse.json()
+      setPendingStaffRequestsCount((staffRequestsData.requests ?? []).length)
     }
 
     setLoading(false)
@@ -398,6 +408,18 @@ export default function PlatformTenantsPage() {
               </button>
 
               <button
+                onClick={() => router.push('/platform/staff-addition-requests')}
+                className={
+                  pendingStaffRequestsCount > 0
+                    ? 'rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900'
+                    : 'rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium'
+                }
+              >
+                Profissionais pendentes
+                {pendingStaffRequestsCount > 0 ? ` (${pendingStaffRequestsCount})` : ''}
+              </button>
+
+              <button
                 onClick={() => router.push('/platform/payments')}
                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
               >
@@ -529,6 +551,18 @@ export default function PlatformTenantsPage() {
                             <div>
                               {formatCurrencyFromCents(tenant.platform_billing_profile.amount_cents)} · dia {tenant.platform_billing_profile.due_day}
                             </div>
+                            {tenant.platform_billing_profile.additional_staff_amount_cents > 0 && (
+                              <div className="text-xs text-sky-700">
+                                Base {formatCurrencyFromCents(tenant.platform_billing_profile.base_amount_cents ?? 0)}
+                                {' + '}
+                                {formatCurrencyFromCents(tenant.platform_billing_profile.additional_staff_amount_cents)}
+                                {' por '}
+                                {tenant.platform_billing_profile.additional_staff_count}
+                                {tenant.platform_billing_profile.additional_staff_count === 1
+                                  ? ' profissional adicional'
+                                  : ' profissionais adicionais'}
+                              </div>
+                            )}
                             <div className="text-xs text-gray-400">
                               {tenant.platform_billing_profile.status}
                             </div>

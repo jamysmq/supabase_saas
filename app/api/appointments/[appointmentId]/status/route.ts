@@ -32,13 +32,20 @@ export async function PATCH(
 
   const { data: appointment, error: appointmentError } = await result.supabase
     .from('appointments')
-    .select('id, status, cancelled_at')
+    .select('id, status, cancelled_at, ends_at')
     .eq('id', appointmentId)
     .eq('tenant_id', result.tenantUser.tenant_id)
     .maybeSingle()
 
   if (appointmentError || !appointment) {
     return errorResponse('Agendamento não encontrado.', 404, appointmentError?.message)
+  }
+
+  if (status === 'completed' && new Date(appointment.ends_at).getTime() > Date.now()) {
+    return errorResponse(
+      'O serviço só pode ser marcado como concluído depois do horário final do agendamento.',
+      409
+    )
   }
 
   const { error } = await result.supabase

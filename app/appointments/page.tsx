@@ -51,6 +51,15 @@ type StaffMember = {
   role: string | null
 }
 
+type PendingStaffRequest = {
+  id: string
+  name: string
+  role: string | null
+  status: string
+  additional_amount_cents: number
+  created_at: string
+}
+
 type AppointmentForm = {
   full_name: string
   cpf: string
@@ -190,8 +199,10 @@ export default function AppointmentsPage() {
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [outcomeQueue, setOutcomeQueue] = useState<Appointment[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
+  const [pendingStaffRequests, setPendingStaffRequests] = useState<PendingStaffRequest[]>([])
   const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>(emptyAppointmentForm)
   const [serviceForm, setServiceForm] = useState<ServiceForm>({
     name: '',
@@ -208,6 +219,7 @@ export default function AppointmentsPage() {
   const [editingStaffId, setEditingStaffId] = useState('')
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false)
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
+  const [isOutcomeQueueOpen, setIsOutcomeQueueOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [actingId, setActingId] = useState('')
@@ -255,16 +267,17 @@ export default function AppointmentsPage() {
       Authorization: `Bearer ${session.access_token}`,
     }
 
-    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse, blocksResponse] =
+    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse, blocksResponse, outcomeQueueResponse] =
       await Promise.all([
         fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers }),
         fetch('/api/appointment-services', { headers }),
         fetch('/api/appointment-staff', { headers }),
         fetch('/api/tenant-appointment-settings', { headers }),
         fetch('/api/tenant-appointment-blocks', { headers }),
+        fetch('/api/appointments/outcome-queue', { headers }),
       ])
 
-    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok || !blocksResponse.ok) {
+    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok || !blocksResponse.ok || !outcomeQueueResponse.ok) {
       setError('Não foi possível carregar a agenda.')
       setLoading(false)
       return
@@ -275,11 +288,16 @@ export default function AppointmentsPage() {
     const staffData = await staffResponse.json()
     const settingsData = await settingsResponse.json()
     const blocksData = await blocksResponse.json()
+    const outcomeQueueData = await outcomeQueueResponse.json()
 
     setAppointments(appointmentsData.appointments ?? [])
     setServices(servicesData.services ?? [])
     setStaff(staffData.staff ?? [])
+    setPendingStaffRequests(staffData.pendingRequests ?? [])
     setAppointmentBlocks(blocksData.blocks ?? [])
+    const pendingOutcomes = outcomeQueueData.appointments ?? []
+    setOutcomeQueue(pendingOutcomes)
+    setIsOutcomeQueueOpen(pendingOutcomes.length > 0)
     setAppointmentSettingsForm({
       ...defaultAppointmentSettings,
       ...(settingsData.settings ?? {}),
@@ -624,7 +642,14 @@ export default function AppointmentsPage() {
       return
     }
 
-    setSuccess(editingStaffId ? 'Profissional atualizado.' : 'Profissional criado.')
+    const data = await response.json()
+    setSuccess(
+      editingStaffId
+        ? 'Profissional atualizado.'
+        : data.pendingApproval
+          ? 'Solicitação enviada à Soft Ink. O profissional será liberado após a aprovação e acrescentará R$ 25,00 à mensalidade.'
+          : 'Primeiro profissional criado e incluído na mensalidade.'
+    )
     closeStaffModal()
     await load()
   }
@@ -733,7 +758,14 @@ export default function AppointmentsPage() {
       return
     }
 
-    setSuccess('Status atualizado.')
+    const successMessages: Record<string, string> = {
+      completed: 'Serviço concluído e lançado no histórico financeiro.',
+      no_show: 'Falta registrada. Nenhuma receita foi lançada.',
+      cancelled: 'Cancelamento registrado. Nenhuma receita foi lançada.',
+      confirmed: 'Agendamento confirmado. A receita só será lançada após a conclusão do serviço.',
+      scheduled: 'Agendamento voltou para o status agendado.',
+    }
+    setSuccess(successMessages[status] ?? 'Status atualizado.')
     setActingId('')
     await load()
   }
@@ -835,6 +867,18 @@ export default function AppointmentsPage() {
               className="text-sm font-medium text-gray-950 underline"
             >
               Histórico
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOutcomeQueueOpen(true)}
+              className={
+                outcomeQueue.length > 0
+                  ? 'rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-900'
+                  : 'rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-500'
+              }
+            >
+              Atendimentos a confirmar
+              {outcomeQueue.length > 0 ? ` (${outcomeQueue.length})` : ''}
             </button>
           </div>
 
@@ -1343,7 +1387,14 @@ export default function AppointmentsPage() {
 
             <section className="min-w-0 rounded-2xl bg-white p-5 shadow">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="font-bold">Profissionais</h2>
+                <div>
+                  <h2 className="font-bold">Profissionais</h2>
+                  {businessType === 'salon' && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      A mensalidade inclui 1 profissional. Cada profissional adicional custa R$ 25,00/mês e depende da aprovação da Soft Ink.
+                    </p>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={openNewStaffModal}
@@ -1352,6 +1403,19 @@ export default function AppointmentsPage() {
                   Novo profissional
                 </button>
               </div>
+              {pendingStaffRequests.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {pendingStaffRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+                    >
+                      <div className="font-medium">{request.name}</div>
+                      <div className="text-xs">Aguardando aprovação · + R$ 25,00/mês</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="divide-y divide-gray-100">
                 {staff.length === 0 ? (
                   <p className="py-3 text-sm text-gray-500">Nenhum profissional cadastrado.</p>
@@ -1521,6 +1585,12 @@ export default function AppointmentsPage() {
                 </button>
               </div>
 
+              {!editingStaffId && businessType === 'salon' && staff.length >= 1 && (
+                <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">
+                  Este profissional será enviado para aprovação da Soft Ink. Depois de aprovado, ficará disponível na agenda e acrescentará R$ 25,00 por mês à mensalidade.
+                </div>
+              )}
+
               <input
                 value={staffForm.name}
                 onChange={(event) => setStaffForm({ ...staffForm, name: event.target.value })}
@@ -1551,6 +1621,86 @@ export default function AppointmentsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {isOutcomeQueueOpen && (
+          <div
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+            role="dialog"
+          >
+            <section className="w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold">O serviço aconteceu?</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Confirme os atendimentos cujo horário já terminou. Somente serviços concluídos entram no financeiro.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOutcomeQueueOpen(false)}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              {outcomeQueue.length === 0 ? (
+                <p className="py-10 text-center text-sm text-gray-500">
+                  Nenhum atendimento aguardando confirmação.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {outcomeQueue.map((appointment) => (
+                    <article
+                      key={appointment.appointment_id}
+                      className="grid gap-4 rounded-xl border border-gray-200 p-4 md:grid-cols-[1fr_auto] md:items-center"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-bold">
+                          {appointment.customer_name || appointment.title || 'Cliente sem nome'}
+                        </div>
+                        <div className="mt-1 text-sm text-gray-600">
+                          {appointment.service_name || 'Serviço não informado'}
+                          {appointment.staff_member_name ? ` · ${appointment.staff_member_name}` : ''}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {new Date(appointment.starts_at).toLocaleString('pt-BR')} até {formatTime(appointment.ends_at)}
+                        </div>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        <button
+                          type="button"
+                          onClick={() => void updateStatus(appointment, 'completed')}
+                          disabled={actingId === appointment.appointment_id}
+                          className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
+                        >
+                          Serviço realizado
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void updateStatus(appointment, 'no_show')}
+                          disabled={actingId === appointment.appointment_id}
+                          className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-bold text-amber-800 disabled:opacity-50"
+                        >
+                          Cliente faltou
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void updateStatus(appointment, 'cancelled')}
+                          disabled={actingId === appointment.appointment_id}
+                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700 disabled:opacity-50"
+                        >
+                          Foi cancelado
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         )}
       </div>

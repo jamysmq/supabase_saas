@@ -52,6 +52,9 @@ type Settings = {
 type BillingProfile = {
   id: string
   amount_cents: number
+  base_amount_cents: number | null
+  additional_staff_count: number
+  additional_staff_amount_cents: number
   due_day: number
   status: string
   currency: string
@@ -180,7 +183,9 @@ export default function PlatformTenantDetailPage() {
       business_type: loadedTenant.business_type ?? 'teacher',
       plan: loadedTenant.plan,
       status: loadedTenant.status,
-      monthly_amount: formatCentsAsMoneyInput(loadedBillingProfile?.amount_cents),
+      monthly_amount: formatCentsAsMoneyInput(
+        loadedBillingProfile?.base_amount_cents ?? loadedBillingProfile?.amount_cents
+      ),
       due_day: loadedBillingProfile?.due_day ? String(loadedBillingProfile.due_day) : '',
     })
     setLoading(false)
@@ -530,7 +535,7 @@ export default function PlatformTenantDetailPage() {
               </label>
 
               <label className="block text-sm font-medium">
-                Mensalidade individual
+                Valor-base da mensalidade
                 <input
                   value={form.monthly_amount}
                   onChange={(event) => setForm({ ...form, monthly_amount: event.target.value })}
@@ -595,6 +600,27 @@ export default function PlatformTenantDetailPage() {
                   <dt className="text-gray-500">Mensalidade</dt>
                   <dd className="font-medium">{formatCurrencyFromCents(billingProfile?.amount_cents)}</dd>
                 </div>
+                {(billingProfile?.additional_staff_amount_cents ?? 0) > 0 && (
+                  <>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-gray-500">Valor-base</dt>
+                      <dd className="font-medium">
+                        {formatCurrencyFromCents(billingProfile?.base_amount_cents)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-gray-500">
+                        + {billingProfile?.additional_staff_count}{' '}
+                        {billingProfile?.additional_staff_count === 1
+                          ? 'profissional'
+                          : 'profissionais'}
+                      </dt>
+                      <dd className="font-medium text-sky-700">
+                        + {formatCurrencyFromCents(billingProfile?.additional_staff_amount_cents)}
+                      </dd>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between gap-3">
                   <dt className="text-gray-500">Vencimento</dt>
                   <dd className="font-medium">

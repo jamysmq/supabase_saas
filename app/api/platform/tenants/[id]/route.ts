@@ -78,7 +78,7 @@ export async function GET(
         .maybeSingle(),
       result.supabase
         .from('platform_tenant_billing_profiles')
-        .select('id, amount_cents, due_day, status, currency, created_at, updated_at')
+        .select('id, amount_cents, base_amount_cents, additional_staff_count, additional_staff_amount_cents, due_day, status, currency, created_at, updated_at')
         .eq('tenant_id', id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -263,9 +263,28 @@ export async function PATCH(
       .limit(1)
       .maybeSingle()
 
+    const { count: activeStaffCount, error: activeStaffError } = await result.supabase
+      .from('tenant_staff_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', id)
+      .eq('is_active', true)
+
+    if (activeStaffError) {
+      return errorResponse('Tenant atualizado, mas não foi possível recalcular os profissionais.', 500, activeStaffError.message)
+    }
+
+    const additionalStaffCount =
+      nextBusinessType === 'salon' && ['plan2', 'plan3'].includes(nextPlan)
+        ? Math.max((activeStaffCount ?? 0) - 1, 0)
+        : 0
+    const additionalStaffAmountCents = additionalStaffCount * 2500
+
     const billingPayload = {
       subscription_id: subscriptionId,
-      amount_cents: amountCents,
+      base_amount_cents: amountCents,
+      additional_staff_count: additionalStaffCount,
+      additional_staff_amount_cents: additionalStaffAmountCents,
+      amount_cents: amountCents + additionalStaffAmountCents,
       due_day: dueDay ?? billingProfile?.due_day ?? new Date().getDate(),
       status: billingProfile?.status ?? 'active',
       updated_at: new Date().toISOString(),

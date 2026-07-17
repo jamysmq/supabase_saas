@@ -58,6 +58,9 @@ export async function GET(request: Request) {
     {
       id: string
       amount_cents: number
+      base_amount_cents: number | null
+      additional_staff_count: number
+      additional_staff_amount_cents: number
       due_day: number
       status: string
     }
@@ -80,7 +83,7 @@ export async function GET(request: Request) {
           .eq('status', 'pending'),
         result.supabase
           .from('platform_tenant_billing_profiles')
-          .select('id, tenant_id, amount_cents, due_day, status')
+          .select('id, tenant_id, amount_cents, base_amount_cents, additional_staff_count, additional_staff_amount_cents, due_day, status')
           .in('tenant_id', tenantIds)
           .order('created_at', { ascending: false }),
         result.supabase
@@ -101,6 +104,9 @@ export async function GET(request: Request) {
         billingProfileByTenantId.set(profile.tenant_id, {
           id: profile.id,
           amount_cents: profile.amount_cents,
+          base_amount_cents: profile.base_amount_cents,
+          additional_staff_count: profile.additional_staff_count,
+          additional_staff_amount_cents: profile.additional_staff_amount_cents,
           due_day: profile.due_day,
           status: profile.status,
         })
