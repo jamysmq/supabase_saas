@@ -81,6 +81,12 @@ export async function PUT(request: Request) {
 
   if (result.error) return result.error
 
+  return errorResponse(
+    'A mensagem automática de cobrança é fixa e aprovada pela Meta para garantir a entrega pelo WhatsApp.',
+    403
+  )
+
+  /*
   const allowedDefinitions = availableDefinitions(result.tenant)
   const allowedByKey = new Map(
     allowedDefinitions.map((definition) => [definition.key, definition])
@@ -158,4 +164,5 @@ export async function PUT(request: Request) {
   }
 
   return Response.json({ templates: savedTemplates })
+  */
 }

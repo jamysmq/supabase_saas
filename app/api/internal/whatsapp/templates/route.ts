@@ -17,7 +17,7 @@ const templateDefinitions = [
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá, {{1}}! Lembrete: seu horário em {{2}} é hoje, às {{3}}. Serviço: {{4}}. Até já!',
+      text: 'Olá, {{1}}! Este é um lembrete automático do Assistente Jack: seu atendimento em {{2}} está marcado para hoje, às {{3}}. O serviço agendado é {{4}}. Se precisar de ajuda, entre em contato com a equipe do estabelecimento. Até breve!',
       example: {
         body_text: [['Sidney Magal', 'Salão Teste', '21:30', 'Corte + barba']],
       },
@@ -31,7 +31,7 @@ const templateDefinitions = [
     components: [
       {
         type: 'BODY',
-        text: 'Olá, {{1}}! Seu agendamento em {{2}} está marcado para {{3}}, às {{4}}. Serviço: {{5}}.',
+        text: 'Olá, {{1}}! Esta é a confirmação automática do Assistente Jack para seu atendimento em {{2}}. A data agendada é {{3}}, com início às {{4}}, para o serviço {{5}}. Escolha abaixo se deseja confirmar, remarcar ou cancelar. Se precisar de ajuda, fale com a equipe do estabelecimento.',
         example: {
           body_text: [['Sidney Magal', 'Salão Teste', '17/07/2026', '21:30', 'Corte + barba']],
         },
@@ -45,6 +45,32 @@ const templateDefinitions = [
         ],
       },
     ],
+  },
+  {
+    name: 'jack_billing_due_reminder',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [{
+      type: 'BODY',
+      text: 'Olá, {{1}}! Este é um lembrete automático de cobrança enviado pelo Assistente Jack em nome de {{2}}. Sua mensalidade no valor de {{3}} vence em {{4}}. A chave Pix para pagamento é {{5}}. Se você já realizou o pagamento, desconsidere esta mensagem. Em caso de dúvida, fale com a equipe responsável.',
+      example: {
+        body_text: [['Maria Silva', 'Professor Exemplo', 'R$ 240,00', '17/07/2026', 'email@pix.com']],
+      },
+    }],
+  },
+  {
+    name: 'jack_daily_agenda_summary',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [{
+      type: 'BODY',
+      text: 'Olá! Este é o resumo automático da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}. Para consultar ou alterar os detalhes, acesse o painel do Assistente Jack.',
+      example: {
+        body_text: [['Salão Exemplo', '17/07/2026', '1) 09:00 - Maria - Corte\n2) 10:30 - João - Barba', '2']],
+      },
+    }],
   },
 ]
 

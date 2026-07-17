@@ -867,6 +867,7 @@ export default function WhatsAppInboxPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
+                hidden
                 onClick={openSettings}
                 className="h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium"
               >

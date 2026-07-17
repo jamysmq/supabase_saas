@@ -298,6 +298,26 @@ function isAppointmentCompletionReply(body: string) {
 }
 
 function appointmentInteractiveReply(body: string): AppointmentInteractiveReply | null {
+  const normalizedBody = body
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+  if (
+    normalizedBody.includes('cadastro enviado') ||
+    normalizedBody.includes('cpf ja esta cadastrado') ||
+    normalizedBody.includes('cadastro com este cpf aguardando')
+  ) {
+    return {
+      kind: 'buttons',
+      body,
+      options: [
+        { id: 'main_menu', title: 'Menu do Jack' },
+        { id: 'tenant_handoff', title: humanHandoffButtonTitle },
+      ],
+    }
+  }
+
   if (isAppointmentCompletionReply(body)) {
     return {
       kind: 'buttons',
@@ -343,11 +363,11 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   const firstOptionLine = numbered[0].lineIndex
   const cleanBody = lines.slice(0, firstOptionLine).join('\n').trim() || 'Escolha uma opção:'
   const isSlotMenu = body.includes('Encontrei estes horarios') || body.includes('Encontrei estes horários')
-  const normalizedBody = body.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  const isBillingSignupMenu = normalizedBody.includes('plano de mensalidade') ||
-    normalizedBody.includes('turma desejada') || normalizedBody.includes('turma com vaga') ||
-    normalizedBody.includes('turma disponivel')
-  const isSignupPlanMenu = normalizedBody.includes('plano de mensalidade')
+  const normalizedMenuBody = normalizedBody
+  const isBillingSignupMenu = normalizedMenuBody.includes('plano de mensalidade') ||
+    normalizedMenuBody.includes('turma desejada') || normalizedMenuBody.includes('turma com vaga') ||
+    normalizedMenuBody.includes('turma disponivel')
+  const isSignupPlanMenu = normalizedMenuBody.includes('plano de mensalidade')
   const options = numbered.map((option) => {
     const compactSlotTitle = compactAppointmentSlotTitle(option.title)
     const signupOptionTitle = option.number === '0'
@@ -433,7 +453,17 @@ async function loadRecentAppointmentCompletion(tenantId: unknown, customerPhone:
 
     if (error || !data) return { found: false, action: null }
 
-    const payload = data.payload_draft as { appointment?: { last_action?: unknown } } | null
+    const payload = data.payload_draft as {
+      module?: unknown
+      appointment?: { last_action?: unknown }
+    } | null
+    const isAppointmentConversation = payload?.module === 'appointments' ||
+      String(data.step ?? '').startsWith('appointment_')
+
+    if (!isAppointmentConversation) {
+      return { found: false, action: null }
+    }
+
     const storedAction = payload?.appointment?.last_action
     const action = storedAction === 'create' || storedAction === 'reschedule' || storedAction === 'cancel'
       ? storedAction
@@ -768,9 +798,15 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                 sendResult = await client.sendText({ to: message.from, body: platformMenuFallback, previewUrl: false })
               }
             } else if (routerResponse?.route === 'platform_plans') {
-              sendResult = await client.sendButtons({
+              await client.sendText({
                 to: message.from,
                 body: replyText,
+                previewUrl: false,
+              })
+              recordedReply = replyText + '\n\nQuer começar a usar o Jack?'
+              sendResult = await client.sendButtons({
+                to: message.from,
+                body: 'Quer começar a usar o Jack no seu negócio?',
                 buttons: [
                   { id: 'platform_signup', title: 'Cadastre-se' },
                   { id: 'main_menu', title: 'Menu do Jack' },
@@ -863,21 +899,39 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
               }
             } else if (routerResponse?.route === 'tenant_post_appointment') {
               const tenantName = normalizeShortLabel(routerResponse.tenant_name, 'este estabelecimento')
-              const completion = await loadRecentAppointmentCompletion(routerResponse.tenant_id, message.from)
-              const contextualReply = completedAppointmentBody(tenantName, completion.action)
-              recordedReply = contextualReply
-              sendResult = await client.sendButtons({
-                to: message.from,
-                body: contextualReply,
-                buttons: [
-                  { id: 'tenant_appointments', title: 'Agendamentos' },
-                  { id: 'tenant_handoff', title: humanHandoffButtonTitle },
-                  { id: 'main_menu', title: 'Menu do Jack' },
-                ],
-              })
+              const planSupportsAppointments = routerResponse.tenant_plan === 'plan2' ||
+                routerResponse.tenant_plan === 'plan3'
+              const completion = planSupportsAppointments
+                ? await loadRecentAppointmentCompletion(routerResponse.tenant_id, message.from)
+                : { found: false, action: null }
+
+              if (completion.found) {
+                const contextualReply = completedAppointmentBody(tenantName, completion.action)
+                recordedReply = contextualReply
+                sendResult = await client.sendButtons({
+                  to: message.from,
+                  body: contextualReply,
+                  buttons: [
+                    { id: 'tenant_appointments', title: 'Agendamentos' },
+                    { id: 'tenant_handoff', title: humanHandoffButtonTitle },
+                    { id: 'main_menu', title: 'Menu do Jack' },
+                  ],
+                })
+              } else {
+                const tenantMenuBody = 'Tudo certo! 😊 Você está no atendimento de *' + tenantName + '*. Escolha abaixo como deseja continuar.'
+                recordedReply = tenantMenuBody
+                sendResult = await client.sendButtons({
+                  to: message.from,
+                  body: tenantMenuBody,
+                  buttons: tenantMenuButtons(routerResponse.tenant_plan),
+                })
+              }
             } else if (routerResponse?.route === 'tenant_menu') {
               const tenantName = normalizeShortLabel(routerResponse.tenant_name, 'este estabelecimento')
-              const completion = routerResponse.reason === 'tenant_menu_invalid_choice'
+              const planSupportsAppointments = routerResponse.tenant_plan === 'plan2' ||
+                routerResponse.tenant_plan === 'plan3'
+              const completion = routerResponse.reason === 'tenant_menu_invalid_choice' &&
+                planSupportsAppointments
                 ? await loadRecentAppointmentCompletion(routerResponse.tenant_id, message.from)
                 : { found: false, action: null }
 

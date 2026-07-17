@@ -25,7 +25,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_list_due_notifications'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_list_due_notifications_v2'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -74,7 +74,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = { tenant_name: $json.tenant_name ?? '', customer_name: $json.customer_name ?? '', appointment_date: $json.appointment_date ?? '', appointment_time: $json.appointment_time ?? '', service_name: $json.service_name ?? '', staff_member_name: $json.staff_member_name ?? '' };\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) rendered = rendered.replaceAll('{{' + key + '}}', String(value || '-'));\nconst isConfirmation = $json.notification_type === 'confirmation';\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered,\n  message_type: 'template',\n  template_name: isConfirmation ? 'jack_appointment_confirmation_d1' : 'jack_appointment_reminder_h1',\n  template_language: 'pt_BR',\n  template_body_parameters: isConfirmation ? [replacements.customer_name, replacements.tenant_name, replacements.appointment_date, replacements.appointment_time, replacements.service_name] : [replacements.customer_name, replacements.tenant_name, replacements.appointment_time, replacements.service_name],\n  template_button_payloads: isConfirmation ? ['appointment_confirm_yes', 'appointment_reschedule', 'appointment_cancel'] : []\n};"
+        "jsCode": "const template = String($json.message_template ?? '');\nconst replacements = { tenant_name: $json.tenant_name ?? '', customer_name: $json.customer_name ?? '', appointment_date: $json.appointment_date ?? '', appointment_time: $json.appointment_time ?? '', service_name: $json.service_name ?? '', staff_member_name: $json.staff_member_name ?? '' };\nlet rendered = template;\nfor (const [key, value] of Object.entries(replacements)) rendered = rendered.replaceAll('{{' + key + '}}', String(value || '-'));\nconst isConfirmation = $json.notification_type === 'confirmation';\nconst canUseFreeform = $json.freeform_window_open === true;\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone_e164,\n  rendered_message: rendered,\n  message_type: canUseFreeform ? (isConfirmation ? 'buttons' : 'text') : 'template',\n  buttons: canUseFreeform && isConfirmation ? [{ id: 'appointment_confirm_yes', title: 'Confirmar' }, { id: 'appointment_reschedule', title: 'Remarcar' }, { id: 'appointment_cancel', title: 'Cancelar' }] : [],\n  template_name: isConfirmation ? 'jack_appointment_confirmation_d1' : 'jack_appointment_reminder_h1',\n  template_language: 'pt_BR',\n  template_body_parameters: isConfirmation ? [replacements.customer_name, replacements.tenant_name, replacements.appointment_date, replacements.appointment_time, replacements.service_name] : [replacements.customer_name, replacements.tenant_name, replacements.appointment_time, replacements.service_name],\n  template_button_payloads: isConfirmation ? ['appointment_confirm_yes', 'appointment_reschedule', 'appointment_cancel'] : []\n};"
       },
       "id": "56db307d-733f-4b2c-af31-fddbf3d18299",
       "name": "FN_render_notification_message",

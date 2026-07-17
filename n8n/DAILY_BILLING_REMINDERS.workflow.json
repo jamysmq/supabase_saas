@@ -1,5 +1,5 @@
 {
-  "name": "DAILY_TENANT_AGENDA_REMINDERS",
+  "name": "DAILY_BILLING_REMINDERS",
   "active": false,
   "nodes": [
     {
@@ -7,28 +7,31 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 15
+              "triggerAtHour": 9
             }
           ]
         }
       },
-      "id": "f6fb76c5-4c61-40a0-b7c3-35a35c10042f",
+      "id": "billing-schedule",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -720,
+        -900,
         0
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_tenant_daily_agenda_list_due_reminders'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_generate_billing_cycles_for_all_tenants'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            },
             {
               "name": "apikey",
               "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
@@ -40,10 +43,6 @@
             {
               "name": "Content-Type",
               "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
             }
           ]
         },
@@ -51,33 +50,78 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "p_window_minutes",
-              "value": "15"
+              "name": "p_reference_date",
+              "value": "={{ new Date().toLocaleDateString('en-CA', { timeZone: 'America/Fortaleza' }) }}"
             }
           ]
         },
         "options": {}
       },
-      "id": "5b42ff42-afca-4f32-9d49-f77468f55408",
-      "name": "RPC_list_due_tenant_agendas",
+      "id": "billing-generate",
+      "name": "RPC admin_generate_billing_cycles_for_all_tenants",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -480,
+        -660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_list_due_cycles_for_date'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            },
+            {
+              "name": "apikey",
+              "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SUPABASE_SERVICE_ROLE_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_run_date",
+              "value": "={{ new Date().toLocaleDateString('en-CA', { timeZone: 'America/Fortaleza' }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "billing-list",
+      "name": "RPC admin_list_due_cycles_for_date",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -420,
         0
       ]
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const appointments = Array.isArray($json.payload?.appointments) ? $json.payload.appointments : [];\nconst agendaLines = appointments.length > 0 ? appointments.map((appointment, index) => {\n  const service = appointment.service_name ? ' - ' + appointment.service_name : '';\n  const staff = appointment.staff_member_name ? ' com ' + appointment.staff_member_name : '';\n  return (index + 1) + ') ' + (appointment.time || '--:--') + ' - ' + (appointment.customer_name || 'Sem nome') + service + staff;\n}).join('\\n') : 'Nenhum agendamento marcado para hoje.';\nconst dateParts = String($json.reminder_date ?? '').split('-');\nconst displayDate = dateParts.length === 3 ? dateParts[2] + '/' + dateParts[1] + '/' + dateParts[0] : String($json.reminder_date ?? '');\nreturn {\n  ...$json,\n  wa_to: $json.recipient_e164,\n  rendered_message: $json.rendered_message,\n  message_type: 'template',\n  template_name: 'jack_daily_agenda_summary',\n  template_language: 'pt_BR',\n  template_body_parameters: [$json.tenant_name ?? '', displayDate, agendaLines, String($json.appointment_count ?? appointments.length)]\n};"
+        "jsCode": "function formatAmount(cents) {\n  return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;\n}\nfunction formatDate(value) {\n  if (!value) return '';\n  const [year, month, day] = String(value).slice(0, 10).split('-');\n  return year && month && day ? `${day}/${month}/${year}` : String(value);\n}\nconst customerName = String($json.customer_name ?? 'Cliente');\nconst tenantName = String($json.tenant_name ?? 'seu estabelecimento');\nconst amount = formatAmount($json.amount_cents);\nconst dueDate = formatDate($json.due_date);\nconst pixKey = String($json.pix_key ?? 'não configurada');\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone,\n  rendered_message: `Olá, ${customerName}! Este é um lembrete automático de cobrança enviado pelo Assistente Jack em nome de ${tenantName}. Sua mensalidade no valor de ${amount} vence em ${dueDate}. A chave Pix para pagamento é ${pixKey}. Se você já realizou o pagamento, desconsidere esta mensagem. Em caso de dúvida, fale com a equipe responsável.`,\n  message_type: 'template',\n  template_name: 'jack_billing_due_reminder',\n  template_language: 'pt_BR',\n  template_body_parameters: [customerName, tenantName, amount, dueDate, pixKey]\n};"
       },
-      "id": "506570b4-b3ec-4c44-9c82-93dd8aa8dd7b",
-      "name": "FN_prepare_message",
+      "id": "billing-render",
+      "name": "FN_render_billing_message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -240,
+        -180,
         0
       ]
     },
@@ -122,21 +166,17 @@
             {
               "name": "template_body_parameters",
               "value": "={{$json.template_body_parameters}}"
-            },
-            {
-              "name": "preview_url",
-              "value": "false"
             }
           ]
         },
         "options": {}
       },
-      "id": "4e2ae34f-5528-4a1d-a924-b7092495f6db",
-      "name": "HTTP_send_whatsapp_text",
+      "id": "billing-send",
+      "name": "HTTP_send_billing_template",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        0,
+        60,
         0
       ],
       "credentials": {
@@ -149,10 +189,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_tenant_daily_agenda_mark_reminder_sent'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_mark_cycle_reminder_sent'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            },
             {
               "name": "apikey",
               "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"
@@ -171,35 +215,23 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "p_tenant_id",
-              "value": "={{$node[\"FN_prepare_message\"].json.tenant_id}}"
-            },
-            {
-              "name": "p_reminder_date",
-              "value": "={{$node[\"FN_prepare_message\"].json.reminder_date}}"
-            },
-            {
-              "name": "p_recipient_e164",
-              "value": "={{$node[\"FN_prepare_message\"].json.wa_to}}"
+              "name": "p_billing_cycle_id",
+              "value": "={{$node[\"FN_render_billing_message\"].json.billing_cycle_id}}"
             },
             {
               "name": "p_rendered_message",
-              "value": "={{$node[\"FN_prepare_message\"].json.rendered_message}}"
-            },
-            {
-              "name": "p_payload",
-              "value": "={{$node[\"FN_prepare_message\"].json.payload}}"
+              "value": "={{$node[\"FN_render_billing_message\"].json.rendered_message}}"
             }
           ]
         },
         "options": {}
       },
-      "id": "f17c93e4-1a81-4988-bb4b-db8b8eb7857e",
-      "name": "RPC_mark_tenant_agenda_sent",
+      "id": "billing-mark",
+      "name": "RPC admin_mark_cycle_reminder_sent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        260,
+        300,
         0
       ]
     }
@@ -209,40 +241,51 @@
       "main": [
         [
           {
-            "node": "RPC_list_due_tenant_agendas",
+            "node": "RPC admin_generate_billing_cycles_for_all_tenants",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "RPC_list_due_tenant_agendas": {
+    "RPC admin_generate_billing_cycles_for_all_tenants": {
       "main": [
         [
           {
-            "node": "FN_prepare_message",
+            "node": "RPC admin_list_due_cycles_for_date",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "FN_prepare_message": {
+    "RPC admin_list_due_cycles_for_date": {
       "main": [
         [
           {
-            "node": "HTTP_send_whatsapp_text",
+            "node": "FN_render_billing_message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP_send_whatsapp_text": {
+    "FN_render_billing_message": {
       "main": [
         [
           {
-            "node": "RPC_mark_tenant_agenda_sent",
+            "node": "HTTP_send_billing_template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP_send_billing_template": {
+      "main": [
+        [
+          {
+            "node": "RPC admin_mark_cycle_reminder_sent",
             "type": "main",
             "index": 0
           }
@@ -258,6 +301,6 @@
   },
   "staticData": null,
   "meta": {
-    "templateCredsSetupCompleted": false
+    "templateCredsSetupCompleted": true
   }
 }
