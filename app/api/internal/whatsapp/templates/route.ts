@@ -77,12 +77,32 @@ async function metaRequest(url: string, accessToken: string, init?: RequestInit)
 async function resolveWabaId(graphVersion: string, phoneNumberId: string, accessToken: string) {
   const baseUrl = `https://graph.facebook.com/${encodeURIComponent(graphVersion)}`
   const accounts: Array<{ id?: string; phone_numbers?: { data?: Array<{ id?: string }> } }> = []
-
-  const me = await metaRequest(`${baseUrl}/me?fields=id,business`, accessToken)
-  const meId = typeof me.id === 'string' ? me.id : ''
-  const ownerBusiness = me.business as { id?: string } | undefined
+  const candidateAccountIds = new Set<string>()
   const businessesToInspect = new Set<string>()
-  if (ownerBusiness?.id) businessesToInspect.add(ownerBusiness.id)
+
+  try {
+    const debug = await metaRequest(
+      `${baseUrl}/debug_token?input_token=${encodeURIComponent(accessToken)}`,
+      accessToken
+    )
+    const debugData = debug.data as {
+      granular_scopes?: Array<{ scope?: string; target_ids?: string[] }>
+    } | undefined
+    for (const permission of debugData?.granular_scopes ?? []) {
+      if (!permission.scope?.startsWith('whatsapp_business_')) continue
+      for (const targetId of permission.target_ids ?? []) candidateAccountIds.add(targetId)
+    }
+  } catch {
+    // Some production tokens cannot introspect themselves.
+  }
+
+  let meId = ''
+  try {
+    const me = await metaRequest(`${baseUrl}/me?fields=id`, accessToken)
+    meId = typeof me.id === 'string' ? me.id : ''
+  } catch {
+    // Continue with token target IDs and business edges.
+  }
 
   if (meId) {
     try {
@@ -93,6 +113,22 @@ async function resolveWabaId(graphVersion: string, phoneNumberId: string, access
       if (Array.isArray(assigned.data)) accounts.push(...assigned.data as typeof accounts)
     } catch {
       // A user token may expose businesses instead of assigned system-user assets.
+    }
+  }
+
+  for (const candidateId of candidateAccountIds) {
+    try {
+      const phoneNumbers = await metaRequest(
+        `${baseUrl}/${encodeURIComponent(candidateId)}/phone_numbers?fields=id`,
+        accessToken
+      )
+      const rows = Array.isArray(phoneNumbers.data)
+        ? phoneNumbers.data as Array<{ id?: string }>
+        : []
+      accounts.push({ id: candidateId, phone_numbers: { data: rows } })
+    } catch {
+      // The target may be a business or app rather than a WhatsApp account.
+      businessesToInspect.add(candidateId)
     }
   }
 
