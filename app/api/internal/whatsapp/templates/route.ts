@@ -179,7 +179,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const wabaId = await resolveWabaId(graphVersion, phoneNumberId, accessToken)
+    const input = await request.json().catch(() => ({})) as { waba_id?: unknown }
+    const providedWabaId = typeof input.waba_id === 'string' && /^\d+$/.test(input.waba_id.trim())
+      ? input.waba_id.trim()
+      : null
+    const wabaId = providedWabaId
+      ?? await resolveWabaId(graphVersion, phoneNumberId, accessToken)
 
     if (!wabaId) {
       return Response.json({ error: 'WhatsApp Business Account was not returned by Meta.' }, { status: 502 })

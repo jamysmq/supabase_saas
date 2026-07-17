@@ -65,6 +65,7 @@ type WhatsAppWebhookChangeValue = {
 
 type WhatsAppWebhookPayload = {
   entry?: Array<{
+    id?: string
     changes?: Array<{
       value?: WhatsAppWebhookChangeValue
     }>
@@ -94,8 +95,10 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
   const body = payload as WhatsAppWebhookPayload
   const messages: WhatsAppWebhookMessageEvent[] = []
   const statuses: WhatsAppWebhookStatusEvent[] = []
+  const businessAccountIds = new Set<string>()
 
   for (const entry of body.entry ?? []) {
+    if (entry.id) businessAccountIds.add(entry.id)
     for (const change of entry.changes ?? []) {
       const value = change.value
       const phoneNumberId = value?.metadata?.phone_number_id ?? null
@@ -165,5 +168,5 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
     }
   }
 
-  return { messages, statuses }
+  return { messages, statuses, businessAccountIds: [...businessAccountIds] }
 }

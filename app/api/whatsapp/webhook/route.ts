@@ -1143,6 +1143,7 @@ export async function POST(request: Request) {
   const forward = await forwardMessagesToN8n(events.messages, inbox.routes)
 
   console.info('WhatsApp webhook received.', {
+    businessAccountIds: events.businessAccountIds,
     messages: events.messages.length,
     statuses: events.statuses.length,
     reminderStatusesUpdated: reminderStatuses.updated,
@@ -1161,6 +1162,7 @@ export async function POST(request: Request) {
 
   return Response.json({
     ok: true,
+    business_account_ids: events.businessAccountIds,
     messages: events.messages.length,
     statuses: events.statuses.length,
     reminder_statuses_updated: reminderStatuses.updated,
