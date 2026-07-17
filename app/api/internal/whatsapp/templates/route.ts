@@ -47,13 +47,13 @@ const templateDefinitions = [
     ],
   },
   {
-    name: 'jack_billing_due_reminder',
+    name: 'jack_billing_due_reminder_v2',
     language: 'pt_BR',
     category: 'UTILITY',
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá, {{1}}! Este é um lembrete automático de cobrança enviado pelo Assistente Jack em nome de {{2}}. Sua mensalidade no valor de {{3}} vence em {{4}}. A chave Pix para pagamento é {{5}}. Se você já realizou o pagamento, desconsidere esta mensagem. Em caso de dúvida, fale com a equipe responsável.',
+      text: 'Olá, {{1}}! 😊\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, vence em {{4}}.\n\n💳 Chave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. Estamos à disposição!',
       example: {
         body_text: [['Maria Silva', 'Professor Exemplo', 'R$ 240,00', '17/07/2026', 'email@pix.com']],
       },
