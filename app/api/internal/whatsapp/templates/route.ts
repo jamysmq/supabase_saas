@@ -78,8 +78,11 @@ async function resolveWabaId(graphVersion: string, phoneNumberId: string, access
   const baseUrl = `https://graph.facebook.com/${encodeURIComponent(graphVersion)}`
   const accounts: Array<{ id?: string; phone_numbers?: { data?: Array<{ id?: string }> } }> = []
 
-  const me = await metaRequest(`${baseUrl}/me?fields=id`, accessToken)
+  const me = await metaRequest(`${baseUrl}/me?fields=id,business`, accessToken)
   const meId = typeof me.id === 'string' ? me.id : ''
+  const ownerBusiness = me.business as { id?: string } | undefined
+  const businessesToInspect = new Set<string>()
+  if (ownerBusiness?.id) businessesToInspect.add(ownerBusiness.id)
 
   if (meId) {
     try {
@@ -97,15 +100,24 @@ async function resolveWabaId(graphVersion: string, phoneNumberId: string, access
     const businesses = await metaRequest(`${baseUrl}/me/businesses?fields=id`, accessToken)
     const businessRows = Array.isArray(businesses.data) ? businesses.data as Array<{ id?: string }> : []
     for (const business of businessRows) {
-      if (!business.id) continue
-      const owned = await metaRequest(
-        `${baseUrl}/${encodeURIComponent(business.id)}/owned_whatsapp_business_accounts?fields=id,phone_numbers{id}`,
-        accessToken
-      )
-      if (Array.isArray(owned.data)) accounts.push(...owned.data as typeof accounts)
+      if (business.id) businessesToInspect.add(business.id)
     }
   } catch {
     // System-user tokens commonly resolve through assigned assets above.
+  }
+
+  for (const businessId of businessesToInspect) {
+    for (const edge of ['owned_whatsapp_business_accounts', 'client_whatsapp_business_accounts']) {
+      try {
+        const response = await metaRequest(
+          `${baseUrl}/${encodeURIComponent(businessId)}/${edge}?fields=id,phone_numbers{id}`,
+          accessToken
+        )
+        if (Array.isArray(response.data)) accounts.push(...response.data as typeof accounts)
+      } catch {
+        // Not every business exposes both ownership edges to the current token.
+      }
+    }
   }
 
   const matchingAccount = accounts.find((account) =>
