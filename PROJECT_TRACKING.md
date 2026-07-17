@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-07-16
+Atualizado em: 2026-07-17
 
 Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
 
@@ -108,12 +108,23 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 ### Financeiro de Atendimentos
 
 - Servicos da agenda passaram a aceitar duracao, descricao e valor.
-- Tenants do tipo `salon` passam a reconhecer receita automaticamente quando um agendamento muda para `confirmed`.
+- Tenants do tipo `salon` reconhecem receita somente quando o atendimento já terminou e o tenant o marca explicitamente como `completed`.
 - Receita de atendimento fica registrada em `tenant_service_revenue_events`, com snapshot de cliente, servico, profissional, valor e origem.
-- Cancelamento/remarcacao para status diferente de `confirmed` estorna logicamente o evento financeiro reconhecido.
+- Agendamentos encerrados em `scheduled` ou `confirmed` entram numa fila de confirmação do resultado; `confirmed`, `cancelled` e `no_show` não geram receita.
+- Mudança de um atendimento concluído para outro status estorna logicamente o evento financeiro reconhecido.
 - Tela tenant-side `Financeiro de atendimentos` lista valores reconhecidos e exporta via impressao/PDF do navegador.
 - Tenants `salon` com agenda possuem tela `Estoque`; entrada de produto atualiza saldo e registra despesa negativa em `tenant_service_revenue_events` com origem `stock_purchase`.
-- Validacao autenticada tenant-side de financeiro de atendimentos passou em 2026-05-20: usuario temporario em tenant `plan2`/`salon` criou servico com valor, profissional e agendamento; confirmacao reconheceu receita de atendimento, cancelamento estornou logicamente a receita, e tenant/usuario de teste foram removidos ao final.
+- A migration 047 corrigiu os lançamentos antigos baseados em confirmação e criou a fila pós-atendimento.
+- A migration 048 torna atômica a atualização feita pelo painel: status, histórico e receita confirmam juntos ou são integralmente revertidos.
+- A mesma migration restringe as RPCs internas de sugestão de horários ao `service_role`, removendo o acesso autenticado legado com `tenant_id` arbitrário.
+- Migration 048 aplicada no Supabase alvo em 2026-07-17 e validada sem mutação: repetir o status atual não criou evento nem receita, e execução anônima foi recusada com `42501`.
+
+### Profissionais adicionais de salões
+
+- Planos 2 e 3 incluem um profissional para tenants do tipo `salon`.
+- Cada profissional ativo adicional acrescenta R$ 25,00 à mensalidade.
+- A inclusão adicional gera solicitação para a Soft Ink; o profissional só é criado após aprovação da plataforma.
+- Alterações de profissional, plano ou preço-base recalculam a composição do perfil de cobrança.
 
 ### Restaurante
 

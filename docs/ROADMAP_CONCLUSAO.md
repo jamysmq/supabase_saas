@@ -1,6 +1,6 @@
 # Roadmap de conclusão do Billing App
 
-Atualizado em: 2026-07-16
+Atualizado em: 2026-07-17
 
 Este checklist é a referência operacional até o lançamento. Itens concluídos permanecem registrados para evitar reabertura acidental de escopo.
 
@@ -49,6 +49,24 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Validar nome e CPF do responsável para aluno menor de 14 anos.
 - [ ] Validar mensagem de CPF já cadastrado e CPF com solicitação pendente.
 
+## Etapa atual — Agenda, profissionais e financeiro de atendimentos
+
+- [x] Configurar os dias recorrentes de expediente e impedir oferta fora deles.
+- [x] Cobrar R$ 25,00 por profissional adicional em salões dos Planos 2 e 3.
+- [x] Exigir aprovação da Soft Ink antes de liberar profissional adicional.
+- [x] Recalcular o perfil de cobrança após aprovação, desativação ou alteração do plano.
+- [x] Criar fila de agendamentos encerrados aguardando confirmação do resultado.
+- [x] Reconhecer receita somente para atendimento concluído depois do horário final.
+- [x] Não reconhecer receita para agendamento confirmado, cancelado ou com falta.
+- [x] Estornar logicamente a receita se o status deixar de ser concluído.
+- [x] Auditar a fila e confirmar que não há receita de atendimento inconsistente.
+- [x] Preparar atualização transacional de status, histórico e receita na migration 048.
+- [x] Restringir as RPCs internas de horários ao workflow oficial com `service_role`.
+- [x] Aplicar a migration 048 no Supabase alvo.
+- [ ] Validar no painel um item da fila como Concluído e conferir o financeiro.
+- [ ] Validar outro item como Faltou e confirmar que não entrou no financeiro.
+- [ ] Solicitar um profissional adicional e validar aprovação, liberação e acréscimo de R$ 25,00.
+
 ## Bloqueadores do lançamento
 
 ### Catálogo, pedidos e estoque — Planos 4 e 5
@@ -88,15 +106,17 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Criar testes automatizados para tenant, plano e idempotência.
 - [ ] Cobrir agenda, cadastro do Professor e catálogo ou pedidos.
 - [ ] Testar webhook duplicado sem duplicar efeitos.
-- [ ] Auditar RLS e grants das migrations recentes.
+- [x] Auditar RLS e grants das migrations 042–047.
 - [ ] Confirmar validações de plano e tenant nas APIs.
 - [ ] Testar dois tenants usando o mesmo telefone de cliente.
 - [ ] Testar telas críticas em celular e desktop.
-- [ ] Executar lint, TypeScript e build no release candidate.
+- [x] Executar lint, TypeScript e build no estado publicado em 2026-07-17.
 
 ## Operação de produção
 
 - [x] Aplicar a migration 041 para garantir no banco a propagação dos preços dos planos.
+- [x] Aplicar as migrations 042–047 e conferir seus invariantes no banco.
+- [x] Aplicar a migration 048 de atualização transacional do resultado do atendimento.
 - [ ] Comparar migrations consolidadas com o schema de produção.
 - [ ] Preparar staging ou procedimento reversível equivalente.
 - [ ] Monitorar crons de D-1, H-1 e retenção.
@@ -104,7 +124,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Garantir exportação e versionamento dos workflows ativos.
 - [ ] Revisar segredos de Vercel, Supabase, Meta e n8n.
 - [ ] Confirmar backup e restauração do Supabase.
-- [ ] Executar smoke test do domínio e de /api/health.
+- [x] Executar smoke test do domínio e de /api/health.
 - [ ] Remover pendências antigas dos documentos de acompanhamento.
 
 ## Validação final por plano
@@ -133,6 +153,12 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Texto da pausa de almoço/descanso corrigido na agenda.
 - [x] Descrições comerciais atualizadas para os preços vigentes dos cinco planos.
 - [x] Mensalidades dos oito negócios existentes sincronizadas com seus planos.
+- [x] Dias da semana do expediente respeitados pelo painel, pelo Jack e pelo resumo diário.
+- [x] Lembretes proativos preparados para janela de atendimento e templates oficiais da Meta.
+- [x] Mensagem oficial de cobrança recebida e validada em dois números reais.
+- [x] Campos de mensagens personalizáveis removidos do painel; mensagens operacionais são controladas pelo produto.
+- [x] Aprovação da Soft Ink e acréscimo de R$ 25,00 por profissional adicional implementados.
+- [x] Fila pós-atendimento implementada para decidir entre Concluído e Faltou/Cancelado.
 
 ## Depois do lançamento
 
