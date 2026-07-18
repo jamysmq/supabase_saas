@@ -68,7 +68,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Validar outro item como Faltou e confirmar que não entrou no financeiro.
 - [x] Solicitar um profissional adicional e validar aprovação, liberação e acréscimo de R$ 25,00.
 - [x] Preparar a migration 049 para corrigir status em dias removidos do expediente e exclusão auditada de profissional.
-- [ ] Aplicar a migration 049 no Supabase alvo.
+- [x] Aplicar a migration 049 no Supabase alvo.
 - [ ] Validar alteração de status dos dois agendamentos antigos de sábado.
 - [ ] Mover ou cancelar o agendamento futuro do profissional e validar a exclusão.
 - [ ] Conferir que a remoção acima de 15 dias mantém apenas um último adicional de R$ 25,00.

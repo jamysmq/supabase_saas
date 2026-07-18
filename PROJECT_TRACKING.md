@@ -115,7 +115,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - A mesma migration restringe as RPCs internas de sugestão de horários ao `service_role`, removendo o acesso autenticado legado com `tenant_id` arbitrário.
 - Migration 048 aplicada no Supabase alvo em 2026-07-17 e validada sem mutação: repetir o status atual não criou evento nem receita, e execução anônima foi recusada com `42501`.
 - Validação funcional temporária da migration 048 concluída no Salão de Beleza: dois agendamentos encerrados entraram na fila; `completed` criou evento e receita reconhecida; `no_show` criou apenas o evento; ambos saíram da fila e todos os registros técnicos foram removidos ao final.
-- A migration 049 foi preparada em 2026-07-18 para permitir correções de status em agendamentos antigos cujo dia saiu do expediente; a regra de dias úteis continua valendo para criação, remarcação e restauração.
+- A migration 049 foi aplicada e verificada no Supabase alvo em 2026-07-18: novas colunas, tabela de auditoria e RPCs responderam corretamente; a regra permite correções de status em agendamentos antigos cujo dia saiu do expediente, mantendo os dias úteis para criação, remarcação e restauração.
 - A mesma migration impede `completed` e `no_show` antes do horário final do atendimento.
 
 ### Profissionais adicionais de salões
