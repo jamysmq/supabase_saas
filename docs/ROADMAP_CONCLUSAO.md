@@ -1,6 +1,6 @@
 # Roadmap de conclusão do Billing App
 
-Atualizado em: 2026-07-17
+Atualizado em: 2026-07-18
 
 Este checklist é a referência operacional até o lançamento. Itens concluídos permanecem registrados para evitar reabertura acidental de escopo.
 

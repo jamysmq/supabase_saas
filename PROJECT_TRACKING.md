@@ -1,6 +1,6 @@
 # Billing App Tracking
 
-Atualizado em: 2026-07-17
+Atualizado em: 2026-07-18
 
 Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
 
@@ -43,7 +43,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Cobrancas, alunos/clientes e turmas/grupos ficam disponiveis para planos com capacidade de cobranca mensal: `plan1` e `plan3`.
 - Modelo de dados, integracoes estruturais e plataforma de hospedagem devem ser tratados como decisoes definitivas de arquitetura: mudar feature e aceitavel, mas evitar escolhas temporarias que obriguem reescrita, migracao de plataforma ou troca de modelo central depois.
 - Alterar plano deve atualizar imediatamente restricoes e valor base da mensalidade.
-- Valor de mensalidade do tenant pode ser ajustado individualmente depois da selecao do plano.
+- O catálogo de planos da plataforma é a fonte de verdade do valor-base; alterações de preço propagam para todos os tenants vinculados e substituem ajustes individuais.
 - Criacao de tenant deve gerar cobranca inicial pendente para a plataforma.
 - Criacao de cliente/aluno do tenant deve gerar ciclo inicial pendente para o tenant.
 - Pausa/reativacao de cobranca deve virar evento historico.
@@ -93,17 +93,13 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Bloqueios temporarios de agenda por intervalo continuo foram adicionados em 2026-07-14: o tenant pode fechar de uma data/hora ate outra, inclusive atravessando dias.
 - A regra de bloqueio e central no banco: painel, WhatsApp e remarcacoes nao aceitam novos horarios no intervalo, enquanto agendamentos existentes permanecem preservados.
 
-### Mensagens Personalizaveis
+### Mensagens do WhatsApp
 
-- `supabase/platform_plan_catalog.sql` foi conferido no Supabase em 2026-05-15.
-- `supabase/tenant_message_templates.sql` foi aplicado no Supabase.
-- `tenant_message_templates` existe no banco e recebeu templates padrao idempotentes para os tenants existentes.
-- Front de configuracoes do tenant passou a editar mensagens de WhatsApp compativeis com o plano atual.
-- API tenant-side valida o plano antes de listar/salvar cada tipo de mensagem.
-- Templates iniciais preparados:
-  - `billing_reminder_due_today`;
-  - `appointment_welcome`;
-  - `restaurant_welcome`.
+- As mensagens operacionais são controladas pelo produto para preservar identidade, conformidade e compatibilidade com os templates oficiais da Meta.
+- Os editores de mensagens foram removidos do painel; o tenant não personaliza cadastro, cobrança ou notificações de agenda.
+- `tenant_message_templates` permanece como configuração interna e histórico de compatibilidade, sem exposição para edição pelo tenant.
+- Fora da janela de atendimento da Meta, mensagens proativas usam templates oficiais; dentro da janela, o app pode usar o texto equivalente controlado pelo produto.
+- O cadastro pelo WhatsApp usa apresentação fixa do Assistente Jack e somente os dados do negócio são interpolados.
 
 ### Financeiro de Atendimentos
 
@@ -172,7 +168,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Variaveis `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` foram configuradas no container n8n em 2026-05-18.
 - SQL de apoio criado em `supabase/whatsapp_appointment_workflow_support.sql` para contexto, patch de conversa e criacao de agendamento via WhatsApp.
 - Lembrete D-1 de agendamento foi modelado para rodar as 09h, evitar duplicidade por evento e abrir conversa de confirmacao com opcoes de confirmar/remarcar/cancelar.
-- `appointment_confirmation_reminder` foi adicionado como template editavel por tenants com agenda.
+- `appointment_confirmation_reminder` foi inicialmente criado como editável e depois passou ao controle do produto/Meta, sem editor no tenant.
 - Inbound `WA_TENANT_APPOINTMENTS_INBOUND_v1` passou a tratar resposta do lembrete:
   - confirmar atualiza status para `confirmed`;
   - cancelar atualiza status para `cancelled`;
@@ -185,7 +181,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Em 2026-07-16, `DAILY_TENANT_AGENDA_REMINDERS` recebeu credencial Header Auth dedicada, passou a usar o dominio oficial e foi corrigido para preservar os dados do lembrete ao registrar o envio depois da resposta da Meta.
 - Em 2026-07-16, o resumo diario foi disparado para o WhatsApp de teste do Salao de Beleza com dois agendamentos reais, recebido pelo usuario e registrado uma unica vez em `tenant_daily_agenda_reminder_events`; o workflow ficou ativo.
 - O workflow remoto `DAILY_BILLING_REMINDERS` passou a usar `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do ambiente do n8n, em vez de credenciais fixas nos nos HTTP.
-- O no de renderizacao de cobranca do `DAILY_BILLING_REMINDERS` passou a usar `template_content` retornado pelo Supabase, mantendo a mensagem editavel por tenant.
+- O nó de cobrança usa conteúdo controlado pelo produto e o template oficial correspondente quando a janela de atendimento exige.
 - SQL de apoio criado em `supabase/whatsapp_billing_workflow_support.sql` para geracao idempotente de ciclos mensais, listagem de ciclos vencidos e baixa de lembrete enviado.
 - Validacao controlada de cobranca mensal em 2026-05-18 passou apos aplicar `supabase/whatsapp_billing_workflow_support.sql`:
   - cliente/perfil/ciclo de teste em tenant `plan3` foi listado como vencido;
@@ -235,7 +231,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
   - SQL incremental `supabase/whatsapp_billing_signup_workflow_support.sql`;
   - migration `supabase/migrations/010_whatsapp_billing_signup_workflow.sql`;
   - workflow n8n inativo `n8n/WA_TENANT_BILLING_SIGNUP_INBOUND_v1.workflow.json`;
-  - template editavel `billing_signup_welcome`;
+  - mensagem fixa de cadastro `billing_signup_welcome`;
   - fluxo coleta nome completo, grupo/turma opcional, valor da mensalidade e dia de vencimento;
   - cria ou reativa cliente pelo WhatsApp, cria/atualiza perfil de cobranca e gera ciclo inicial pendente.
 - Em 2026-06-22, workflow remoto `WA_TENANT_BILLING_SIGNUP_INBOUND_v1` foi criado no n8n com id `A4XOl16nkcIYOre1` e mantido inativo para go-live controlado.
@@ -525,7 +521,7 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Nao misturar historico de plataforma com historico interno do tenant.
 - Nao permitir funcionalidades por esconder botao apenas; rotas/API tambem validam capacidades do plano.
 - Nao criar um workflow n8n por tenant/restaurante; usar workflows genericos orientados por dados e configuracoes do tenant.
-- Nao hardcodar mensagens de WhatsApp no workflow quando elas forem parte da experiencia do tenant; buscar templates/configuracoes no banco.
+- Centralizar mensagens do WhatsApp no produto e nos templates oficiais da Meta; não expor editores ao tenant nem duplicar textos divergentes nos workflows.
 - Nao tratar SQL solto como produto final; ele e etapa de desenvolvimento antes das migrations.
 
 ## Prompt Para Continuar em Outra Task
