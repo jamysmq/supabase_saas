@@ -45,7 +45,14 @@ export async function PATCH(
 
     if (error.message.includes('appointment_has_not_ended')) {
       return errorResponse(
-        'O serviço só pode ser marcado como concluído depois do horário final do agendamento.',
+        'O atendimento só pode ser marcado como concluído ou faltou depois do horário final.',
+        409
+      )
+    }
+
+    if (error.message.includes('appointment_day_unavailable')) {
+      return errorResponse(
+        'Este dia não faz parte do expediente atual. Ajuste os dias de atendimento antes de remarcar o horário.',
         409
       )
     }

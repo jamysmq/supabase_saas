@@ -63,16 +63,39 @@ export async function DELETE(
   const { staffMemberId } = await context.params
 
   const { data, error } = await result.supabase
-    .from('tenant_staff_members')
-    .delete()
-    .eq('id', staffMemberId)
-    .eq('tenant_id', result.tenantUser.tenant_id)
-    .select('id')
+    .rpc('admin_remove_tenant_staff_member', {
+      p_tenant_id: result.tenantUser.tenant_id,
+      p_staff_member_id: staffMemberId,
+      p_tenant_user_id: result.tenantUser.id,
+    })
     .single()
 
   if (error || !data) {
-    return errorResponse('Não foi possível excluir o profissional.', error?.code === 'PGRST116' ? 404 : 500, error?.message)
+    if (error?.message?.includes('staff_has_future_appointments')) {
+      return errorResponse(
+        'Este profissional possui agendamentos futuros. Mova ou cancele esses horários antes de excluí-lo.',
+        409
+      )
+    }
+
+    if (error?.message?.includes('staff_member_not_found')) {
+      return errorResponse('Profissional não encontrado.', 404)
+    }
+
+    return errorResponse('Não foi possível excluir o profissional.', 500, error?.message)
   }
 
-  return Response.json({ ok: true })
+  const removal = data as {
+    charge_next_billing: boolean
+    charge_amount_cents: number
+    total_amount_cents: number
+  }
+  const chargeNextBilling = Boolean(removal.charge_next_billing)
+  return Response.json({
+    ok: true,
+    removal,
+    message: chargeNextBilling
+      ? 'Profissional excluído. Como permaneceu ativo por mais de 15 dias, o adicional de R$ 25,00 será cobrado uma última vez na próxima mensalidade.'
+      : 'Profissional excluído. O adicional não será cobrado na próxima mensalidade.',
+  })
 }

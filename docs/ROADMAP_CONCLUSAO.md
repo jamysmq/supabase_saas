@@ -54,7 +54,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Configurar os dias recorrentes de expediente e impedir oferta fora deles.
 - [x] Cobrar R$ 25,00 por profissional adicional em salões dos Planos 2 e 3.
 - [x] Exigir aprovação da Soft Ink antes de liberar profissional adicional.
-- [x] Recalcular o perfil de cobrança após aprovação, desativação ou alteração do plano.
+- [x] Recalcular o perfil de cobrança após aprovação, exclusão ou alteração do plano.
 - [x] Criar fila de agendamentos encerrados aguardando confirmação do resultado.
 - [x] Reconhecer receita somente para atendimento concluído depois do horário final.
 - [x] Não reconhecer receita para agendamento confirmado, cancelado ou com falta.
@@ -66,7 +66,12 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Validar com dois agendamentos técnicos: ambos entraram na fila, somente Concluído gerou receita e Faltou não gerou.
 - [ ] Validar no painel um item da fila como Concluído e conferir o financeiro.
 - [ ] Validar outro item como Faltou e confirmar que não entrou no financeiro.
-- [ ] Solicitar um profissional adicional e validar aprovação, liberação e acréscimo de R$ 25,00.
+- [x] Solicitar um profissional adicional e validar aprovação, liberação e acréscimo de R$ 25,00.
+- [x] Preparar a migration 049 para corrigir status em dias removidos do expediente e exclusão auditada de profissional.
+- [ ] Aplicar a migration 049 no Supabase alvo.
+- [ ] Validar alteração de status dos dois agendamentos antigos de sábado.
+- [ ] Mover ou cancelar o agendamento futuro do profissional e validar a exclusão.
+- [ ] Conferir que a remoção acima de 15 dias mantém apenas um último adicional de R$ 25,00.
 
 ## Bloqueadores do lançamento
 

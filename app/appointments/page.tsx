@@ -693,7 +693,12 @@ export default function AppointmentsPage() {
   }
 
   async function deleteStaff(member: StaffMember) {
-    const confirmed = confirm(`Excluir o profissional ${member.name}?`)
+    const confirmed = confirm(
+      `Excluir o profissional ${member.name}?\n\n` +
+      'Ele será removido imediatamente da agenda, mas o histórico será preservado. ' +
+      'Se esteve ativo por mais de 15 dias, o adicional de R$ 25,00 será cobrado uma última vez na próxima mensalidade. ' +
+      'Agendamentos futuros precisam ser movidos ou cancelados antes da exclusão.'
+    )
     if (!confirmed) return
 
     const token = await getToken()
@@ -716,8 +721,9 @@ export default function AppointmentsPage() {
 
     setActingId('')
 
+    const data = await response.json().catch(() => null)
+
     if (!response.ok) {
-      const data = await response.json().catch(() => null)
       setError(data?.message || 'Não foi possível excluir o profissional.')
       return
     }
@@ -726,7 +732,7 @@ export default function AppointmentsPage() {
       closeStaffModal()
     }
 
-    setSuccess('Profissional excluído.')
+    setSuccess(data?.message || 'Profissional excluído.')
     await load()
   }
 

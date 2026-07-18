@@ -25,9 +25,56 @@ type StaffRequest = {
   } | null
 }
 
+type StaffRemoval = {
+  id: string
+  staff_member_name_snapshot: string
+  staff_member_role_snapshot: string | null
+  active_from: string
+  removed_at: string
+  active_days: number
+  charge_next_billing: boolean
+  amount_cents: number
+  consumed_at: string | null
+  tenant: StaffRequest['tenant']
+}
+
+function StaffRemovalHistory({ removals }: { removals: StaffRemoval[] }) {
+  return (
+    <section className="rounded-2xl bg-white p-5 shadow">
+      <h2 className="text-lg font-bold">Remoções recentes</h2>
+      <p className="mt-1 text-sm text-gray-500">Histórico das exclusões e do efeito aplicado à próxima mensalidade.</p>
+      {removals.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500">Nenhuma remoção registrada.</p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {removals.map((item) => (
+            <article key={item.id} className="grid gap-3 rounded-xl border border-gray-200 p-4 md:grid-cols-[1fr_280px] md:items-center">
+              <div>
+                <h3 className="font-bold">{item.staff_member_name_snapshot}</h3>
+                {item.staff_member_role_snapshot && <p className="text-sm text-gray-600">{item.staff_member_role_snapshot}</p>}
+                <p className="mt-1 text-sm text-gray-500">{item.tenant?.public_name || item.tenant?.legal_name || 'Negócio não encontrado'} · {item.active_days} dias ativo</p>
+                <p className="mt-1 text-xs text-gray-400">Removido em {new Date(item.removed_at).toLocaleString('pt-BR')}</p>
+              </div>
+              <div className={`rounded-lg p-3 text-sm ${item.charge_next_billing ? 'bg-amber-50 text-amber-950' : 'bg-emerald-50 text-emerald-950'}`}>
+                {item.charge_next_billing ? (
+                  <>
+                    <div className="font-bold">Último adicional: {formatCurrencyFromCents(item.amount_cents)}</div>
+                    <div>{item.consumed_at ? 'Cobrança já aplicada.' : 'Pendente para a próxima mensalidade.'}</div>
+                  </>
+                ) : <div className="font-bold">Sem cobrança adicional na próxima mensalidade.</div>}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function StaffAdditionRequestsPage() {
   const router = useRouter()
   const [requests, setRequests] = useState<StaffRequest[]>([])
+  const [removals, setRemovals] = useState<StaffRemoval[]>([])
   const [loading, setLoading] = useState(true)
   const [actingId, setActingId] = useState('')
   const [error, setError] = useState('')
@@ -58,6 +105,7 @@ export default function StaffAdditionRequestsPage() {
 
     const data = await response.json()
     setRequests(data.requests ?? [])
+    setRemovals(data.removals ?? [])
     setLoading(false)
   }, [router])
 
@@ -183,6 +231,7 @@ export default function StaffAdditionRequestsPage() {
             </div>
           )}
         </section>
+        <StaffRemovalHistory removals={removals} />
       </div>
     </main>
   )

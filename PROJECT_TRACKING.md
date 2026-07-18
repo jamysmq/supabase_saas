@@ -115,6 +115,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - A mesma migration restringe as RPCs internas de sugestão de horários ao `service_role`, removendo o acesso autenticado legado com `tenant_id` arbitrário.
 - Migration 048 aplicada no Supabase alvo em 2026-07-17 e validada sem mutação: repetir o status atual não criou evento nem receita, e execução anônima foi recusada com `42501`.
 - Validação funcional temporária da migration 048 concluída no Salão de Beleza: dois agendamentos encerrados entraram na fila; `completed` criou evento e receita reconhecida; `no_show` criou apenas o evento; ambos saíram da fila e todos os registros técnicos foram removidos ao final.
+- A migration 049 foi preparada em 2026-07-18 para permitir correções de status em agendamentos antigos cujo dia saiu do expediente; a regra de dias úteis continua valendo para criação, remarcação e restauração.
+- A mesma migration impede `completed` e `no_show` antes do horário final do atendimento.
 
 ### Profissionais adicionais de salões
 
@@ -122,6 +124,10 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Cada profissional ativo adicional acrescenta R$ 25,00 à mensalidade.
 - A inclusão adicional gera solicitação para a Soft Ink; o profissional só é criado após aprovação da plataforma.
 - Alterações de profissional, plano ou preço-base recalculam a composição do perfil de cobrança.
+- A inclusão adicional foi validada de ponta a ponta no Salão de Beleza, incluindo aprovação, liberação e acréscimo de R$ 25,00.
+- A exclusão é definitiva, preserva snapshots nos históricos e fica auditada para a Soft Ink.
+- Profissionais com agendamentos futuros só podem ser excluídos depois que esses horários forem movidos ou cancelados.
+- Até 15 dias de atividade, o adicional não entra na próxima mensalidade; acima de 15 dias, cobra-se uma última parcela de R$ 25,00 e depois o valor recorrente é removido.
 
 ### Restaurante
 
@@ -328,7 +334,8 @@ Validacoes recomendadas no Supabase:
 
 - Excluir pagamento da plataforma: soft delete.
 - Excluir agendamento: soft delete.
-- Excluir servico/profissional: desativacao por `is_active = false`.
+- Excluir serviço: desativação por `is_active = false`.
+- Excluir profissional: exclusão definitiva após tratar agendamentos futuros, com snapshots históricos e evento de auditoria preservados.
 - Excluir cliente/aluno do tenant: hoje usamos desativacao; manter assim para preservar cobranca/historico local.
 - Excluir tenant: hard delete dos dados internos do tenant, mas antes grava snapshot em `platform_payment_events` para manter rastro no historico da plataforma.
 

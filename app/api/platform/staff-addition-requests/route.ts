@@ -29,6 +29,19 @@ type RequestBillingProfile = {
   status: string
 }
 
+type StaffRemovalEvent = {
+  id: string
+  tenant_id: string
+  staff_member_name_snapshot: string
+  staff_member_role_snapshot: string | null
+  active_from: string
+  removed_at: string
+  active_days: number
+  charge_next_billing: boolean
+  amount_cents: number
+  consumed_at: string | null
+}
+
 export async function GET(request: Request) {
   const result = await requirePlatformAdmin(request)
   if (result.error) return result.error
@@ -48,8 +61,22 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Não foi possível listar as solicitações.' }, { status: 500 })
   }
 
+  const { data: removalData, error: removalError } = await result.supabase
+    .from('tenant_staff_removal_events')
+    .select('id, tenant_id, staff_member_name_snapshot, staff_member_role_snapshot, active_from, removed_at, active_days, charge_next_billing, amount_cents, consumed_at')
+    .order('removed_at', { ascending: false })
+    .limit(50)
+
+  if (removalError) {
+    return Response.json({ error: 'Não foi possível listar as remoções.' }, { status: 500 })
+  }
+
   const staffRequests = (requests ?? []) as StaffAdditionRequest[]
-  const tenantIds = [...new Set(staffRequests.map((item) => item.tenant_id))]
+  const removals = (removalData ?? []) as StaffRemovalEvent[]
+  const tenantIds = [...new Set([
+    ...staffRequests.map((item) => item.tenant_id),
+    ...removals.map((item) => item.tenant_id),
+  ])]
   const [tenantsResult, billingResult] = tenantIds.length > 0
     ? await Promise.all([
         result.supabase
@@ -77,6 +104,11 @@ export async function GET(request: Request) {
 
   return Response.json({
     requests: staffRequests.map((item) => ({
+      ...item,
+      tenant: tenantById.get(item.tenant_id) ?? null,
+      billingProfile: billingByTenantId.get(item.tenant_id) ?? null,
+    })),
+    removals: removals.map((item) => ({
       ...item,
       tenant: tenantById.get(item.tenant_id) ?? null,
       billingProfile: billingByTenantId.get(item.tenant_id) ?? null,
