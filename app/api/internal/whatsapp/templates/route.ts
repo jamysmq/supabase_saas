@@ -66,7 +66,7 @@ const templateDefinitions = [
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá, {{1}}! 😊\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, vence hoje ({{4}}).\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}.',
+      text: 'Olá, {{1}}!\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, vence hoje ({{4}}).\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. 😊',
       example: {
         body_text: [['Maria Silva', 'Professor Exemplo', 'R$ 240,00', '19/07/2026', 'email@pix.com']],
       },
@@ -92,7 +92,7 @@ const templateDefinitions = [
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá, {{1}}! 😊\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, venceu em {{4}} e está pendente.\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}.',
+      text: 'Olá, {{1}}!\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, venceu em {{4}} e está pendente.\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. 😊',
       example: {
         body_text: [['Maria da Silva', 'Professor Teste', 'R$ 49,90', '10/07/2026', '11999999999']],
       },
