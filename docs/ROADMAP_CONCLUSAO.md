@@ -64,14 +64,14 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Restringir as RPCs internas de horários ao workflow oficial com `service_role`.
 - [x] Aplicar a migration 048 no Supabase alvo.
 - [x] Validar com dois agendamentos técnicos: ambos entraram na fila, somente Concluído gerou receita e Faltou não gerou.
-- [ ] Validar no painel um item da fila como Concluído e conferir o financeiro.
-- [ ] Validar outro item como Faltou e confirmar que não entrou no financeiro.
+- [x] Validar no painel um item da fila como Concluído e conferir o financeiro.
+- [x] Validar outro item como Faltou e confirmar que não entrou no financeiro.
 - [x] Solicitar um profissional adicional e validar aprovação, liberação e acréscimo de R$ 25,00.
 - [x] Preparar a migration 049 para corrigir status em dias removidos do expediente e exclusão auditada de profissional.
 - [x] Aplicar a migration 049 no Supabase alvo.
-- [ ] Validar alteração de status dos dois agendamentos antigos de sábado.
-- [ ] Mover ou cancelar o agendamento futuro do profissional e validar a exclusão.
-- [ ] Conferir que a remoção acima de 15 dias mantém apenas um último adicional de R$ 25,00.
+- [x] Validar alteração de status dos dois agendamentos antigos de sábado.
+- [x] Mover ou cancelar o agendamento futuro do profissional e validar a exclusão.
+- [x] Conferir que a remoção acima de 15 dias mantém apenas um último adicional de R$ 25,00.
 
 ## Bloqueadores do lançamento
 

@@ -117,6 +117,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Validação funcional temporária da migration 048 concluída no Salão de Beleza: dois agendamentos encerrados entraram na fila; `completed` criou evento e receita reconhecida; `no_show` criou apenas o evento; ambos saíram da fila e todos os registros técnicos foram removidos ao final.
 - A migration 049 foi aplicada e verificada no Supabase alvo em 2026-07-18: novas colunas, tabela de auditoria e RPCs responderam corretamente; a regra permite correções de status em agendamentos antigos cujo dia saiu do expediente, mantendo os dias úteis para criação, remarcação e restauração.
 - A mesma migration impede `completed` e `no_show` antes do horário final do atendimento.
+- Validação oficial no Salão de Beleza confirmou eventos com origem `panel`: atendimentos `completed` mantiveram receita reconhecida, enquanto `no_show` não manteve receita ativa; os dois agendamentos de sábado também ficaram com histórico auditável de alteração/cancelamento.
 
 ### Profissionais adicionais de salões
 
@@ -128,6 +129,9 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - A exclusão é definitiva, preserva snapshots nos históricos e fica auditada para a Soft Ink.
 - Profissionais com agendamentos futuros só podem ser excluídos depois que esses horários forem movidos ou cancelados.
 - Até 15 dias de atividade, o adicional não entra na próxima mensalidade; acima de 15 dias, cobra-se uma última parcela de R$ 25,00 e depois o valor recorrente é removido.
+- Em 2026-07-19, o agendamento futuro ligado ao registro legado de Ingrid Dayene foi cancelado pelo fluxo auditado do painel e a profissional foi excluída pela RPC oficial. O histórico preservou o snapshot do nome e o evento de remoção registrou 46 dias ativos e uma única cobrança final de R$ 25,00.
+- A operação revelou um alias inválido (`pp`) introduzido na função de recálculo pela migration 049. A migration 054 corrigiu a referência para `plan`, passou em prévia sob `ROLLBACK` e foi aplicada em produção antes da exclusão.
+- Após a remoção, o perfil do Salão de Beleza ficou com base de R$ 49,90, quatro adicionais recorrentes (R$ 100,00), um adicional final pendente (R$ 25,00) e total da próxima cobrança de R$ 174,90.
 
 ### Restaurante
 
