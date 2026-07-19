@@ -25,7 +25,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Confirmar a solicitação em Cadastros pendentes.
 - [x] Editar a turma antes da aprovação.
 - [x] Aprovar e conferir aluno, perfil de cobrança e ciclo inicial.
-- [ ] Rejeitar outra solicitação e confirmar que nenhum registro financeiro foi criado.
+- [x] Rejeitar outra solicitação e confirmar que nenhum registro financeiro foi criado.
 
 ### Planos de mensalidade
 
@@ -42,12 +42,12 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Reativar o cadastro e confirmar que o fluxo volta.
 - [x] Preencher a última vaga de uma turma.
 - [x] Confirmar que turma lotada não aparece em novos cadastros.
-- [ ] Garantir que duas aprovações não ocupem a mesma última vaga.
-- [ ] Repetir cadastro com o mesmo WhatsApp e validar a solicitação duplicada.
-- [ ] Validar retorno ao menu e atendimento humano.
-- [ ] Validar cadastro completo com e-mail, CPF e data de nascimento.
-- [ ] Validar nome e CPF do responsável para aluno menor de 14 anos.
-- [ ] Validar mensagem de CPF já cadastrado e CPF com solicitação pendente.
+- [x] Garantir que duas aprovações não ocupem a mesma última vaga.
+- [x] Repetir cadastro com o mesmo WhatsApp e validar a solicitação duplicada.
+- [x] Validar retorno ao menu e atendimento humano.
+- [x] Validar cadastro completo com e-mail, CPF e data de nascimento.
+- [x] Validar nome e CPF do responsável para aluno menor de 14 anos.
+- [x] Validar mensagem de CPF já cadastrado e CPF com solicitação pendente.
 
 ## Etapa atual — Agenda, profissionais e financeiro de atendimentos
 
@@ -99,7 +99,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 ### Ciclo de cobranças
 
-- [ ] Validar criação automática do primeiro ciclo.
+- [x] Validar criação automática do primeiro ciclo.
 - [x] Validar aviso de cobrança vencida com nome, valor, data e Pix em número real.
 - [x] Corrigir geração diária de ciclos `pending` e transição posterior para `overdue`.
 - [x] Separar aceite da Meta de entrega real e registrar eventos de `sent`, `delivered`, `read` e `failed`.
