@@ -111,7 +111,8 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Validar ponta a ponta cobranças do dia e vencida com ciclos elegíveis e entrega real.
 - [x] Validar falha e retentativa controlada, respeitando uma tentativa diária e o limite de três.
 - [x] Submeter as revisões `jack_billing_due_reminder_v3` (`1041055674977367`) e `jack_billing_overdue_reminder_v2` (`2124744398115629`) à Meta.
-- [ ] Confirmar aprovação das revisões e só então atualizar RPCs e workflow para “vence hoje”/encerramento revisado.
+- [x] Confirmar aprovação das revisões e atualizar RPCs e workflow para “vence hoje”/encerramento revisado.
+- [x] Aplicar a migration 052 e validar oficialmente o workflow revisado sem cobranças elegíveis.
 - [ ] Implementar ou validar segunda via pelo WhatsApp.
 - [ ] Validar confirmação manual e histórico do pagamento.
 - [ ] Validar cobrança vencida, reenvio e pausa ou reativação.

@@ -45,8 +45,8 @@ O parâmetro `{{2}}` é reutilizado no encerramento e não cria um sexto parâme
 
 ## Revisões submetidas em 19/07/2026
 
-- `jack_billing_due_reminder_v3`, ID `1041055674977367`, status `PENDING`: usa “vence hoje ({{4}})”.
-- `jack_billing_overdue_reminder_v2`, ID `2124744398115629`, status `PENDING`: mantém “venceu em {{4}} e está pendente”.
+- `jack_billing_due_reminder_v3`, ID `1041055674977367`, status `APPROVED`: usa “vence hoje ({{4}})”.
+- `jack_billing_overdue_reminder_v2`, ID `2124744398115629`, status `APPROVED`: mantém “venceu em {{4}} e está pendente”.
 - Ambas usam um único emoji e terminam visualmente com `equipe de {{2}}. 😊`.
 - A Meta recusou a primeira proposta que terminava diretamente em `{{2}}`, pois variáveis não podem ficar no início ou no fim do template (`2388299`).
-- As versões novas não devem substituir as vigentes no workflow antes de `APPROVED`.
+- As versões novas foram publicadas no workflow após a confirmação de `APPROVED`.
