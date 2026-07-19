@@ -108,7 +108,8 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Submeter à Meta o template `jack_billing_overdue_reminder_v1` (`1008513205307809`).
 - [x] Confirmar que o template vencido saiu de `PENDING` para `APPROVED`.
 - [x] Publicar o workflow revisado e executar oficialmente o caminho sem cobranças elegíveis.
-- [ ] Validar ponta a ponta cobrança do dia, vencida e retentativa controlada com ciclos elegíveis.
+- [x] Validar ponta a ponta cobranças do dia e vencida com ciclos elegíveis e entrega real.
+- [ ] Validar falha e retentativa controlada, respeitando uma tentativa diária e o limite de três.
 - [ ] Implementar ou validar segunda via pelo WhatsApp.
 - [ ] Validar confirmação manual e histórico do pagamento.
 - [ ] Validar cobrança vencida, reenvio e pausa ou reativação.
