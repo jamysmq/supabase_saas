@@ -289,6 +289,56 @@ async function diagnoseWabaResolution(graphVersion: string, phoneNumberId: strin
   return diagnostics
 }
 
+async function inspectWebhookSubscription(
+  graphVersion: string,
+  wabaId: string,
+  accessToken: string,
+  appSecret: string | undefined,
+) {
+  try {
+    const response = await metaRequest(
+      `https://graph.facebook.com/${encodeURIComponent(graphVersion)}/${encodeURIComponent(wabaId)}/subscribed_apps`,
+      accessToken,
+    )
+    const apps = Array.isArray(response.data)
+      ? response.data as Array<{
+          whatsapp_business_api_data?: { id?: string }
+        }>
+      : []
+    const appSubscriptions = []
+
+    for (const app of apps) {
+      const appId = app.whatsapp_business_api_data?.id
+      if (!appId || !appSecret) continue
+
+      try {
+        const subscriptions = await metaRequest(
+          `https://graph.facebook.com/${encodeURIComponent(graphVersion)}/${encodeURIComponent(appId)}/subscriptions`,
+          `${appId}|${appSecret}`,
+        )
+        appSubscriptions.push({ app_id: appId, data: subscriptions.data ?? [] })
+      } catch (error) {
+        appSubscriptions.push({
+          app_id: appId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    return {
+      ok: true,
+      apps,
+      app_subscriptions: appSubscriptions,
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      apps: [],
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -297,13 +347,17 @@ export async function POST(request: Request) {
   const accessToken = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim()
   const phoneNumberId = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()
   const graphVersion = process.env.WHATSAPP_CLOUD_GRAPH_VERSION?.trim() || 'v23.0'
+  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim()
 
   if (!accessToken || !phoneNumberId) {
     return Response.json({ error: 'WhatsApp Cloud API is not configured.' }, { status: 503 })
   }
 
   try {
-    const input = await request.json().catch(() => ({})) as { waba_id?: unknown }
+    const input = await request.json().catch(() => ({})) as {
+      waba_id?: unknown
+      include_webhook_subscription?: unknown
+    }
     const providedWabaId = typeof input.waba_id === 'string' && /^\d+$/.test(input.waba_id.trim())
       ? input.waba_id.trim()
       : null
@@ -352,7 +406,16 @@ export async function POST(request: Request) {
       })
     }
 
-    return Response.json({ ok: true, waba_id: wabaId, templates: results })
+    const webhookSubscription = input.include_webhook_subscription === true
+      ? await inspectWebhookSubscription(graphVersion, wabaId, accessToken, appSecret)
+      : undefined
+
+    return Response.json({
+      ok: true,
+      waba_id: wabaId,
+      templates: results,
+      ...(webhookSubscription ? { webhook_subscription: webhookSubscription } : {}),
+    })
   } catch (error) {
     console.error('Could not synchronize WhatsApp appointment templates.', error)
     return Response.json({

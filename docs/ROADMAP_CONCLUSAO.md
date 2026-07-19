@@ -1,6 +1,6 @@
 # Roadmap de conclusão do Billing App
 
-Atualizado em: 2026-07-18
+Atualizado em: 2026-07-19
 
 Este checklist é a referência operacional até o lançamento. Itens concluídos permanecem registrados para evitar reabertura acidental de escopo.
 
@@ -29,17 +29,17 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 ### Planos de mensalidade
 
-- [ ] Alterar temporariamente o Professor Teste para o modo Planos.
-- [ ] Criar pelo menos dois planos com valores e vencimentos diferentes.
-- [ ] Confirmar botões para até três planos e lista para mais de três.
-- [ ] Concluir cadastro e conferir plano, valor e vencimento gravados.
-- [ ] Desativar um plano e confirmar que ele desaparece do WhatsApp.
-- [ ] Retornar o Professor Teste à configuração desejada.
+- [x] Alterar temporariamente o Professor Teste para o modo Planos.
+- [x] Criar pelo menos dois planos com valores e vencimentos diferentes.
+- [x] Confirmar botões para até três planos e lista para mais de três.
+- [x] Concluir cadastro e conferir plano, valor e vencimento gravados.
+- [x] Desativar um plano e confirmar que ele desaparece do WhatsApp.
+- [x] Retornar o Professor Teste à configuração desejada.
 
 ### Controles e casos de borda
 
-- [ ] Desativar o cadastro via WhatsApp e validar a mensagem.
-- [ ] Reativar o cadastro e confirmar que o fluxo volta.
+- [x] Desativar o cadastro via WhatsApp e validar a mensagem.
+- [x] Reativar o cadastro e confirmar que o fluxo volta.
 - [x] Preencher a última vaga de uma turma.
 - [x] Confirmar que turma lotada não aparece em novos cadastros.
 - [ ] Garantir que duas aprovações não ocupem a mesma última vaga.
@@ -100,10 +100,11 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 ### Ciclo de cobranças
 
 - [ ] Validar criação automática do primeiro ciclo.
-- [ ] Validar aviso de vencimento com nome, valor, data e Pix.
+- [x] Validar aviso de cobrança vencida com nome, valor, data e Pix em número real.
 - [x] Corrigir geração diária de ciclos `pending` e transição posterior para `overdue`.
 - [x] Separar aceite da Meta de entrega real e registrar eventos de `sent`, `delivered`, `read` e `failed`.
 - [x] Aplicar a migration 050 no Supabase.
+- [x] Aplicar a migration 051 para corrigir a idempotência dos callbacks de entrega.
 - [x] Submeter à Meta o template `jack_billing_overdue_reminder_v1` (`1008513205307809`).
 - [x] Confirmar que o template vencido saiu de `PENDING` para `APPROVED`.
 - [x] Publicar o workflow revisado e executar oficialmente o caminho sem cobranças elegíveis.
