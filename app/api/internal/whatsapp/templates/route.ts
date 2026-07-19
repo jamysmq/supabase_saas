@@ -60,6 +60,19 @@ const templateDefinitions = [
     }],
   },
   {
+    name: 'jack_billing_overdue_reminder_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [{
+      type: 'BODY',
+      text: 'Olá, {{1}}! 😊\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, venceu em {{4}} e está pendente.\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. Estamos à disposição!',
+      example: {
+        body_text: [['Maria da Silva', 'Professor Teste', 'R$ 49,90', '10/07/2026', '11999999999']],
+      },
+    }],
+  },
+  {
     name: 'jack_daily_agenda_summary',
     language: 'pt_BR',
     category: 'UTILITY',
@@ -197,6 +210,85 @@ async function resolveWabaId(graphVersion: string, phoneNumberId: string, access
   return uniqueAccountIds.length === 1 ? uniqueAccountIds[0] : null
 }
 
+async function diagnoseWabaResolution(graphVersion: string, phoneNumberId: string, accessToken: string) {
+  const baseUrl = `https://graph.facebook.com/${encodeURIComponent(graphVersion)}`
+  const diagnostics: Record<string, unknown> = {}
+
+  try {
+    const phone = await metaRequest(
+      `${baseUrl}/${encodeURIComponent(phoneNumberId)}?fields=whatsapp_business_account`,
+      accessToken
+    )
+    diagnostics.phone_waba_id = (phone.whatsapp_business_account as { id?: unknown } | undefined)?.id ?? null
+  } catch (error) {
+    diagnostics.phone_lookup_error = error instanceof Error ? error.message : String(error)
+  }
+
+  try {
+    const debug = await metaRequest(
+      `${baseUrl}/debug_token?input_token=${encodeURIComponent(accessToken)}`,
+      accessToken
+    )
+    const data = debug.data as {
+      granular_scopes?: Array<{ scope?: string; target_ids?: string[] }>
+      scopes?: string[]
+    } | undefined
+    diagnostics.scopes = data?.scopes ?? []
+    diagnostics.granular_scopes = data?.granular_scopes ?? []
+  } catch (error) {
+    diagnostics.debug_token_error = error instanceof Error ? error.message : String(error)
+  }
+
+  try {
+    const me = await metaRequest(`${baseUrl}/me?fields=id`, accessToken)
+    diagnostics.token_owner_id = me.id ?? null
+
+    try {
+      const assigned = await metaRequest(
+        `${baseUrl}/${encodeURIComponent(String(me.id))}/assigned_whatsapp_business_accounts?fields=id,phone_numbers{id}`,
+        accessToken
+      )
+      diagnostics.assigned_wabas = assigned.data ?? []
+    } catch (error) {
+      diagnostics.assigned_wabas_error = error instanceof Error ? error.message : String(error)
+    }
+  } catch (error) {
+    diagnostics.token_owner_error = error instanceof Error ? error.message : String(error)
+  }
+
+  try {
+    const businesses = await metaRequest(`${baseUrl}/me/businesses?fields=id,name`, accessToken)
+    const rows = Array.isArray(businesses.data)
+      ? businesses.data as Array<{ id?: string; name?: string }>
+      : []
+    diagnostics.businesses = rows
+    const edges = []
+    for (const business of rows) {
+      if (!business.id) continue
+      for (const edge of ['owned_whatsapp_business_accounts', 'client_whatsapp_business_accounts']) {
+        try {
+          const response = await metaRequest(
+            `${baseUrl}/${encodeURIComponent(business.id)}/${edge}?fields=id,name,phone_numbers{id}`,
+            accessToken
+          )
+          edges.push({ business_id: business.id, edge, data: response.data ?? [] })
+        } catch (error) {
+          edges.push({
+            business_id: business.id,
+            edge,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+    }
+    diagnostics.business_waba_edges = edges
+  } catch (error) {
+    diagnostics.businesses_error = error instanceof Error ? error.message : String(error)
+  }
+
+  return diagnostics
+}
+
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -219,7 +311,11 @@ export async function POST(request: Request) {
       ?? await resolveWabaId(graphVersion, phoneNumberId, accessToken)
 
     if (!wabaId) {
-      return Response.json({ error: 'WhatsApp Business Account was not returned by Meta.' }, { status: 502 })
+      const diagnostics = await diagnoseWabaResolution(graphVersion, phoneNumberId, accessToken)
+      return Response.json({
+        error: 'WhatsApp Business Account was not returned by Meta.',
+        diagnostics,
+      }, { status: 502 })
     }
 
     const results = []

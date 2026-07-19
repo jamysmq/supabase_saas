@@ -49,6 +49,15 @@ function normalizeN8nReplyText(value: unknown) {
   return text && text.length <= 4096 ? text : ''
 }
 
+function statusTimestampIso(timestamp: string | null) {
+  const normalizedTimestamp = timestamp?.trim() ?? ''
+  const timestampSeconds = normalizedTimestamp ? Number(normalizedTimestamp) : Number.NaN
+
+  return Number.isFinite(timestampSeconds) && timestampSeconds > 0
+    ? new Date(timestampSeconds * 1000).toISOString()
+    : new Date().toISOString()
+}
+
 async function recordAppointmentReminderStatuses(statuses: WhatsAppWebhookStatusEvent[]) {
   if (!statuses.length) return { updated: 0, failed: 0 }
 
@@ -57,10 +66,7 @@ async function recordAppointmentReminderStatuses(statuses: WhatsAppWebhookStatus
   let failed = 0
 
   for (const status of statuses) {
-    const timestampSeconds = Number(status.timestamp)
-    const statusUpdatedAt = Number.isFinite(timestampSeconds)
-      ? new Date(timestampSeconds * 1000).toISOString()
-      : new Date().toISOString()
+    const statusUpdatedAt = statusTimestampIso(status.timestamp)
 
     const { data, error } = await supabase
       .from('appointment_reminder_events')
@@ -84,6 +90,43 @@ async function recordAppointmentReminderStatuses(statuses: WhatsAppWebhookStatus
     }
 
     updated += data?.length ?? 0
+  }
+
+  return { updated, failed }
+}
+
+async function recordBillingReminderStatuses(statuses: WhatsAppWebhookStatusEvent[]) {
+  if (!statuses.length) return { updated: 0, failed: 0 }
+
+  const supabase = createTenantAdminClient()
+  let updated = 0
+  let failed = 0
+
+  for (const status of statuses) {
+    const statusUpdatedAt = statusTimestampIso(status.timestamp)
+
+    const { data, error } = await supabase.rpc(
+      'admin_record_billing_reminder_delivery_status',
+      {
+        p_provider_message_id: status.messageId,
+        p_delivery_status: status.status,
+        p_status_updated_at: statusUpdatedAt,
+        p_recipient_id: status.recipientId,
+        p_delivery_error: status.errors.length ? status.errors : null,
+      },
+    )
+
+    if (error) {
+      failed += 1
+      console.error('Could not record billing reminder delivery status.', {
+        providerMessageId: status.messageId,
+        status: status.status,
+        error: error.message,
+      })
+      continue
+    }
+
+    updated += Array.isArray(data) ? data.length : 0
   }
 
   return { updated, failed }
@@ -1193,6 +1236,7 @@ export async function POST(request: Request) {
 
   const events = normalizeWhatsAppWebhookPayload(payload)
   const reminderStatuses = await recordAppointmentReminderStatuses(events.statuses)
+  const billingReminderStatuses = await recordBillingReminderStatuses(events.statuses)
   const inbox = await recordMessagesInInbox(events.messages)
   const forward = await forwardMessagesToN8n(events.messages, inbox.routes)
 
@@ -1202,6 +1246,8 @@ export async function POST(request: Request) {
     statuses: events.statuses.length,
     reminderStatusesUpdated: reminderStatuses.updated,
     reminderStatusFailures: reminderStatuses.failed,
+    billingReminderStatusesUpdated: billingReminderStatuses.updated,
+    billingReminderStatusFailures: billingReminderStatuses.failed,
     inboxRecorded: inbox.recorded,
     inboxFailures: inbox.failed,
     inboxUnrouted: inbox.unrouted,
@@ -1221,6 +1267,8 @@ export async function POST(request: Request) {
     statuses: events.statuses.length,
     reminder_statuses_updated: reminderStatuses.updated,
     reminder_status_failures: reminderStatuses.failed,
+    billing_reminder_statuses_updated: billingReminderStatuses.updated,
+    billing_reminder_status_failures: billingReminderStatuses.failed,
     inbox_recorded: inbox.recorded,
     inbox_failed: inbox.failed,
     inbox_unrouted: inbox.unrouted,
