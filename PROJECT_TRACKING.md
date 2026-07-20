@@ -169,7 +169,7 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - A migration 055 adicionou ator, origem e chave de idempotência aos movimentos, além de RPCs transacionais para compra e saída. As funções usam travas no banco, custo médio e constraint de saldo não negativo.
 - Compras continuam gerando despesa `stock_purchase` no financeiro unificado. A API financeira foi liberada para tenants de catálogo, permitindo que despesas dos Planos 4 e 5 apareçam junto ao financeiro de pedidos.
 - A prévia em produção sob `ROLLBACK` validou Salão e Plano 4, repetição idempotente e rejeição de saída acima do saldo. A migration foi aplicada sem alterar os dois produtos reais já existentes no Salão de Beleza.
-- A integração entre item de catálogo e produto de estoque será feita no fluxo de confirmação do pedido; não haverá um segundo saldo específico para pedidos.
+- O vínculo entre item de catálogo e produto de estoque ficou em `standby`, fora do bloqueador de lançamento. O uso prático raramente é 1:1; uma eventual extensão deverá avaliar composição/receita com múltiplos insumos e baixa proporcional, sem criar um segundo saldo.
 
 ### n8n / WhatsApp
 
@@ -540,6 +540,7 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 
 - Roadmap detalhado de botões, listas, busca tolerante e confirmações salvo em `docs/whatsapp-interactive-roadmap.md`.
 - Planejar bloqueios extraordinarios de agenda por intervalo continuo, por tenant ou profissional (ex.: terca 14h ate quinta 10h), com deteccao de conflito em agendamentos existentes.
+- Avaliar somente após uso real se catálogo e estoque precisam de composição/receita de insumos; não implementar vínculo direto item-produto por padrão.
 
 1. Evoluir mensagens WhatsApp para botoes/listas interativas quando o uso em producao estiver liberado.
 2. Planejar workflow WhatsApp de restaurante separado do fluxo de agenda/cobranca, usando `tenant_menu_groups`, `tenant_menu_items` e `tenant_restaurant_orders`.

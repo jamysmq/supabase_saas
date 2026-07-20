@@ -93,7 +93,6 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Permitir revisar, alterar e cancelar o carrinho.
 - [ ] Confirmar pedido por botões.
 - [ ] Registrar o pedido no tenant correto com idempotência.
-- [ ] Integrar a baixa automática do estoque à confirmação do pedido.
 - [ ] Consultar e atualizar o status do pedido.
 - [ ] Refletir pagamento e baixa no financeiro.
 - [ ] Respeitar a janela de atendimento humano.
@@ -192,5 +191,6 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 - [ ] Conciliação automática de Pix, caso não entre no MVP.
 - [ ] Catálogo nativo da Meta e mensagens de produto.
+- [ ] Avaliar a viabilidade de vincular itens vendidos a insumos de estoque por composição/receita; não presumir relação direta de um item para um produto.
 - [ ] Métricas de abandono, fallback e handoff.
 - [ ] Painel de saúde dos workflows e webhooks.
