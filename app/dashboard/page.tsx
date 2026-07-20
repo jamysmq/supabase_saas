@@ -10,7 +10,7 @@ import {
   tenantCanUseAppointments,
   tenantCanUseBilling,
   tenantCanUseCatalog,
-  tenantCanUseSalonInventory,
+  tenantCanUseInventory,
 } from '../../src/lib/plan-features'
 
 type TenantUser = {
@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const canUseBilling = tenantCanUseBilling(tenantPlan)
   const canUseAppointments = tenantCanUseAppointments(tenantPlan)
   const canUseCatalog = tenantCanUseCatalog(tenantPlan)
-  const canUseSalonInventory = tenantCanUseSalonInventory(tenantPlan, businessType)
+  const canUseInventory = tenantCanUseInventory(tenantPlan, businessType)
   const canUseFinance = canUseCatalog || (canUseAppointments && businessType === 'salon')
 
   const navigationItems = [
@@ -67,17 +67,17 @@ export default function DashboardPage() {
           title: 'Agenda',
           description: 'Gerencie atendimentos, consultas e horários.',
         },
-        ...(businessType === 'salon' && canUseSalonInventory
-          ? [{
-              href: '/salon-inventory',
-              title: 'Estoque',
-              description: 'Controle produtos comprados e custos lancados no financeiro.',
-            }]
-          : []),
         {
           href: '/appointment-history?from=dashboard',
           title: 'Histórico de agendamentos',
           description: 'Consulte atendimentos realizados, cancelados e excluídos.',
+        }]
+      : []),
+    ...(canUseInventory
+      ? [{
+          href: '/inventory',
+          title: 'Estoque',
+          description: 'Controle entradas, saídas, saldos e custos dos produtos.',
         }]
       : []),
     ...(canUseCatalog

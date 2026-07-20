@@ -3,6 +3,7 @@ import {
   tenantCanUseAppointments as planCanUseAppointments,
   tenantCanUseBilling as planCanUseBilling,
   tenantCanUseCatalog as planCanUseCatalog,
+  tenantCanUseInventory as planCanUseInventory,
   tenantCanUseRestaurant as planCanUseRestaurant,
   tenantCanUseSalonInventory as planCanUseSalonInventory,
 } from './plan-features'
@@ -100,4 +101,11 @@ export function tenantCanUseSalonInventory(tenant: {
   business_type?: string | null
 }) {
   return planCanUseSalonInventory(tenant.plan, tenant.business_type)
+}
+
+export function tenantCanUseInventory(tenant: {
+  plan?: string | null
+  business_type?: string | null
+}) {
+  return planCanUseInventory(tenant.plan, tenant.business_type)
 }

@@ -162,6 +162,15 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Financeiro unificado em `/financeiro`: junta receita de pedidos, atendimentos e despesas de estoque numa unica tela, com filtro de periodo, resumo por dia, exportacao CSV e PDF. As telas antigas `/restaurant-finance` e `/service-revenue` foram removidas (a API `/api/service-revenue` continua existindo como fonte de dados).
 - Plataforma e cadastro publico passaram a listar os novos tipos de negocio.
 
+### Estoque transversal (2026-07-20)
+
+- O estoque originalmente criado para salões foi generalizado para Salão e tenants dos Planos 4 e 5. As tabelas físicas `tenant_salon_inventory_*` foram preservadas para não mover nem duplicar dados de produção.
+- A capability `tenantCanUseInventory`, a tela `/inventory` e a API `/api/inventory` formam o contrato genérico; `/salon-inventory` e `/api/salon-inventory` permanecem retrocompatíveis.
+- A migration 055 adicionou ator, origem e chave de idempotência aos movimentos, além de RPCs transacionais para compra e saída. As funções usam travas no banco, custo médio e constraint de saldo não negativo.
+- Compras continuam gerando despesa `stock_purchase` no financeiro unificado. A API financeira foi liberada para tenants de catálogo, permitindo que despesas dos Planos 4 e 5 apareçam junto ao financeiro de pedidos.
+- A prévia em produção sob `ROLLBACK` validou Salão e Plano 4, repetição idempotente e rejeição de saída acima do saldo. A migration foi aplicada sem alterar os dois produtos reais já existentes no Salão de Beleza.
+- A integração entre item de catálogo e produto de estoque será feita no fluxo de confirmação do pedido; não haverá um segundo saldo específico para pedidos.
+
 ### n8n / WhatsApp
 
 - Integracao com n8n via API confirmada usando `N8N_BASE_URL` e `N8N_API_KEY`.

@@ -75,6 +75,16 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 ## Bloqueadores do lançamento
 
+### Estoque transversal
+
+- [x] Reaproveitar o estoque existente do Salão sem duplicar tabelas ou saldos.
+- [x] Liberar o módulo para Salão e tenants dos Planos 4 e 5.
+- [x] Registrar entradas com SKU, fornecedor, quantidade, custo médio e despesa financeira.
+- [x] Registrar saídas auditadas sem permitir saldo negativo.
+- [x] Tornar entradas e saídas idempotentes para evitar movimentação duplicada.
+- [x] Exibir produtos, saldos, custo total e histórico de movimentações no painel.
+- [x] Validar a migration 055 em produção para Salão e Plano 4.
+
 ### Catálogo, pedidos e estoque — Planos 4 e 5
 
 - [ ] Apresentar categorias e itens em listas interativas.
@@ -83,7 +93,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Permitir revisar, alterar e cancelar o carrinho.
 - [ ] Confirmar pedido por botões.
 - [ ] Registrar o pedido no tenant correto com idempotência.
-- [ ] Dar baixa no estoque sem permitir quantidade negativa.
+- [ ] Integrar a baixa automática do estoque à confirmação do pedido.
 - [ ] Consultar e atualizar o status do pedido.
 - [ ] Refletir pagamento e baixa no financeiro.
 - [ ] Respeitar a janela de atendimento humano.

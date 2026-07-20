@@ -1,4 +1,4 @@
-import { requireTenantUser, tenantCanUseSalonInventory } from '../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseInventory } from '../../../src/lib/tenant-admin'
 import { parseMoneyToCents } from '../../../src/lib/money'
 
 function errorResponse(message: string, status = 400, details?: string) {
@@ -22,8 +22,8 @@ export async function GET(request: Request) {
 
   if (result.error) return result.error
 
-  if (!tenantCanUseSalonInventory(result.tenant)) {
-    return errorResponse('Estoque disponivel apenas para saloes com agenda.', 403)
+  if (!tenantCanUseInventory(result.tenant)) {
+    return errorResponse('Estoque não disponível para este plano.', 403)
   }
 
   const [productsResult, movementsResult] = await Promise.all([
@@ -44,6 +44,8 @@ export async function GET(request: Request) {
         total_cost_cents,
         supplier,
         notes,
+        tenant_user_id,
+        source,
         created_at,
         product:tenant_salon_inventory_products(name, sku)
       `)
@@ -71,8 +73,8 @@ export async function POST(request: Request) {
 
   if (result.error) return result.error
 
-  if (!tenantCanUseSalonInventory(result.tenant)) {
-    return errorResponse('Estoque disponivel apenas para saloes com agenda.', 403)
+  if (!tenantCanUseInventory(result.tenant)) {
+    return errorResponse('Estoque não disponível para este plano.', 403)
   }
 
   const body = await request.json().catch(() => null)
@@ -81,18 +83,67 @@ export async function POST(request: Request) {
     return errorResponse('Dados invalidos. Recarregue a pagina e tente novamente.')
   }
 
-  const name = String(body.name || '').trim()
-  const supplier = String(body.supplier || '').trim()
+  const action = String(body.action || 'purchase').trim()
   const notes = String(body.notes || '').trim()
   const quantity = parseQuantity(body.quantity)
-  const unitCostCents = parseMoneyToCents(body.unit_cost)
+  const idempotencyKey = String(
+    request.headers.get('x-idempotency-key') || body.idempotency_key || ''
+  ).trim() || null
 
-  if (!name || name.length > 120) {
-    return errorResponse('Informe o nome do produto.')
+  if (idempotencyKey && idempotencyKey.length > 200) {
+    return errorResponse('Chave de idempotência inválida.')
   }
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
     return errorResponse('Informe uma quantidade maior que zero.')
+  }
+
+  if (action === 'usage') {
+    const productId = String(body.product_id || '').trim()
+
+    if (!productId) {
+      return errorResponse('Selecione o produto para registrar a saída.')
+    }
+
+    const { data, error } = await result.supabase.rpc(
+      'admin_create_inventory_usage',
+      {
+        p_tenant_id: result.tenantUser.tenant_id,
+        p_tenant_user_id: result.tenantUser.id,
+        p_product_id: productId,
+        p_quantity: quantity,
+        p_notes: notes || null,
+        p_idempotency_key: idempotencyKey,
+        p_source: 'panel',
+      }
+    )
+
+    if (error) {
+      if (error.message.includes('insufficient_inventory')) {
+        return errorResponse('Saldo insuficiente para registrar esta saída.', 409)
+      }
+
+      if (error.message.includes('inventory_product_not_found')) {
+        return errorResponse('Produto não encontrado.', 404)
+      }
+
+      return errorResponse('Não foi possível registrar a saída de estoque.', 500, error.message)
+    }
+
+    return Response.json({ ok: true, result: data?.[0] ?? null })
+  }
+
+  if (action !== 'purchase') {
+    return errorResponse('Tipo de movimentação inválido.')
+  }
+
+  const name = String(body.name || '').trim()
+  const sku = String(body.sku || '').trim()
+  const supplier = String(body.supplier || '').trim()
+  const unitCostCents = parseMoneyToCents(body.unit_cost)
+
+  if (!name || name.length > 120) {
+    return errorResponse('Informe o nome do produto.')
   }
 
   if (!Number.isFinite(unitCostCents) || unitCostCents <= 0) {
@@ -100,15 +151,18 @@ export async function POST(request: Request) {
   }
 
   const { data, error } = await result.supabase.rpc(
-    'admin_create_salon_inventory_purchase',
+    'admin_create_inventory_purchase',
     {
       p_tenant_id: result.tenantUser.tenant_id,
+      p_tenant_user_id: result.tenantUser.id,
       p_name: name,
       p_quantity: quantity,
       p_unit_cost_cents: unitCostCents,
-      p_sku: null,
+      p_sku: sku || null,
       p_supplier: supplier || null,
       p_notes: notes || null,
+      p_idempotency_key: idempotencyKey,
+      p_source: 'panel',
     }
   )
 

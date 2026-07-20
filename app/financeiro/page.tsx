@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
-import { tenantCanUseAppointments, tenantCanUseCatalog } from '../../src/lib/plan-features'
+import { tenantCanUseCatalog, tenantCanUseInventory } from '../../src/lib/plan-features'
 import { formatCurrencyFromCents } from '../../src/lib/money'
 import { openNativePicker } from '../../src/lib/open-native-picker'
 
@@ -130,9 +130,9 @@ export default function FinancePage() {
     const plan = result.tenant?.plan
     const businessType = result.tenant?.business_type
     const canUseCatalog = tenantCanUseCatalog(plan)
-    const canUseServiceRevenue = tenantCanUseAppointments(plan) && businessType === 'salon'
+    const canUseOperationalFinance = tenantCanUseInventory(plan, businessType)
 
-    if (!canUseCatalog && !canUseServiceRevenue) {
+    if (!canUseCatalog && !canUseOperationalFinance) {
       router.push('/dashboard')
       return
     }
@@ -163,12 +163,12 @@ export default function FinancePage() {
       setCatalogRevenue(data.revenueEvents ?? [])
     }
 
-    if (canUseServiceRevenue) {
+    if (canUseOperationalFinance) {
       const response = await fetch('/api/service-revenue', { headers })
 
       if (!response.ok) {
         const data = await response.json().catch(() => null)
-        setError(data?.message || 'Não foi possível carregar o financeiro de atendimentos.')
+        setError(data?.message || 'Não foi possível carregar o financeiro operacional.')
         setLoading(false)
         return
       }

@@ -23,6 +23,13 @@ export function tenantCanUseSalonInventory(
   return businessType === 'salon' && tenantCanUseAppointments(plan)
 }
 
+export function tenantCanUseInventory(
+  plan?: string | null,
+  businessType?: string | null
+) {
+  return tenantCanUseCatalog(plan) || tenantCanUseSalonInventory(plan, businessType)
+}
+
 export function tenantCanUseTableReservations(plan?: string | null) {
   return plan === 'plan5'
 }

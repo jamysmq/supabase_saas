@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatCurrencyFromCents, formatMoneyInput } from '../../src/lib/money'
-import { tenantCanUseSalonInventory } from '../../src/lib/plan-features'
+import { tenantCanUseInventory } from '../../src/lib/plan-features'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
 
@@ -27,6 +27,7 @@ type Movement = {
   total_cost_cents: number
   supplier: string | null
   notes: string | null
+  source: string
   created_at: string
   product: {
     name: string | null
@@ -36,17 +37,31 @@ type Movement = {
 
 type InventoryForm = {
   name: string
+  sku: string
   quantity: string
   unit_cost: string
   supplier: string
   notes: string
 }
 
+type UsageForm = {
+  product_id: string
+  quantity: string
+  notes: string
+}
+
 const emptyForm: InventoryForm = {
   name: '',
+  sku: '',
   quantity: '1',
   unit_cost: '',
   supplier: '',
+  notes: '',
+}
+
+const emptyUsageForm: UsageForm = {
+  product_id: '',
+  quantity: '1',
   notes: '',
 }
 
@@ -66,14 +81,26 @@ function formatQuantity(value: number) {
   }).format(value)
 }
 
+function movementTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    purchase: 'Entrada',
+    usage: 'Saída',
+    adjustment: 'Ajuste',
+  }
+
+  return labels[type] ?? type
+}
+
 export default function SalonInventoryPage() {
   const router = useRouter()
 
   const [products, setProducts] = useState<Product[]>([])
   const [movements, setMovements] = useState<Movement[]>([])
   const [form, setForm] = useState<InventoryForm>(emptyForm)
+  const [usageForm, setUsageForm] = useState<UsageForm>(emptyUsageForm)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [usingStock, setUsingStock] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -99,7 +126,7 @@ export default function SalonInventoryPage() {
       return
     }
 
-    if (!tenantCanUseSalonInventory(result.tenant?.plan, result.tenant?.business_type)) {
+    if (!tenantCanUseInventory(result.tenant?.plan, result.tenant?.business_type)) {
       router.push('/dashboard')
       return
     }
@@ -113,7 +140,7 @@ export default function SalonInventoryPage() {
       return
     }
 
-    const response = await fetch('/api/salon-inventory', {
+    const response = await fetch('/api/inventory', {
       headers: {
         Authorization: `Bearer ${session.access_token}`,
       },
@@ -155,13 +182,14 @@ export default function SalonInventoryPage() {
       return
     }
 
-    const response = await fetch('/api/salon-inventory', {
+    const response = await fetch('/api/inventory', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
+        'X-Idempotency-Key': crypto.randomUUID(),
       },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, action: 'purchase' }),
     })
 
     setSaving(false)
@@ -174,6 +202,44 @@ export default function SalonInventoryPage() {
 
     setSuccess('Entrada de estoque registrada.')
     setForm(emptyForm)
+    await load()
+  }
+
+  async function registerUsage(event: FormEvent) {
+    event.preventDefault()
+    setUsingStock(true)
+    setError('')
+    setSuccess('')
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/inventory', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': crypto.randomUUID(),
+      },
+      body: JSON.stringify({ ...usageForm, action: 'usage' }),
+    })
+
+    setUsingStock(false)
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || 'Não foi possível registrar a saída de estoque.')
+      return
+    }
+
+    setSuccess('Saída de estoque registrada.')
+    setUsageForm(emptyUsageForm)
     await load()
   }
 
@@ -197,7 +263,7 @@ export default function SalonInventoryPage() {
             <div>
               <h1 className="text-2xl font-bold">Estoque</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Registre produtos comprados para o salao e acompanhe o custo no financeiro.
+                Controle entradas, saídas e saldos. Compras entram como despesa no financeiro.
               </p>
             </div>
 
@@ -229,11 +295,12 @@ export default function SalonInventoryPage() {
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[360px_1fr]">
+          <div className="space-y-4">
           <form onSubmit={save} className="space-y-4 rounded-2xl bg-white p-5 shadow">
             <div>
               <h2 className="font-bold">Adicionar produto</h2>
               <p className="mt-1 text-sm text-gray-500">
-                O valor total entra como despesa no financeiro de atendimentos.
+                O valor total da compra entra como despesa no financeiro.
               </p>
             </div>
 
@@ -245,6 +312,16 @@ export default function SalonInventoryPage() {
                 className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
                 maxLength={120}
                 required
+              />
+            </label>
+
+            <label className="block text-sm font-medium">
+              SKU ou código
+              <input
+                value={form.sku}
+                onChange={(event) => setForm({ ...form, sku: event.target.value })}
+                className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                maxLength={80}
               />
             </label>
 
@@ -306,6 +383,64 @@ export default function SalonInventoryPage() {
             </button>
           </form>
 
+          <form onSubmit={registerUsage} className="space-y-4 rounded-2xl bg-white p-5 shadow">
+            <div>
+              <h2 className="font-bold">Registrar saída</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                O sistema bloqueia automaticamente qualquer saída maior que o saldo.
+              </p>
+            </div>
+
+            <label className="block text-sm font-medium">
+              Produto
+              <select
+                value={usageForm.product_id}
+                onChange={(event) => setUsageForm({ ...usageForm, product_id: event.target.value })}
+                className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                required
+              >
+                <option value="">Selecione</option>
+                {products
+                  .filter((product) => Number(product.current_quantity) > 0)
+                  .map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} — saldo {formatQuantity(Number(product.current_quantity))}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <label className="block text-sm font-medium">
+              Quantidade
+              <input
+                value={usageForm.quantity}
+                onChange={(event) => setUsageForm({ ...usageForm, quantity: event.target.value })}
+                className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 font-normal"
+                inputMode="decimal"
+                required
+              />
+            </label>
+
+            <label className="block text-sm font-medium">
+              Motivo ou observação
+              <textarea
+                value={usageForm.notes}
+                onChange={(event) => setUsageForm({ ...usageForm, notes: event.target.value })}
+                className="mt-1 min-h-20 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                maxLength={500}
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={usingStock || products.every((product) => Number(product.current_quantity) <= 0)}
+              className="w-full rounded-lg bg-amber-700 py-2 font-medium text-white disabled:opacity-50"
+            >
+              {usingStock ? 'Registrando...' : 'Confirmar saída'}
+            </button>
+          </form>
+          </div>
+
           <div className="space-y-4">
             <section className="rounded-2xl bg-white p-5 shadow">
               <h2 className="font-bold">Produtos em estoque</h2>
@@ -348,15 +483,16 @@ export default function SalonInventoryPage() {
             </section>
 
             <section className="rounded-2xl bg-white p-5 shadow">
-              <h2 className="font-bold">Historico de entradas</h2>
+              <h2 className="font-bold">Histórico de movimentações</h2>
               {movements.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-500">Nenhuma entrada registrada.</p>
+                <p className="py-8 text-center text-sm text-gray-500">Nenhuma movimentação registrada.</p>
               ) : (
                 <div className="mt-3 overflow-x-auto">
                   <table className="w-full min-w-[680px] text-sm">
                     <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
                       <tr>
                         <th className="py-2 pr-3 font-medium">Data</th>
+                        <th className="py-2 pr-3 font-medium">Tipo</th>
                         <th className="py-2 pr-3 font-medium">Produto</th>
                         <th className="py-2 pr-3 text-right font-medium">Qtd.</th>
                         <th className="py-2 pr-3 text-right font-medium">Valor un.</th>
@@ -369,6 +505,9 @@ export default function SalonInventoryPage() {
                         <tr key={movement.id} className="hover:bg-gray-50">
                           <td className="py-2 pr-3 text-xs text-gray-600">
                             {formatDateTime(movement.created_at)}
+                          </td>
+                          <td className="py-2 pr-3 font-medium">
+                            {movementTypeLabel(movement.movement_type)}
                           </td>
                           <td className="py-2 pr-3">
                             <div className="font-medium">{movement.product?.name || 'Produto'}</div>
@@ -387,8 +526,10 @@ export default function SalonInventoryPage() {
                           <td className="py-2 pr-3 text-gray-600">
                             {movement.supplier || '-'}
                           </td>
-                          <td className="py-2 text-right font-semibold text-red-700 tabular-nums">
-                            -{formatCurrencyFromCents(movement.total_cost_cents)}
+                          <td className={`py-2 text-right font-semibold tabular-nums ${
+                            movement.movement_type === 'purchase' ? 'text-red-700' : 'text-amber-700'
+                          }`}>
+                            {formatCurrencyFromCents(movement.total_cost_cents)}
                           </td>
                         </tr>
                       ))}

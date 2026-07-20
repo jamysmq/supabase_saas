@@ -1,4 +1,4 @@
-import { requireTenantUser, tenantCanUseAppointments } from '../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseInventory } from '../../../src/lib/tenant-admin'
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -13,8 +13,8 @@ export async function GET(request: Request) {
 
   if (result.error) return result.error
 
-  if (!tenantCanUseAppointments(result.tenant) || result.tenant.business_type !== 'salon') {
-    return errorResponse('Financeiro de atendimentos disponível apenas para salões com agenda.', 403)
+  if (!tenantCanUseInventory(result.tenant)) {
+    return errorResponse('Financeiro operacional não disponível para este plano.', 403)
   }
 
   const url = new URL(request.url)
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
   const { data, error } = await query
 
   if (error) {
-    return errorResponse('Não foi possível listar o financeiro de atendimentos.', 500, error.message)
+    return errorResponse('Não foi possível listar o financeiro operacional.', 500, error.message)
   }
 
   return Response.json({ events: data ?? [] })
