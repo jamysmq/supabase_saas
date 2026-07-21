@@ -705,10 +705,15 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - O Plano 3 base permanece em R$ 79,90/mês; o Plano 3 Plus totaliza R$ 159,80/mês, com R$ 79,90 registrados separadamente como extensão.
 - Migration `058_restore_plan3_base_presentation.sql` criada; a atualização equivalente do catálogo foi aplicada em produção pela API administrativa, pois o histórico remoto da CLI não reconhece as migrations anteriores e um `db push` tentaria reaplicar `001` a `057`.
 - Deploy final de produção `dpl_4FLMwX35iUfKhXLmp7BqRjuVW11S` publicado. Teste controlado confirmou `requested_plan=plan3_plus`, `resource_booking_plus_requested=true` e total de R$ 159,80; o registro sintético foi removido após a validação.
-- Aluguel de quadras passou a tratar a duração cadastrada como bloco padrão/mínimo: o cliente escolhe durações em intervalos de 30 minutos, até 8 horas, e pode alterar duração ou período sem reiniciar o atendimento.
+- Aluguel de quadras passou a tratar a duração cadastrada como bloco padrão/mínimo: o cliente escolhe durações em intervalos de 30 minutos, até 4 horas, e pode alterar duração ou período sem reiniciar o atendimento.
 - A disponibilidade valida todo o intervalo contínuo solicitado; o resumo informa início, fim, duração e preço proporcional ao bloco padrão. A reserva continua sendo um único agendamento.
 - Migration `059_variable_resource_booking_duration.sql` aplicada em produção via `db query --linked`. Teste oficial com a Quadra 1 confirmou 120 minutos e R$ 400,00 para o bloco base de 60 minutos/R$ 200,00.
 - App publicado em `dpl_EC7m9R2zYnSWx4ULmxSSymFxqx7x`; workflow `WA_TENANT_APPOINTMENTS_INBOUND_v1` (`X1lUop6Q5fh9uxTG`) atualizado, validado e reativado.
+- Em 2026-07-21, o fluxo foi refinado para oferecer 1h, 1h30, 2h, 2h30, 3h, 3h30 e 4h; paginação preserva a duração e trocar a duração reinicia a busca no primeiro horário.
+- CPF passou a aceitar entrada com ou sem pontuação e data de nascimento aceita DDMMAA, DDMMAAAA, espaços ou barras, nos workflows de agenda e cadastro/cobrança.
+- Os dois workflows foram republicados com leitura UTF-8 segura, eliminando os textos com acentuação corrompida, e permaneceram ativos.
+- Calendários nativos do front fecham após a seleção; menus do WhatsApp evitam títulos abreviados e mantêm `Ver mais horários`.
+- Deploy de produção concluído em `dpl_6pv9QKU8aMv8EP31ih72K6vTsx9E`.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 

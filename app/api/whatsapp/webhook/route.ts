@@ -300,6 +300,14 @@ function shortInteractiveTitle(value: string, maxLength: number) {
 }
 
 function compactAppointmentSlotTitle(value: string) {
+  const rangeMatch = value.trim().match(
+    /(\d{1,2}\/\d{1,2}).*?(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/
+  )
+
+  if (rangeMatch) {
+    return `${rangeMatch[1]} ${rangeMatch[2]}-${rangeMatch[3]}`
+  }
+
   const match = value.trim().match(/^([A-Za-zÀ-ÿ-]+),?\s+(\d{1,2}\/\d{1,2})\s+(?:às|as)\s+(\d{1,2}:\d{2})/i)
 
   if (!match) {
@@ -434,11 +442,15 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
       ? 'Sem turma'
       : `${isSignupPlanMenu ? 'Plano' : 'Turma'} ${option.number}`
     const title = isBillingSignupMenu ? signupOptionTitle : option.title
+    const preferredTitle = compactSlotTitle ?? title
+    const titleIsTooLong = preferredTitle.length > 24
 
     return {
       id: `${isBillingSignupMenu ? 'billing_signup_choice' : 'appointment_choice'}_${option.number}`,
-      title: compactSlotTitle ?? title,
-      ...((compactSlotTitle || isBillingSignupMenu) ? { description: shortInteractiveTitle(option.title, 72) } : {}),
+      title: titleIsTooLong ? `Opção ${option.number}` : preferredTitle,
+      ...((compactSlotTitle || isBillingSignupMenu || titleIsTooLong)
+        ? { description: shortInteractiveTitle(option.title, 72) }
+        : {}),
     }
   })
 
@@ -460,7 +472,10 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
     }
   }
 
-  if (options.length <= 3) {
+  const canUseButtons = options.length <= 3 &&
+    options.every((option) => option.title.length <= 20 && !option.description)
+
+  if (canUseButtons) {
     return {
       kind: 'buttons',
       body: isBillingSignupMenu ? body : cleanBody,
