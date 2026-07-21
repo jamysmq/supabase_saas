@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
@@ -822,7 +823,7 @@ export default function AppointmentsPage() {
             if (isUpdating) event.preventDefault()
           }}
           aria-disabled={isUpdating}
-          className={`flex h-9 w-full list-none items-center justify-between gap-2 rounded-lg border px-3 text-xs font-semibold shadow-sm transition hover:brightness-[0.98] [&::-webkit-details-marker]:hidden ${statusTone(appointment.status)} ${isUpdating ? 'cursor-wait opacity-60' : ''}`}
+          className={`flex h-8 w-full list-none items-center justify-between gap-2 rounded-lg border px-3 text-xs font-semibold shadow-sm transition hover:brightness-[0.98] [&::-webkit-details-marker]:hidden ${statusTone(appointment.status)} ${isUpdating ? 'cursor-wait opacity-60' : ''}`}
         >
           <span className="truncate">{isUpdating ? 'Salvando...' : statusLabel(appointment.status)}</span>
           <span aria-hidden="true" className="text-[10px] transition group-open:rotate-180">▼</span>
@@ -896,8 +897,8 @@ export default function AppointmentsPage() {
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-7xl space-y-4">
-        <section className="bg-white rounded-2xl shadow p-5">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+        <section className="relative overflow-hidden rounded-2xl bg-white p-5 shadow lg:min-h-[250px] lg:pr-[250px]">
+          <div className="relative z-10 mb-4 flex flex-wrap items-center gap-2">
             <button
               onClick={() => router.push('/dashboard')}
               className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
@@ -933,7 +934,7 @@ export default function AppointmentsPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="relative z-10 flex flex-col gap-4">
             <div className="space-y-4">
               <h1 className="text-2xl font-bold">Agenda</h1>
               <p className="text-sm text-gray-500 mt-1">
@@ -954,6 +955,14 @@ export default function AppointmentsPage() {
               </label>
             </div>
           </div>
+          <Image
+            src="/jack-agenda.png"
+            alt="Jack segurando um calendário e um lápis"
+            width={581}
+            height={640}
+            sizes="(min-width: 1024px) 220px, 1px"
+            className="pointer-events-none absolute right-5 top-4 hidden h-[220px] w-auto select-none object-contain lg:block"
+          />
         </section>
 
         {error && (
@@ -1013,11 +1022,12 @@ export default function AppointmentsPage() {
                                 {appointment.customer_phone_e164 || 'Sem contato'}
                               </p>
                             </div>
-                            <div className="flex shrink-0 gap-2">
+                            <div className="grid w-[118px] shrink-0 gap-1.5">
+                              {renderStatusControl(appointment)}
                               <button
                                 type="button"
                                 onClick={() => setSelectedAppointment(appointment)}
-                                className="h-9 rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 shadow-sm hover:bg-sky-100"
+                                className="h-8 rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 shadow-sm hover:bg-sky-100"
                               >
                                 Detalhes
                               </button>
@@ -1025,20 +1035,17 @@ export default function AppointmentsPage() {
                                 type="button"
                                 onClick={() => void deleteAppointment(appointment)}
                                 disabled={actingId === appointment.appointment_id}
-                                className="h-9 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-60"
+                                className="h-8 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-60"
                               >
                                 Excluir
                               </button>
                             </div>
                           </div>
-                          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_130px] items-end gap-3">
-                            <div className="min-w-0 text-xs text-gray-600">
-                              <p className="truncate font-medium">{appointment.bookable_resource_name || appointment.service_name || 'Sem serviço'}</p>
-                              <p className="truncate">
-                                {appointment.bookable_resource_name ? 'Aluguel de local' : appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
-                              </p>
-                            </div>
-                            {renderStatusControl(appointment)}
+                          <div className="mt-3 min-w-0 text-xs text-gray-600">
+                            <p className="truncate font-medium">{appointment.bookable_resource_name || appointment.service_name || 'Sem serviço'}</p>
+                            <p className="truncate">
+                              {appointment.bookable_resource_name ? 'Aluguel de local' : appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
+                            </p>
                           </div>
                         </article>
                       ))}
@@ -1047,18 +1054,16 @@ export default function AppointmentsPage() {
                   <div className="hidden md:block">
                     <table className="w-full table-fixed text-sm">
                       <colgroup>
-                        <col className="w-[17%]" />
-                        <col className="w-[29%]" />
-                        <col className="w-[26%]" />
-                        <col className="w-[14%]" />
-                        <col className="w-[14%]" />
+                        <col className="w-[18%]" />
+                        <col className="w-[30%]" />
+                        <col className="w-[28%]" />
+                        <col className="w-[24%]" />
                       </colgroup>
                       <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
                         <tr>
                           <th className="py-2.5 pr-3 font-semibold">Horário</th>
                           <th className="py-2.5 pr-3 font-semibold">Cliente</th>
                           <th className="py-2.5 pr-3 font-semibold">Atendimento</th>
-                          <th className="py-2.5 pr-3 font-semibold">Status</th>
                           <th className="py-2.5 text-right font-semibold">Ação</th>
                         </tr>
                       </thead>
@@ -1085,15 +1090,13 @@ export default function AppointmentsPage() {
                                 {appointment.bookable_resource_name ? 'Aluguel de local' : appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
                               </div>
                             </td>
-                            <td className="py-3 pr-2">
-                              {renderStatusControl(appointment)}
-                            </td>
                             <td className="py-3 text-right">
-                              <div className="grid gap-2">
+                              <div className="ml-auto grid max-w-[150px] gap-1.5">
+                                {renderStatusControl(appointment)}
                                 <button
                                   type="button"
                                   onClick={() => setSelectedAppointment(appointment)}
-                                  className="h-9 w-full rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 shadow-sm transition hover:bg-sky-100"
+                                  className="h-8 w-full rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 shadow-sm transition hover:bg-sky-100"
                                 >
                                   Detalhes
                                 </button>
@@ -1101,7 +1104,7 @@ export default function AppointmentsPage() {
                                   type="button"
                                   onClick={() => void deleteAppointment(appointment)}
                                   disabled={actingId === appointment.appointment_id}
-                                  className="h-9 w-full rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-60"
+                                  className="h-8 w-full rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-60"
                                 >
                                   Excluir
                                 </button>
