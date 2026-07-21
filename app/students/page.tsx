@@ -119,6 +119,7 @@ export default function StudentsPage() {
   const [saving, setSaving] = useState(false)
   const [groupSaving, setGroupSaving] = useState(false)
   const [billingStatusSavingId, setBillingStatusSavingId] = useState('')
+  const [studentStatusSavingId, setStudentStatusSavingId] = useState('')
   const [error, setError] = useState('')
   const [groupError, setGroupError] = useState('')
   const [groupSuccess, setGroupSuccess] = useState('')
@@ -697,16 +698,31 @@ export default function StudentsPage() {
     const confirmed = confirm(`Desativar ${student.full_name}?`)
     if (!confirmed) return
 
-    const { error: deactivateError } = await supabase.rpc(
-      'admin_deactivate_customer',
-      {
-        p_customer_id: student.id,
-        p_reason: 'Desativado pelo painel no cadastro de clientes',
-      }
-    )
+    setStudentStatusSavingId(student.id)
+    setError('')
 
-    if (deactivateError) {
-      setError(`Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
+    const token = await getSessionToken()
+
+    if (!token) {
+      setStudentStatusSavingId('')
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch(`/api/tenant-customers/${student.id}/status`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_active: false }),
+    })
+
+    setStudentStatusSavingId('')
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || `Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 
@@ -853,24 +869,25 @@ export default function StudentsPage() {
                         </button>
                       )}
 
-                      <div className="mt-3 grid grid-cols-3 gap-2">
+                      <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                           onClick={() => openEditor(student)}
-                          className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
+                          className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => router.push(`/students/${student.id}/move`)}
-                          className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs font-medium"
+                          className="h-10 rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 hover:bg-sky-100"
                         >
                           Mover
                         </button>
                         <button
-                          onClick={() => deactivateStudent(student)}
-                          className="h-9 rounded-lg bg-red-50 px-2 text-xs font-medium text-red-700"
+                          onClick={() => void deactivateStudent(student)}
+                          disabled={studentStatusSavingId === student.id}
+                          className="col-span-2 h-10 rounded-lg border border-red-100 bg-red-50 px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-wait disabled:opacity-60"
                         >
-                          Desativar
+                          {studentStatusSavingId === student.id ? 'Desativando...' : 'Desativar'}
                         </button>
                       </div>
                     </article>
@@ -882,11 +899,11 @@ export default function StudentsPage() {
             <div className="hidden md:block">
               <table className="w-full table-fixed text-sm">
                 <colgroup>
-                  <col className="w-[29%]" />
+                  <col className="w-[27%]" />
                   <col className="w-[17%]" />
                   <col className="w-[15%]" />
-                  <col className="w-[19%]" />
-                  <col className="w-[20%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[23%]" />
                 </colgroup>
                 <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
                   <tr>
@@ -950,24 +967,25 @@ export default function StudentsPage() {
                             )}
                           </td>
                           <td className="py-2 text-right">
-                            <div className="flex flex-wrap justify-end gap-1.5">
+                            <div className="ml-auto grid max-w-[180px] grid-cols-2 gap-1.5">
                               <button
                                 onClick={() => openEditor(student)}
-                                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs font-medium"
+                                className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs font-semibold text-gray-700 hover:bg-gray-100"
                               >
                                 Editar
                               </button>
                               <button
                                 onClick={() => router.push(`/students/${student.id}/move`)}
-                                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs font-medium"
+                                className="h-8 rounded-md border border-sky-200 bg-sky-50 px-2 text-xs font-semibold text-sky-800 hover:bg-sky-100"
                               >
                                 Mover
                               </button>
                               <button
-                                onClick={() => deactivateStudent(student)}
-                                className="h-7 rounded-md border border-red-100 bg-red-50 px-2 text-xs font-medium text-red-700"
+                                onClick={() => void deactivateStudent(student)}
+                                disabled={studentStatusSavingId === student.id}
+                                className="col-span-2 h-8 rounded-md border border-red-100 bg-red-50 px-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-wait disabled:opacity-60"
                               >
-                                Desativar
+                                {studentStatusSavingId === student.id ? 'Desativando...' : 'Desativar'}
                               </button>
                             </div>
                           </td>

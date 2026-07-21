@@ -24,6 +24,7 @@ export default function PendingPaymentsPage() {
   const [loading, setLoading] = useState(true)
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [items, setItems] = useState<PendingPayment[]>([])
+  const [deactivatingCustomerId, setDeactivatingCustomerId] = useState('')
   const [error, setError] = useState('')
   const labels = getBusinessLabels(businessType)
 
@@ -120,16 +121,32 @@ export default function PendingPaymentsPage() {
 
     if (!confirmed) return
 
-    const { error } = await supabase.rpc(
-      'admin_deactivate_customer',
-      {
-        p_customer_id: customerId,
-        p_reason: 'Desativado pelo painel',
-      }
-    )
+    setDeactivatingCustomerId(customerId)
 
-    if (error) {
-      alert(`Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setDeactivatingCustomerId('')
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch(`/api/tenant-customers/${customerId}/status`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_active: false }),
+    })
+
+    setDeactivatingCustomerId('')
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      alert(data?.message || `Não foi possível desativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 
@@ -248,10 +265,11 @@ function statusLabel(status: string) {
                 </button>
 
                 <button
-                  onClick={() => deactivateCustomer(item.customer_id)}
-                  className="h-9 rounded-lg bg-red-50 px-3 text-xs font-medium text-red-700 md:w-28"
+                  onClick={() => void deactivateCustomer(item.customer_id)}
+                  disabled={deactivatingCustomerId === item.customer_id}
+                  className="h-9 rounded-lg bg-red-50 px-3 text-xs font-medium text-red-700 disabled:cursor-wait disabled:opacity-60 md:w-28"
                 >
-                  Desativar
+                  {deactivatingCustomerId === item.customer_id ? 'Aguarde...' : 'Desativar'}
                 </button>
               </div>
             </div>

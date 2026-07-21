@@ -33,6 +33,7 @@ export function InactiveStudentsPanel({ embedded = false }: { embedded?: boolean
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [reactivatingStudentId, setReactivatingStudentId] = useState('')
   const [error, setError] = useState('')
   const labels = getBusinessLabels(businessType)
 
@@ -110,15 +111,33 @@ export function InactiveStudentsPanel({ embedded = false }: { embedded?: boolean
     const confirmed = confirm(`Reativar ${student.full_name}?`)
     if (!confirmed) return
 
-    const { error: reactivateError } = await supabase.rpc(
-      'admin_reactivate_customer',
-      {
-        p_customer_id: student.id,
-      }
-    )
+    setReactivatingStudentId(student.id)
+    setError('')
 
-    if (reactivateError) {
-      setError(`Não foi possível reativar o ${labels.customerSingular.toLowerCase()}.`)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setReactivatingStudentId('')
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch(`/api/tenant-customers/${student.id}/status`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_active: true }),
+    })
+
+    setReactivatingStudentId('')
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      setError(data?.message || `Não foi possível reativar o ${labels.customerSingular.toLowerCase()}.`)
       return
     }
 
@@ -183,10 +202,11 @@ export function InactiveStudentsPanel({ embedded = false }: { embedded?: boolean
                   </div>
 
                   <button
-                    onClick={() => reactivateStudent(student)}
-                    className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-medium text-white"
+                    onClick={() => void reactivateStudent(student)}
+                    disabled={reactivatingStudentId === student.id}
+                    className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60"
                   >
-                    Reativar
+                    {reactivatingStudentId === student.id ? 'Reativando...' : 'Reativar'}
                   </button>
                 </div>
               ))
