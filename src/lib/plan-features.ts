@@ -6,6 +6,10 @@ export function tenantCanUseAppointments(plan?: string | null) {
   return plan === 'plan2' || plan === 'plan3'
 }
 
+export function tenantCanUseOperationalFinance(plan?: string | null) {
+  return tenantCanUseAppointments(plan)
+}
+
 // Motor de catálogo + pedidos (ex-"restaurante"). Disponível nos planos 4 e 5.
 export function tenantCanUseCatalog(plan?: string | null) {
   return plan === 'plan4' || plan === 'plan5'

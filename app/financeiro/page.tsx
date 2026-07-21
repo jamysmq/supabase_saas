@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
-import { tenantCanUseCatalog, tenantCanUseInventory } from '../../src/lib/plan-features'
+import { tenantCanUseCatalog, tenantCanUseOperationalFinance } from '../../src/lib/plan-features'
 import { formatCurrencyFromCents } from '../../src/lib/money'
 import { openNativePicker } from '../../src/lib/open-native-picker'
 
@@ -128,9 +128,8 @@ export default function FinancePage() {
     }
 
     const plan = result.tenant?.plan
-    const businessType = result.tenant?.business_type
     const canUseCatalog = tenantCanUseCatalog(plan)
-    const canUseOperationalFinance = tenantCanUseInventory(plan, businessType)
+    const canUseOperationalFinance = tenantCanUseOperationalFinance(plan)
 
     if (!canUseCatalog && !canUseOperationalFinance) {
       router.push('/dashboard')

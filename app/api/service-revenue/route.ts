@@ -1,4 +1,4 @@
-import { requireTenantUser, tenantCanUseInventory } from '../../../src/lib/tenant-admin'
+import { requireTenantUser, tenantCanUseOperationalFinance } from '../../../src/lib/tenant-admin'
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   if (result.error) return result.error
 
-  if (!tenantCanUseInventory(result.tenant)) {
+  if (!tenantCanUseOperationalFinance(result.tenant)) {
     return errorResponse('Financeiro operacional não disponível para este plano.', 403)
   }
 

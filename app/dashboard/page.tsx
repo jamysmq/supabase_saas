@@ -11,6 +11,7 @@ import {
   tenantCanUseBilling,
   tenantCanUseCatalog,
   tenantCanUseInventory,
+  tenantCanUseOperationalFinance,
 } from '../../src/lib/plan-features'
 
 type TenantUser = {
@@ -36,7 +37,7 @@ export default function DashboardPage() {
   const canUseAppointments = tenantCanUseAppointments(tenantPlan)
   const canUseCatalog = tenantCanUseCatalog(tenantPlan)
   const canUseInventory = tenantCanUseInventory(tenantPlan, businessType)
-  const canUseFinance = canUseCatalog || (canUseAppointments && businessType === 'salon')
+  const canUseFinance = canUseCatalog || tenantCanUseOperationalFinance(tenantPlan)
 
   const navigationItems = [
     ...(canUseBilling
