@@ -3,7 +3,7 @@ import { parseMoneyToCents } from '../../../../../src/lib/money'
 import { isTenantPlanBusinessTypeCompatible } from '../../../../../src/lib/plan-features'
 
 const allowedStatuses = new Set(['pending', 'active', 'suspended', 'cancelled'])
-const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop'])
+const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop', 'arena', 'academy'])
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -46,6 +46,7 @@ export async function GET(
       email,
       birth_date,
       whatsapp_e164,
+      resource_booking_plus_enabled,
       asaas_customer_id,
       created_at,
       updated_at
@@ -78,7 +79,7 @@ export async function GET(
         .maybeSingle(),
       result.supabase
         .from('platform_tenant_billing_profiles')
-        .select('id, amount_cents, base_amount_cents, additional_staff_count, additional_staff_amount_cents, due_day, status, currency, created_at, updated_at')
+        .select('id, amount_cents, base_amount_cents, additional_staff_count, additional_staff_amount_cents, resource_booking_plus_amount_cents, due_day, status, currency, created_at, updated_at')
         .eq('tenant_id', id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -111,7 +112,7 @@ export async function PATCH(
 
   const { data: currentTenant, error: currentTenantError } = await result.supabase
     .from('tenants')
-    .select('id, plan, business_type')
+    .select('id, plan, business_type, resource_booking_plus_enabled')
     .eq('id', id)
     .single()
 
@@ -119,7 +120,7 @@ export async function PATCH(
     return errorResponse('Tenant não encontrado.', 404, currentTenantError?.message)
   }
 
-  const patch: Record<string, string | null> = {}
+  const patch: Record<string, string | boolean | null> = {}
 
   for (const key of ['legal_name', 'public_name', 'cpf', 'email', 'birth_date', 'whatsapp_e164']) {
     if (typeof body[key] === 'string') {
@@ -133,9 +134,17 @@ export async function PATCH(
   const nextBusinessType = typeof body.business_type === 'string'
     ? body.business_type.trim()
     : currentTenant.business_type
+  const requestedResourcePlus = typeof body.resource_booking_plus_enabled === 'boolean'
+    ? body.resource_booking_plus_enabled
+    : currentTenant.resource_booking_plus_enabled
+  const nextResourcePlus = nextPlan === 'plan3' ? requestedResourcePlus : false
 
   if (nextPlan !== currentTenant.plan) {
     patch.plan = nextPlan
+  }
+
+  if (nextResourcePlus !== currentTenant.resource_booking_plus_enabled) {
+    patch.resource_booking_plus_enabled = nextResourcePlus
   }
 
   if (typeof body.status === 'string') {
@@ -157,7 +166,8 @@ export async function PATCH(
   const shouldUpdateBilling =
     typeof body.plan === 'string' ||
     body.monthly_amount !== undefined ||
-    body.due_day !== undefined
+    body.due_day !== undefined ||
+    body.resource_booking_plus_enabled !== undefined
 
   if (Object.keys(patch).length === 0 && !shouldUpdateBilling) {
     return errorResponse('Nenhuma alteracao para salvar.')
@@ -274,17 +284,20 @@ export async function PATCH(
     }
 
     const additionalStaffCount =
-      nextBusinessType === 'salon' && ['plan2', 'plan3'].includes(nextPlan)
+      nextPlan === 'plan3' || (nextPlan === 'plan2' && nextBusinessType === 'salon')
         ? Math.max((activeStaffCount ?? 0) - 1, 0)
         : 0
-    const additionalStaffAmountCents = additionalStaffCount * 2500
+    const additionalStaffUnitCents = nextPlan === 'plan3' ? 5000 : 2500
+    const additionalStaffAmountCents = additionalStaffCount * additionalStaffUnitCents
+    const resourceBookingPlusAmountCents = nextResourcePlus ? 7990 : 0
 
     const billingPayload = {
       subscription_id: subscriptionId,
       base_amount_cents: amountCents,
       additional_staff_count: additionalStaffCount,
       additional_staff_amount_cents: additionalStaffAmountCents,
-      amount_cents: amountCents + additionalStaffAmountCents,
+      resource_booking_plus_amount_cents: resourceBookingPlusAmountCents,
+      amount_cents: amountCents + additionalStaffAmountCents + resourceBookingPlusAmountCents,
       due_day: dueDay ?? billingProfile?.due_day ?? new Date().getDate(),
       status: billingProfile?.status ?? 'active',
       updated_at: new Date().toISOString(),

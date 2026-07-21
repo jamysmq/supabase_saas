@@ -69,7 +69,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_list_due_cycles_for_date'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_list_due_cycles_for_date_v2'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -114,7 +114,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "function formatAmount(cents) {\n  return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;\n}\nfunction formatDate(value) {\n  if (!value) return '';\n  const [year, month, day] = String(value).slice(0, 10).split('-');\n  return year && month && day ? `${day}/${month}/${year}` : String(value);\n}\nconst customerName = String($json.customer_name ?? 'Cliente');\nconst tenantName = String($json.tenant_name ?? 'seu estabelecimento');\nconst amount = formatAmount($json.amount_cents);\nconst dueDate = formatDate($json.due_date);\nconst pixKey = String($json.pix_key ?? 'não configurada');\nconst isOverdue = $json.notification_type === 'overdue';\nconst dueSentence = isOverdue\n  ? `venceu em ${dueDate} e está pendente`\n  : `vence hoje (${dueDate})`;\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone,\n  rendered_message: `Olá, ${customerName}!\\n\\nPassando para lembrar que sua mensalidade com ${tenantName}, no valor de ${amount}, ${dueSentence}.\\n\\nChave Pix: ${pixKey}\\n\\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\\n\\nEm caso de dúvida, fale com a equipe de ${tenantName}. 😊`,\n  message_type: 'template',\n  template_name: String($json.template_name),\n  template_language: 'pt_BR',\n  template_body_parameters: [customerName, tenantName, amount, dueDate, pixKey]\n};"
+        "jsCode": "function formatAmount(cents) {\n  return `R$ ${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')}`;\n}\nfunction formatDate(value) {\n  if (!value) return '';\n  const [year, month, day] = String(value).slice(0, 10).split('-');\n  return year && month && day ? `${day}/${month}/${year}` : String(value);\n}\nconst customerName = String($json.customer_name ?? 'Cliente');\nconst tenantName = String($json.tenant_name ?? 'seu estabelecimento');\nconst tenantWhatsapp = String($json.tenant_whatsapp_e164 ?? '').replace(/\\D/g, '');\nconst tenantId = String($json.tenant_id ?? '').trim();\nconst amount = formatAmount($json.amount_cents);\nconst dueDate = formatDate($json.due_date);\nconst pixKey = String($json.pix_key ?? 'não configurada');\nconst isOverdue = $json.notification_type === 'overdue';\nconst dueSentence = isOverdue\n  ? `venceu em ${dueDate} e está pendente`\n  : `vence hoje (${dueDate})`;\nconst templateName = String($json.template_name);\nconst hasContactButton = templateName === 'jack_billing_due_reminder_v4' || templateName === 'jack_billing_overdue_reminder_v3';\nconst validTenantId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId);\nif (hasContactButton && (tenantWhatsapp.length < 10 || tenantWhatsapp.length > 15 || !validTenantId)) {\n  throw new Error('Invalid tenant contact for billing button.');\n}\nreturn {\n  ...$json,\n  wa_to: $json.customer_phone,\n  rendered_message: `Olá, ${customerName}!\\n\\nPassando para lembrar que sua mensalidade com ${tenantName}, no valor de ${amount}, ${dueSentence}.\\n\\nChave Pix: ${pixKey}\\n\\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\\n\\nEm caso de dúvida, fale com a equipe de ${tenantName}. 😊`,\n  message_type: 'template',\n  template_name: templateName,\n  template_language: 'pt_BR',\n  template_body_parameters: [customerName, tenantName, amount, dueDate, pixKey],\n  template_url_button_parameters: hasContactButton ? [tenantId] : []\n};"
       },
       "id": "billing-render",
       "name": "FN_render_billing_message",
@@ -136,7 +136,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_reserve_billing_reminder_attempt'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/admin_reserve_billing_reminder_attempt_v2'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -265,6 +265,10 @@
             {
               "name": "template_body_parameters",
               "value": "={{$node['FN_render_billing_message'].json.template_body_parameters}}"
+            },
+            {
+              "name": "template_url_button_parameters",
+              "value": "={{$node['FN_render_billing_message'].json.template_url_button_parameters}}"
             }
           ]
         },

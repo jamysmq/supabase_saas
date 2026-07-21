@@ -20,6 +20,8 @@ type Appointment = {
   service_name: string | null
   staff_member_id: string | null
   staff_member_name: string | null
+  bookable_resource_id: string | null
+  bookable_resource_name: string | null
   starts_at: string
   ends_at: string
   status: string
@@ -61,12 +63,14 @@ type PendingStaffRequest = {
 }
 
 type AppointmentForm = {
+  booking_type: 'service' | 'resource'
   full_name: string
   cpf: string
   whatsapp_e164: string
   birth_date: string
   service_id: string
   staff_member_id: string
+  bookable_resource_id: string
   date: string
   time: string
   duration_minutes: string
@@ -82,6 +86,14 @@ type AppointmentSettingsForm = {
   break_starts_at: string
   break_duration_minutes: string
   timezone: string
+}
+
+type BookableResource = {
+  id: string
+  name: string
+  kind: 'court' | 'environment'
+  duration_minutes: number
+  price_cents: number | null
 }
 
 type AppointmentBlock = {
@@ -118,12 +130,14 @@ const weekdayOptions = [
 ]
 
 const emptyAppointmentForm: AppointmentForm = {
+  booking_type: 'service',
   full_name: '',
   cpf: '',
   whatsapp_e164: '',
   birth_date: '',
   service_id: '',
   staff_member_id: '',
+  bookable_resource_id: '',
   date: new Date().toISOString().slice(0, 10),
   time: '09:00',
   duration_minutes: '60',
@@ -197,11 +211,14 @@ export default function AppointmentsPage() {
   const router = useRouter()
 
   const [businessType, setBusinessType] = useState<string | null>(null)
+  const [tenantPlan, setTenantPlan] = useState<string | null>(null)
+  const [resourceBookingPlusEnabled, setResourceBookingPlusEnabled] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [outcomeQueue, setOutcomeQueue] = useState<Appointment[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([])
+  const [bookableResources, setBookableResources] = useState<BookableResource[]>([])
   const [pendingStaffRequests, setPendingStaffRequests] = useState<PendingStaffRequest[]>([])
   const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>(emptyAppointmentForm)
   const [serviceForm, setServiceForm] = useState<ServiceForm>({
@@ -252,6 +269,9 @@ export default function AppointmentsPage() {
     }
 
     setBusinessType(result.tenant?.business_type ?? null)
+    setTenantPlan(result.tenant?.plan ?? null)
+    const canUseResourceBookingPlus = result.tenant?.resource_booking_plus_enabled === true
+    setResourceBookingPlusEnabled(canUseResourceBookingPlus)
 
     const {
       data: { session },
@@ -267,7 +287,7 @@ export default function AppointmentsPage() {
       Authorization: `Bearer ${session.access_token}`,
     }
 
-    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse, blocksResponse, outcomeQueueResponse] =
+    const [appointmentsResponse, servicesResponse, staffResponse, settingsResponse, blocksResponse, outcomeQueueResponse, resourcesResponse] =
       await Promise.all([
         fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers }),
         fetch('/api/appointment-services', { headers }),
@@ -275,9 +295,10 @@ export default function AppointmentsPage() {
         fetch('/api/tenant-appointment-settings', { headers }),
         fetch('/api/tenant-appointment-blocks', { headers }),
         fetch('/api/appointments/outcome-queue', { headers }),
+        canUseResourceBookingPlus ? fetch('/api/appointment-resources', { headers }) : Promise.resolve(null),
       ])
 
-    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok || !blocksResponse.ok || !outcomeQueueResponse.ok) {
+    if (!appointmentsResponse.ok || !servicesResponse.ok || !staffResponse.ok || !settingsResponse.ok || !blocksResponse.ok || !outcomeQueueResponse.ok || (resourcesResponse && !resourcesResponse.ok)) {
       setError('Não foi possível carregar a agenda.')
       setLoading(false)
       return
@@ -289,11 +310,13 @@ export default function AppointmentsPage() {
     const settingsData = await settingsResponse.json()
     const blocksData = await blocksResponse.json()
     const outcomeQueueData = await outcomeQueueResponse.json()
+    const resourcesData = resourcesResponse ? await resourcesResponse.json() : { resources: [] }
 
     setAppointments(appointmentsData.appointments ?? [])
     setServices(servicesData.services ?? [])
     setStaff(staffData.staff ?? [])
     setPendingStaffRequests(staffData.pendingRequests ?? [])
+    setBookableResources(resourcesData.resources ?? [])
     setAppointmentBlocks(blocksData.blocks ?? [])
     const pendingOutcomes = outcomeQueueData.appointments ?? []
     setOutcomeQueue(pendingOutcomes)
@@ -512,15 +535,21 @@ export default function AppointmentsPage() {
       return
     }
 
-    if (!appointmentForm.service_id) {
+    if (appointmentForm.booking_type === 'service' && !appointmentForm.service_id) {
       setSaving(false)
       setError('Selecione o serviço.')
       return
     }
 
-    if (!appointmentForm.staff_member_id) {
+    if (appointmentForm.booking_type === 'service' && !appointmentForm.staff_member_id) {
       setSaving(false)
       setError('Selecione o profissional.')
+      return
+    }
+
+    if (appointmentForm.booking_type === 'resource' && !appointmentForm.bookable_resource_id) {
+      setSaving(false)
+      setError('Selecione a quadra ou ambiente.')
       return
     }
 
@@ -539,8 +568,9 @@ export default function AppointmentsPage() {
         cpf: appointmentForm.cpf,
         whatsapp_e164: appointmentForm.whatsapp_e164,
         birth_date: appointmentForm.birth_date,
-        service_id: appointmentForm.service_id || null,
-        staff_member_id: appointmentForm.staff_member_id || null,
+        service_id: appointmentForm.booking_type === 'service' ? appointmentForm.service_id || null : null,
+        staff_member_id: appointmentForm.booking_type === 'service' ? appointmentForm.staff_member_id || null : null,
+        bookable_resource_id: appointmentForm.booking_type === 'resource' ? appointmentForm.bookable_resource_id || null : null,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
         title: appointmentForm.title,
@@ -556,7 +586,7 @@ export default function AppointmentsPage() {
       return
     }
 
-    setSuccess('Agendamento criado.')
+    setSuccess(appointmentForm.booking_type === 'resource' ? 'Aluguel criado.' : 'Agendamento criado.')
     setAppointmentForm({ ...emptyAppointmentForm, date: appointmentForm.date })
     await load()
   }
@@ -647,7 +677,7 @@ export default function AppointmentsPage() {
       editingStaffId
         ? 'Profissional atualizado.'
         : data.pendingApproval
-          ? 'Solicitação enviada à Soft Ink. O profissional será liberado após a aprovação e acrescentará R$ 25,00 à mensalidade.'
+          ? 'Solicitação enviada à Soft Ink. Após a aprovação, o acréscimo será de R$ 50,00 no Plano 3 ou R$ 25,00 no Plano 2 para salões.'
           : 'Primeiro profissional criado e incluído na mensalidade.'
     )
     closeStaffModal()
@@ -890,7 +920,18 @@ export default function AppointmentsPage() {
 
           <div className="flex flex-col gap-4">
             <div className="space-y-4">
-              <h1 className="text-2xl font-bold">Agenda</h1>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl font-bold">Agenda</h1>
+                {resourceBookingPlusEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => router.push('/appointment-resources')}
+                    className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-800"
+                  >
+                    Gerenciar quadras e ambientes
+                  </button>
+                )}
+              </div>
               <p className="text-sm text-gray-500 mt-1">
                 Organize atendimentos, consultas e horários por profissional.
               </p>
@@ -979,9 +1020,9 @@ export default function AppointmentsPage() {
                           </div>
                           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_130px] items-end gap-3">
                             <div className="min-w-0 text-xs text-gray-600">
-                              <p className="truncate font-medium">{appointment.service_name || 'Sem serviço'}</p>
+                              <p className="truncate font-medium">{appointment.bookable_resource_name || appointment.service_name || 'Sem serviço'}</p>
                               <p className="truncate">
-                                {appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
+                                {appointment.bookable_resource_name ? 'Aluguel de local' : appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
                               </p>
                             </div>
                             {renderStatusControl(appointment)}
@@ -1026,9 +1067,9 @@ export default function AppointmentsPage() {
                               )}
                             </td>
                             <td className="min-w-0 py-3 pr-3 text-gray-700">
-                              <div className="truncate font-medium">{appointment.service_name || 'Sem serviço'}</div>
+                              <div className="truncate font-medium">{appointment.bookable_resource_name || appointment.service_name || 'Sem serviço'}</div>
                               <div className="mt-0.5 truncate text-xs text-gray-500">
-                                {appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
+                                {appointment.bookable_resource_name ? 'Aluguel de local' : appointment.staff_member_name ? `com ${appointment.staff_member_name}` : 'Profissional não definido'}
                               </div>
                             </td>
                             <td className="py-3 pr-2">
@@ -1248,40 +1289,88 @@ export default function AppointmentsPage() {
                 </label>
               </div>
 
-              <label className="block text-sm font-medium">
-                Serviço
-                <select
-                  value={appointmentForm.service_id}
-                  onChange={(event) => selectService(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
-                  required
-                >
-                  <option value="">Selecione um serviço</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {resourceBookingPlusEnabled && (
+                <label className="block text-sm font-medium">
+                  Tipo de agendamento
+                  <select
+                    value={appointmentForm.booking_type}
+                    onChange={(event) => setAppointmentForm({
+                      ...appointmentForm,
+                      booking_type: event.target.value as AppointmentForm['booking_type'],
+                      service_id: '',
+                      staff_member_id: '',
+                      bookable_resource_id: '',
+                    })}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  >
+                    <option value="service">Serviço ou profissional</option>
+                    <option value="resource">Aluguel de quadra ou ambiente</option>
+                  </select>
+                </label>
+              )}
 
-              <label className="block text-sm font-medium">
-                Profissional
-                <select
-                  value={appointmentForm.staff_member_id}
-                  onChange={(event) => setAppointmentForm({ ...appointmentForm, staff_member_id: event.target.value })}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
-                  required
-                  disabled={!appointmentForm.service_id}
-                >
-                  <option value="">Selecione um profissional</option>
-                  {appointmentStaff.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {appointmentForm.booking_type === 'resource' ? (
+                <label className="block text-sm font-medium">
+                  Quadra ou ambiente
+                  <select
+                    value={appointmentForm.bookable_resource_id}
+                    onChange={(event) => {
+                      const resource = bookableResources.find((item) => item.id === event.target.value)
+                      setAppointmentForm({
+                        ...appointmentForm,
+                        bookable_resource_id: event.target.value,
+                        duration_minutes: resource ? String(resource.duration_minutes) : appointmentForm.duration_minutes,
+                      })
+                    }}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                    required
+                  >
+                    <option value="">Selecione uma quadra ou ambiente</option>
+                    {bookableResources.map((resource) => (
+                      <option key={resource.id} value={resource.id}>
+                        {resource.name} · {resource.duration_minutes} min
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium">
+                    Serviço
+                    <select
+                      value={appointmentForm.service_id}
+                      onChange={(event) => selectService(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                      required
+                    >
+                      <option value="">Selecione um serviço</option>
+                      {services.map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {service.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-medium">
+                    Profissional
+                    <select
+                      value={appointmentForm.staff_member_id}
+                      onChange={(event) => setAppointmentForm({ ...appointmentForm, staff_member_id: event.target.value })}
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                      required
+                      disabled={!appointmentForm.service_id}
+                    >
+                      <option value="">Selecione um profissional</option>
+                      {appointmentStaff.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <label className="text-sm font-medium">
@@ -1395,9 +1484,9 @@ export default function AppointmentsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-bold">Profissionais</h2>
-                  {businessType === 'salon' && (
+                  {(tenantPlan === 'plan3' || businessType === 'salon') && (
                     <p className="mt-1 text-xs text-gray-500">
-                      A mensalidade inclui 1 profissional. Cada profissional adicional custa R$ 25,00/mês e depende da aprovação da Soft Ink.
+                      A mensalidade inclui 1 profissional. No Plano 3, cada profissional adicional custa R$ 50,00/mês; no Plano 2 para salões, R$ 25,00/mês. A inclusão depende da aprovação da Soft Ink.
                     </p>
                   )}
                 </div>
@@ -1591,9 +1680,9 @@ export default function AppointmentsPage() {
                 </button>
               </div>
 
-              {!editingStaffId && businessType === 'salon' && staff.length >= 1 && (
+              {!editingStaffId && (tenantPlan === 'plan3' || businessType === 'salon') && staff.length >= 1 && (
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">
-                  Este profissional será enviado para aprovação da Soft Ink. Depois de aprovado, ficará disponível na agenda e acrescentará R$ 25,00 por mês à mensalidade.
+                  Este profissional será enviado para aprovação da Soft Ink. Depois de aprovado, ficará disponível na agenda e acrescentará R$ 50,00/mês no Plano 3 ou R$ 25,00/mês no Plano 2 para salões.
                 </div>
               )}
 
@@ -1669,7 +1758,7 @@ export default function AppointmentsPage() {
                           {appointment.customer_name || appointment.title || 'Cliente sem nome'}
                         </div>
                         <div className="mt-1 text-sm text-gray-600">
-                          {appointment.service_name || 'Serviço não informado'}
+                          {appointment.bookable_resource_name || appointment.service_name || 'Serviço não informado'}
                           {appointment.staff_member_name ? ` · ${appointment.staff_member_name}` : ''}
                         </div>
                         <div className="mt-1 text-xs text-gray-500">

@@ -18,6 +18,7 @@ type Tenant = {
   email: string
   birth_date: string
   whatsapp_e164: string
+  resource_booking_plus_enabled: boolean
   asaas_customer_id: string | null
   created_at: string
   updated_at: string
@@ -55,6 +56,7 @@ type BillingProfile = {
   base_amount_cents: number | null
   additional_staff_count: number
   additional_staff_amount_cents: number
+  resource_booking_plus_amount_cents: number
   due_day: number
   status: string
   currency: string
@@ -82,6 +84,7 @@ type FormState = {
   status: string
   monthly_amount: string
   due_day: string
+  resource_booking_plus_enabled: boolean
 }
 
 export default function PlatformTenantDetailPage() {
@@ -106,6 +109,7 @@ export default function PlatformTenantDetailPage() {
     status: '',
     monthly_amount: '',
     due_day: '',
+    resource_booking_plus_enabled: false,
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -187,6 +191,7 @@ export default function PlatformTenantDetailPage() {
         loadedBillingProfile?.base_amount_cents ?? loadedBillingProfile?.amount_cents
       ),
       due_day: loadedBillingProfile?.due_day ? String(loadedBillingProfile.due_day) : '',
+      resource_booking_plus_enabled: loadedTenant.resource_booking_plus_enabled === true,
     })
     setLoading(false)
   }, [params.id, router])
@@ -208,6 +213,9 @@ export default function PlatformTenantDetailPage() {
       monthly_amount: selectedPlan
         ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
         : form.monthly_amount,
+      resource_booking_plus_enabled: nextPlanCode === 'plan3'
+        ? form.resource_booking_plus_enabled
+        : false,
     })
   }
 
@@ -220,6 +228,9 @@ export default function PlatformTenantDetailPage() {
       monthly_amount: selectedPlan
         ? formatCentsAsMoneyInput(selectedPlan.monthly_amount_cents)
         : form.monthly_amount,
+      resource_booking_plus_enabled: planCode === 'plan3'
+        ? form.resource_booking_plus_enabled
+        : false,
     })
   }
 
@@ -514,6 +525,8 @@ export default function PlatformTenantDetailPage() {
                   <option value="autonomous">Autônomo</option>
                   <option value="clinic">Clínica</option>
                   <option value="salon">Salão</option>
+                  <option value="arena">Arena esportiva</option>
+                  <option value="academy">Academia</option>
                   <option value="restaurant">Restaurante</option>
                 </select>
               </label>
@@ -562,6 +575,24 @@ export default function PlatformTenantDetailPage() {
                 />
               </label>
             </div>
+
+            {form.plan === 'plan3' && (
+              <label className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.resource_booking_plus_enabled}
+                  onChange={(event) => setForm({
+                    ...form,
+                    resource_booking_plus_enabled: event.target.checked,
+                  })}
+                  className="mt-1"
+                />
+                <span>
+                  <strong className="block">Plus Quadras e ambientes</strong>
+                  Libera cadastro e aluguel pelo painel e WhatsApp. Acréscimo de R$ 79,90/mês.
+                </span>
+              </label>
+            )}
 
             <button
               type="submit"
@@ -620,6 +651,14 @@ export default function PlatformTenantDetailPage() {
                       </dd>
                     </div>
                   </>
+                )}
+                {(billingProfile?.resource_booking_plus_amount_cents ?? 0) > 0 && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-gray-500">Plus Quadras e ambientes</dt>
+                    <dd className="font-medium text-sky-700">
+                      + {formatCurrencyFromCents(billingProfile?.resource_booking_plus_amount_cents)}
+                    </dd>
+                  </div>
                 )}
                 <div className="flex justify-between gap-3">
                   <dt className="text-gray-500">Vencimento</dt>

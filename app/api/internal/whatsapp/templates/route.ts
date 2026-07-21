@@ -73,6 +73,30 @@ const templateDefinitions = [
     }],
   },
   {
+    name: 'jack_billing_due_reminder_v4',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, {{1}}!\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, vence hoje ({{4}}).\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. 😊',
+        example: {
+          body_text: [['Maria Silva', 'Professor Exemplo', 'R$ 240,00', '19/07/2026', 'email@pix.com']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [{
+          type: 'URL',
+          text: 'Falar com a equipe',
+          url: 'https://app.meuassistentevirtual.com.br/falar-com-equipe/{{1}}',
+          example: ['https://app.meuassistentevirtual.com.br/falar-com-equipe/11111111-1111-4111-8111-111111111111'],
+        }],
+      },
+    ],
+  },
+  {
     name: 'jack_billing_overdue_reminder_v1',
     language: 'pt_BR',
     category: 'UTILITY',
@@ -97,6 +121,30 @@ const templateDefinitions = [
         body_text: [['Maria da Silva', 'Professor Teste', 'R$ 49,90', '10/07/2026', '11999999999']],
       },
     }],
+  },
+  {
+    name: 'jack_billing_overdue_reminder_v3',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, {{1}}!\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, venceu em {{4}} e está pendente.\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. 😊',
+        example: {
+          body_text: [['Maria da Silva', 'Professor Teste', 'R$ 49,90', '10/07/2026', '11999999999']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [{
+          type: 'URL',
+          text: 'Falar com a equipe',
+          url: 'https://app.meuassistentevirtual.com.br/falar-com-equipe/{{1}}',
+          example: ['https://app.meuassistentevirtual.com.br/falar-com-equipe/11111111-1111-4111-8111-111111111111'],
+        }],
+      },
+    ],
   },
   {
     name: 'jack_daily_agenda_summary',

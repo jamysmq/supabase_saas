@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [tenantPlan, setTenantPlan] = useState<string | null>(null)
+  const [resourceBookingPlusEnabled, setResourceBookingPlusEnabled] = useState(false)
   const [tenantUser, setTenantUser] =
     useState<TenantUser | null>(null)
 
@@ -71,7 +72,12 @@ export default function DashboardPage() {
           href: '/appointment-history?from=dashboard',
           title: 'Histórico de agendamentos',
           description: 'Consulte atendimentos realizados, cancelados e excluídos.',
-        }]
+        },
+        ...(resourceBookingPlusEnabled ? [{
+          href: '/appointment-resources',
+          title: 'Quadras e ambientes',
+          description: 'Cadastre e gerencie os locais oferecidos para aluguel.',
+        }] : [])]
       : []),
     ...(canUseInventory
       ? [{
@@ -128,6 +134,7 @@ export default function DashboardPage() {
       setTenantUser(result.tenantUser)
       setBusinessType(result.tenant?.business_type ?? null)
       setTenantPlan(result.tenant?.plan ?? null)
+      setResourceBookingPlusEnabled(result.tenant?.resource_booking_plus_enabled === true)
       setLoading(false)
     }
 

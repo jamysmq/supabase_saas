@@ -1,4 +1,8 @@
-import { requireTenantUser, tenantCanUseAppointments } from '../../../src/lib/tenant-admin'
+import {
+  requireTenantUser,
+  tenantCanUseAppointments,
+  tenantCanUseResourceBookingPlus,
+} from '../../../src/lib/tenant-admin'
 
 function errorResponse(message: string, status = 400, details?: string) {
   if (details) {
@@ -45,7 +49,44 @@ export async function GET(request: Request) {
     return errorResponse('Não foi possível listar agendamentos.', 500, error.message)
   }
 
-  return Response.json({ appointments: data ?? [] })
+  const appointments = data ?? []
+  const appointmentIds = appointments.map(
+    (appointment: { appointment_id: string }) => appointment.appointment_id
+  )
+  let resourceByAppointmentId = new Map<string, {
+    bookable_resource_id: string | null
+    bookable_resource_name: string | null
+  }>()
+
+  if (appointmentIds.length > 0) {
+    const { data: resourceAppointments, error: resourceError } = await result.supabase
+      .from('appointments')
+      .select('id, bookable_resource_id, bookable_resource_name_snapshot, tenant_bookable_resources(name)')
+      .eq('tenant_id', result.tenantUser.tenant_id)
+      .in('id', appointmentIds)
+
+    if (resourceError) {
+      return errorResponse('Não foi possível carregar os locais dos agendamentos.', 500, resourceError.message)
+    }
+
+    resourceByAppointmentId = new Map((resourceAppointments ?? []).map((appointment) => {
+      const relation = appointment.tenant_bookable_resources as unknown as { name?: string } | null
+      return [appointment.id, {
+        bookable_resource_id: appointment.bookable_resource_id,
+        bookable_resource_name: appointment.bookable_resource_name_snapshot || relation?.name || null,
+      }]
+    }))
+  }
+
+  return Response.json({
+    appointments: appointments.map((appointment: { appointment_id: string }) => ({
+      ...appointment,
+      ...(resourceByAppointmentId.get(appointment.appointment_id) ?? {
+        bookable_resource_id: null,
+        bookable_resource_name: null,
+      }),
+    })),
+  })
 }
 
 export async function POST(request: Request) {
@@ -68,6 +109,7 @@ export async function POST(request: Request) {
   const birthDate = String(body?.birth_date ?? '').trim()
   const serviceId = String(body?.service_id ?? '').trim() || null
   const staffMemberId = String(body?.staff_member_id ?? '').trim() || null
+  const bookableResourceId = String(body?.bookable_resource_id ?? '').trim() || null
 
   if (!fullName) {
     return errorResponse('Informe o nome completo.')
@@ -85,12 +127,16 @@ export async function POST(request: Request) {
     return errorResponse('Informe a data de nascimento.')
   }
 
-  if (!serviceId) {
+  if (!bookableResourceId && !serviceId) {
     return errorResponse('Informe o servico.')
   }
 
-  if (!staffMemberId) {
+  if (!bookableResourceId && !staffMemberId) {
     return errorResponse('Informe o profissional.')
+  }
+
+  if (bookableResourceId && (serviceId || staffMemberId)) {
+    return errorResponse('Escolha um serviço/profissional ou uma quadra/ambiente, não os dois.')
   }
 
   if (!startsAt || !endsAt) {
@@ -99,6 +145,35 @@ export async function POST(request: Request) {
 
   if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
     return errorResponse('O fim precisa ser depois do início.')
+  }
+
+  if (bookableResourceId) {
+    if (!tenantCanUseResourceBookingPlus(result.tenant)) {
+      return errorResponse('O Plus Quadras e ambientes não está ativo para este negócio.', 403)
+    }
+
+    const { data, error } = await result.supabase.rpc('admin_create_external_resource_appointment', {
+      p_tenant_id: result.tenantUser.tenant_id,
+      p_full_name: fullName,
+      p_cpf: cpf,
+      p_whatsapp_e164: whatsapp,
+      p_birth_date: birthDate,
+      p_bookable_resource_id: bookableResourceId,
+      p_starts_at: startsAt,
+      p_ends_at: endsAt,
+      p_title: title,
+      p_notes: notes,
+      p_source: 'panel',
+    })
+
+    if (error) {
+      if (error.message.includes('bookable_resource_time_unavailable')) {
+        return errorResponse('Esse horário já está reservado para este local.', 409)
+      }
+      return errorResponse('Não foi possível criar o aluguel.', 500, error.message)
+    }
+
+    return Response.json({ appointment_id: data })
   }
 
   const { data: serviceStaffLink, error: serviceStaffLinkError } = await result.supabase

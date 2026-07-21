@@ -64,8 +64,9 @@ export async function POST(request: Request) {
   }
 
   const requiresApproval =
-    result.tenant.business_type === 'salon' &&
-    ['plan2', 'plan3'].includes(result.tenant.plan)
+    result.tenant.plan === 'plan3' ||
+    (result.tenant.business_type === 'salon' && result.tenant.plan === 'plan2')
+  const additionalAmountCents = result.tenant.plan === 'plan3' ? 5000 : 2500
 
   if (requiresApproval) {
     const { count, error: countError } = await result.supabase
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
           name,
           role,
           status: 'pending',
-          additional_amount_cents: 2500,
+          additional_amount_cents: additionalAmountCents,
         })
         .select('id, name, role, status, additional_amount_cents, created_at')
         .single()

@@ -762,6 +762,8 @@ export default function PlatformTenantsPage() {
                     <option value="autonomous">Autônomo</option>
                     <option value="clinic">Clínica</option>
                     <option value="salon">Salão</option>
+                    <option value="arena">Arena esportiva</option>
+                    <option value="academy">Academia</option>
                     <option value="restaurant">Restaurante</option>
                     <option value="loja_material">Loja de material de construção</option>
                     <option value="petshop">Petshop</option>

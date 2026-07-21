@@ -55,6 +55,7 @@ export async function POST(request: Request) {
         languageCode: String(body?.template_language ?? 'pt_BR'),
         bodyParameters: parseStringArray(body?.template_body_parameters),
         quickReplyPayloads: parseStringArray(body?.template_button_payloads),
+        urlButtonParameters: parseStringArray(body?.template_url_button_parameters),
       })
       : messageType === 'buttons'
       ? await client.sendButtons({

@@ -218,6 +218,8 @@ Premissa central: o tenant e o registro solido do cliente da plataforma. Os dado
 - Em 2026-07-19, foram submetidos à Meta os templates `jack_billing_due_reminder_v3` (`1041055674977367`), com “vence hoje”, e `jack_billing_overdue_reminder_v2` (`2124744398115629`), com “venceu em”; ambos ficaram `PENDING`. Como a Meta proíbe variável no fim do corpo (`2388299`), o único emoji foi movido para depois de “equipe de {{2}}”. O workflow permanece nas versões aprovadas anteriores até a aprovação das revisões.
 - Os dois templates revisados foram aprovados pela Meta em produção em 2026-07-19. A migration 052 atualizou atomicamente as RPCs de listagem e reserva para `jack_billing_due_reminder_v3` e `jack_billing_overdue_reminder_v2`; a prévia sob `ROLLBACK` passou antes da aplicação.
 - O workflow oficial foi publicado com “vence hoje (data)” para o dia, “venceu em (data) e está pendente” para atraso e um único `😊` após o tenant. A execução oficial `2851` terminou com `success`, encontrou zero cobranças elegíveis antes e depois, e a agenda foi restaurada ativa às 09h em `America/Fortaleza`.
+- Em 2026-07-21, a Meta recusou botões com URL direta `wa.me` nos templates de cobrança (`2388081`). Foi publicado um redirecionador seguro no domínio do produto, que resolve o tenant ativo e abre o `wa.me` configurado em `tenants.whatsapp_e164`.
+- Os templates `jack_billing_due_reminder_v4` (`2264704294377701`) e `jack_billing_overdue_reminder_v3` (`1392925799394393`) foram submetidos como `UTILITY` com o botão “Falar com a equipe” apontando para o redirecionador do tenant; ambos permaneciam `PENDING`. A migration 056 e o workflow v2 não devem ser ativados antes de ambos ficarem `APPROVED`.
 - Em 2026-07-19, os casos de borda do Professor foram validados em produção: rejeição sem aluno ou financeiro, CPF pendente e cadastrado, identidade completa, responsável para menor de 14 anos e disputa da última vaga com apenas uma aprovação. A rodada de banco ocorreu sob `ROLLBACK`.
 - O webhook oficial do módulo foi percorrido com números fictícios para um adulto, repetição duplicada e um menor com responsável; as respostas de CPF pendente/cadastrado foram confirmadas. Um adulto sintético foi aprovado para comprovar perfil e primeiro ciclo, e todos os clientes, perfis, ciclos, solicitações e conversas artificiais foram removidos ao final.
 - A auditoria mostrou que “atendimento humano” durante um módulo ativo era encaminhado ao formulário. A migration 053 passou em prévia, foi aplicada e revalidada: o handoff do tenant agora tem prioridade e fecha o estado transitório do módulo.
@@ -686,6 +688,19 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
   - headers defensivos globais adicionados no Next.js: `X-Content-Type-Options`, `X-Frame-Options` e `Referrer-Policy`;
   - listagem de clientes/alunos ganhou cartoes responsivos no celular, preservando a tabela completa no desktop e eliminando rolagem lateral nessa operacao.
   - deploy de producao concluido em `dpl_7e3NtboXSDAm7RBo9RbFoUxZW4tK`; health HTTP 200 e headers confirmados no dominio oficial.
+
+## Plano 3 Plus — Quadras e ambientes (2026-07-21)
+
+- Plano 3 reposicionado para academias, arenas e negócios de serviços, mantendo alunos, cobranças e agenda.
+- Tipos de negócio `arena` e `academy` adicionados à validação de banco, APIs e telas administrativas.
+- Plus opcional `Quadras e ambientes` criado por R$ 79,90/mês; somente o admin da plataforma pode habilitá-lo ao editar um tenant do Plano 3.
+- Profissional adicional no Plano 3 passou para R$ 50,00/mês; a regra anterior de R$ 25,00 foi preservada para salão no Plano 2.
+- Migration 057 aplicada em produção com tabela genérica `tenant_bookable_resources`, vínculo nas reservas, RLS, RPCs e proteção transacional contra sobreposição.
+- Painel ganhou CRUD em `/appointment-resources`, acesso condicional no dashboard e criação/visualização de aluguel na agenda.
+- Workflow `WA_TENANT_APPOINTMENTS_INBOUND_v1` (`X1lUop6Q5fh9uxTG`) atualizado e reativado: oferece serviço/profissional e aluguel quando ambos existem, ou segue direto para quadra/ambiente quando for a única oferta.
+- Rollout de produção concluído no deployment `dpl_4XFiJpDJGBVZcDmL963PhDsR4zRe`; domínio oficial respondeu HTTP 200.
+- Teste transacional em produção confirmou gate do Plus, cadastro do recurso, sugestão de horário, criação da reserva e rejeição de colisão; rollback confirmou ausência de dados permanentes.
+- Nenhum tenant foi habilitado automaticamente. Pendente apenas habilitar o primeiro cliente real, cadastrar suas quadras e realizar o aluguel oficial pelo WhatsApp.
 
 ```text
 Bom dia, Codex. Estamos no projeto `c:\Users\Jamys\billing-app`.

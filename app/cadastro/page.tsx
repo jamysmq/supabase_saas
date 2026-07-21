@@ -99,7 +99,7 @@ export default function SignupPage() {
 
   function getPlanLabel(plan: Plan) {
     if (plan.code === 'plan3') {
-      return 'Plano 3 - Completo (Cobranças + Agenda)'
+      return 'Plano 3 - Completo para academias, arenas e serviços'
     }
 
     return plan.name
@@ -319,6 +319,8 @@ export default function SignupPage() {
                     <option value="autonomous">Autônomo</option>
                     <option value="clinic">Clínica</option>
                     <option value="salon">Salão</option>
+                    <option value="arena">Arena esportiva</option>
+                    <option value="academy">Academia</option>
                     <option value="restaurant">Restaurante</option>
                     <option value="loja_material">Loja de material de construção</option>
                     <option value="petshop">Petshop</option>

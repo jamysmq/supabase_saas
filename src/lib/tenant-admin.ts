@@ -61,7 +61,7 @@ export async function requireTenantUser(request: Request) {
 
   const { data: tenant, error: tenantError } = await supabase
     .from('tenants')
-    .select('id, legal_name, public_name, plan, status, business_type')
+    .select('id, legal_name, public_name, plan, status, business_type, resource_booking_plus_enabled')
     .eq('id', tenantUser.tenant_id)
     .single()
 
@@ -81,6 +81,13 @@ export async function requireTenantUser(request: Request) {
 
 export function tenantCanUseAppointments(tenant: { plan?: string | null }) {
   return planCanUseAppointments(tenant.plan)
+}
+
+export function tenantCanUseResourceBookingPlus(tenant: {
+  plan?: string | null
+  resource_booking_plus_enabled?: boolean | null
+}) {
+  return tenant.plan === 'plan3' && tenant.resource_booking_plus_enabled === true
 }
 
 export function tenantCanUseBilling(tenant: { plan?: string | null }) {

@@ -48,6 +48,7 @@ export type SendWhatsAppTemplateInput = {
   languageCode?: string
   bodyParameters?: string[]
   quickReplyPayloads?: string[]
+  urlButtonParameters?: string[]
 }
 
 export type WhatsAppCloudSendResponse = {
@@ -259,6 +260,7 @@ export function buildWhatsAppCloudTemplatePayload(input: SendWhatsAppTemplateInp
   const languageCode = String(input.languageCode ?? 'pt_BR').trim()
   const bodyParameters = Array.isArray(input.bodyParameters) ? input.bodyParameters : []
   const quickReplyPayloads = Array.isArray(input.quickReplyPayloads) ? input.quickReplyPayloads : []
+  const urlButtonParameters = Array.isArray(input.urlButtonParameters) ? input.urlButtonParameters : []
 
   if (to.length < 8 || to.length > 15) {
     throw new WhatsAppCloudValidationError('Invalid WhatsApp recipient.')
@@ -278,6 +280,15 @@ export function buildWhatsAppCloudTemplatePayload(input: SendWhatsAppTemplateInp
   })) {
     throw new WhatsAppCloudValidationError('Invalid WhatsApp template quick reply payload.')
   }
+  if (urlButtonParameters.length > 2 || urlButtonParameters.some((value) => {
+    const parameter = String(value ?? '').trim()
+    return !parameter || parameter.length > 200
+  })) {
+    throw new WhatsAppCloudValidationError('Invalid WhatsApp template URL button parameter.')
+  }
+  if (quickReplyPayloads.length > 0 && urlButtonParameters.length > 0) {
+    throw new WhatsAppCloudValidationError('Mixed WhatsApp template button parameters are not supported.')
+  }
 
   const components = [
     ...(bodyParameters.length > 0 ? [{
@@ -289,6 +300,12 @@ export function buildWhatsAppCloudTemplatePayload(input: SendWhatsAppTemplateInp
       sub_type: 'quick_reply',
       index: String(index),
       parameters: [{ type: 'payload', payload: String(payload) }],
+    })),
+    ...urlButtonParameters.map((parameter, index) => ({
+      type: 'button',
+      sub_type: 'url',
+      index: String(index),
+      parameters: [{ type: 'text', text: String(parameter).trim() }],
     })),
   ]
 

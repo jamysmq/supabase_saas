@@ -50,3 +50,11 @@ O parâmetro `{{2}}` é reutilizado no encerramento e não cria um sexto parâme
 - Ambas usam um único emoji e terminam visualmente com `equipe de {{2}}. 😊`.
 - A Meta recusou a primeira proposta que terminava diretamente em `{{2}}`, pois variáveis não podem ficar no início ou no fim do template (`2388299`).
 - As versões novas foram publicadas no workflow após a confirmação de `APPROVED`.
+
+## Botão de atendimento submetido em 21/07/2026
+
+- A Meta bloqueia links diretos para `wa.me` em botões de template (`2388081`).
+- O botão “Falar com a equipe” usa uma URL dinâmica do domínio `app.meuassistentevirtual.com.br`, que resolve o tenant ativo e redireciona para seu `whatsapp_e164`.
+- `jack_billing_due_reminder_v4`, ID `2264704294377701`, status inicial `PENDING`.
+- `jack_billing_overdue_reminder_v3`, ID `1392925799394393`, status inicial `PENDING`.
+- Tenants sem WhatsApp válido permanecem nas versões aprovadas sem botão.

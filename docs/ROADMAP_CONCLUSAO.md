@@ -1,6 +1,6 @@
 # Roadmap de conclusão do Billing App
 
-Atualizado em: 2026-07-19
+Atualizado em: 2026-07-21
 
 Este checklist é a referência operacional até o lançamento. Itens concluídos permanecem registrados para evitar reabertura acidental de escopo.
 
@@ -52,7 +52,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 ## Etapa atual — Agenda, profissionais e financeiro de atendimentos
 
 - [x] Configurar os dias recorrentes de expediente e impedir oferta fora deles.
-- [x] Cobrar R$ 25,00 por profissional adicional em salões dos Planos 2 e 3.
+- [x] Cobrar R$ 25,00 por profissional adicional em salões do Plano 2 e R$ 50,00 no Plano 3.
 - [x] Exigir aprovação da Soft Ink antes de liberar profissional adicional.
 - [x] Recalcular o perfil de cobrança após aprovação, exclusão ou alteração do plano.
 - [x] Criar fila de agendamentos encerrados aguardando confirmação do resultado.
@@ -72,6 +72,19 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Validar alteração de status dos dois agendamentos antigos de sábado.
 - [x] Mover ou cancelar o agendamento futuro do profissional e validar a exclusão.
 - [x] Conferir que a remoção acima de 15 dias mantém apenas um último adicional de R$ 25,00.
+
+### Plano 3 Plus — Quadras e ambientes
+
+- [x] Tratar quadras e ambientes como Plus opcional do Plano 3 por R$ 79,90/mês.
+- [x] Permitir ao admin habilitar ou desabilitar o Plus ao editar o tenant.
+- [x] Incluir Arena esportiva e Academia como tipos de negócio compatíveis com o Plano 3.
+- [x] Criar CRUD de quadras e ambientes com duração e valor padrão.
+- [x] Permitir criação manual e visualização dos aluguéis na agenda.
+- [x] Oferecer serviço/profissional e aluguel no WhatsApp quando ambos existirem.
+- [x] Ir direto para quadra/ambiente quando não houver serviço cadastrado.
+- [x] Impedir colisão de reservas no banco e respeitar expediente, pausas e bloqueios.
+- [x] Aplicar a migration 057, publicar app e workflow e validar criação/colisão com rollback.
+- [ ] Habilitar o Plus no primeiro cliente real, cadastrar as quadras e concluir um aluguel real pelo WhatsApp.
 
 ## Bloqueadores do lançamento
 

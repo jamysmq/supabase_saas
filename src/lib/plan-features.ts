@@ -39,6 +39,8 @@ const allowedPlanCodesByBusinessType: Record<string, string[]> = {
   autonomous: ['plan2', 'plan3'],
   clinic: ['plan2', 'plan3'],
   salon: ['plan2', 'plan3'],
+  arena: ['plan3'],
+  academy: ['plan3'],
   restaurant: ['plan4', 'plan5'],
   loja_material: ['plan4', 'plan5'],
   petshop: ['plan4', 'plan5'],
