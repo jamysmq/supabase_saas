@@ -74,9 +74,9 @@ export default function DashboardPage() {
           description: 'Consulte atendimentos realizados, cancelados e excluídos.',
         },
         ...(resourceBookingPlusEnabled ? [{
-          href: '/appointment-resources',
-          title: 'Quadras e ambientes',
-          description: 'Cadastre e gerencie os locais oferecidos para aluguel.',
+          href: '/appointment-resources?from=dashboard',
+          title: 'Ambientes',
+          description: 'Locais para aluguel, como quadras, salões de festa, piscinas e outros espaços.',
         }] : [])]
       : []),
     ...(canUseInventory

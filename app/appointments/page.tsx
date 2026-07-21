@@ -237,6 +237,7 @@ export default function AppointmentsPage() {
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false)
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
   const [isOutcomeQueueOpen, setIsOutcomeQueueOpen] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [actingId, setActingId] = useState('')
@@ -246,6 +247,11 @@ export default function AppointmentsPage() {
   const appointmentPersonLabel = businessType === 'clinic'
     ? 'Paciente'
     : 'Pessoa'
+  const additionalStaffAmountCents = tenantPlan === 'plan3'
+    ? 5000
+    : tenantPlan === 'plan2' && businessType === 'salon'
+      ? 2500
+      : null
 
   const load = useCallback(async function load() {
     setLoading(true)
@@ -891,16 +897,16 @@ export default function AppointmentsPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-7xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
-          <div className="mb-3 flex flex-wrap items-center gap-3">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <button
               onClick={() => router.push('/dashboard')}
-              className="text-sm text-gray-500"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
             >
-              Voltar
+              Dashboard
             </button>
             <button
               onClick={() => router.push('/appointment-history?from=appointments')}
-              className="text-sm font-medium text-gray-950 underline"
+              className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-800 transition hover:bg-violet-100"
             >
               Histórico
             </button>
@@ -909,31 +915,29 @@ export default function AppointmentsPage() {
               onClick={() => setIsOutcomeQueueOpen(true)}
               className={
                 outcomeQueue.length > 0
-                  ? 'rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-900'
-                  : 'rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-500'
+                  ? 'rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100'
+                  : 'rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100'
               }
             >
-              Atendimentos a confirmar
+              Agendamentos pendentes
               {outcomeQueue.length > 0 ? ` (${outcomeQueue.length})` : ''}
             </button>
+            {resourceBookingPlusEnabled && (
+              <button
+                type="button"
+                onClick={() => router.push('/appointment-resources?from=appointments')}
+                className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800 transition hover:bg-sky-100"
+              >
+                Ambientes
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-4">
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-2xl font-bold">Agenda</h1>
-                {resourceBookingPlusEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => router.push('/appointment-resources')}
-                    className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-800"
-                  >
-                    Gerenciar quadras e ambientes
-                  </button>
-                )}
-              </div>
+              <h1 className="text-2xl font-bold">Agenda</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Organize atendimentos, consultas e horários por profissional.
+                Organize serviços, profissionais, ambientes e horários em um só lugar.
               </p>
               <label className="block max-w-xs text-sm font-medium">
                 Dia da agenda
@@ -1009,14 +1013,23 @@ export default function AppointmentsPage() {
                                 {appointment.customer_phone_e164 || 'Sem contato'}
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => void deleteAppointment(appointment)}
-                              disabled={actingId === appointment.appointment_id}
-                              className="h-9 shrink-0 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-60"
-                            >
-                              Excluir
-                            </button>
+                            <div className="flex shrink-0 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAppointment(appointment)}
+                                className="h-9 rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 shadow-sm hover:bg-sky-100"
+                              >
+                                Detalhes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void deleteAppointment(appointment)}
+                                disabled={actingId === appointment.appointment_id}
+                                className="h-9 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-60"
+                              >
+                                Excluir
+                              </button>
+                            </div>
                           </div>
                           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_130px] items-end gap-3">
                             <div className="min-w-0 text-xs text-gray-600">
@@ -1076,14 +1089,23 @@ export default function AppointmentsPage() {
                               {renderStatusControl(appointment)}
                             </td>
                             <td className="py-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => void deleteAppointment(appointment)}
-                                disabled={actingId === appointment.appointment_id}
-                                className="h-9 w-full rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-60"
-                              >
-                                Excluir
-                              </button>
+                              <div className="grid gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedAppointment(appointment)}
+                                  className="h-9 w-full rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-800 shadow-sm transition hover:bg-sky-100"
+                                >
+                                  Detalhes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void deleteAppointment(appointment)}
+                                  disabled={actingId === appointment.appointment_id}
+                                  className="h-9 w-full rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-60"
+                                >
+                                  Excluir
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1486,9 +1508,9 @@ export default function AppointmentsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-bold">Profissionais</h2>
-                  {(tenantPlan === 'plan3' || businessType === 'salon') && (
+                  {additionalStaffAmountCents !== null && (
                     <p className="mt-1 text-xs text-gray-500">
-                      A mensalidade inclui 1 profissional. No Plano 3, cada profissional adicional custa R$ 50,00/mês; no Plano 2 para salões, R$ 25,00/mês. A inclusão depende da aprovação da Soft Ink.
+                      A mensalidade inclui 1 profissional. Cada profissional adicional custa {formatCurrency(additionalStaffAmountCents)}/mês e depende da aprovação da Soft Ink.
                     </p>
                   )}
                 </div>
@@ -1508,7 +1530,9 @@ export default function AppointmentsPage() {
                       className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
                     >
                       <div className="font-medium">{request.name}</div>
-                      <div className="text-xs">Aguardando aprovação · + R$ 25,00/mês</div>
+                      <div className="text-xs">
+                        Aguardando aprovação · + {formatCurrency(request.additional_amount_cents)}/mês
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1682,9 +1706,9 @@ export default function AppointmentsPage() {
                 </button>
               </div>
 
-              {!editingStaffId && (tenantPlan === 'plan3' || businessType === 'salon') && staff.length >= 1 && (
+              {!editingStaffId && additionalStaffAmountCents !== null && staff.length >= 1 && (
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">
-                  Este profissional será enviado para aprovação da Soft Ink. Depois de aprovado, ficará disponível na agenda e acrescentará R$ 50,00/mês no Plano 3 ou R$ 25,00/mês no Plano 2 para salões.
+                  Este profissional será enviado para aprovação da Soft Ink. Depois de aprovado, ficará disponível na agenda e acrescentará {formatCurrency(additionalStaffAmountCents)}/mês.
                 </div>
               )}
 
@@ -1721,6 +1745,79 @@ export default function AppointmentsPage() {
           </div>
         )}
 
+        {selectedAppointment && (
+          <div
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+            role="dialog"
+          >
+            <section className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold">Detalhes do agendamento</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Informações completas registradas para este horário.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAppointment(null)}
+                  className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="font-semibold text-gray-500">Cliente</dt>
+                  <dd className="mt-1 break-words">{selectedAppointment.customer_name || selectedAppointment.title || 'Não informado'}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-gray-500">WhatsApp</dt>
+                  <dd className="mt-1 break-words">{selectedAppointment.customer_phone_e164 || 'Não informado'}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-gray-500">Data e horário</dt>
+                  <dd className="mt-1">
+                    {new Date(selectedAppointment.starts_at).toLocaleString('pt-BR')} até {formatTime(selectedAppointment.ends_at)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-gray-500">Status</dt>
+                  <dd className="mt-1">{statusLabel(selectedAppointment.status)}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-gray-500">
+                    {selectedAppointment.bookable_resource_name ? 'Ambiente' : 'Serviço'}
+                  </dt>
+                  <dd className="mt-1 break-words">
+                    {selectedAppointment.bookable_resource_name || selectedAppointment.service_name || 'Não informado'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-gray-500">Profissional</dt>
+                  <dd className="mt-1 break-words">
+                    {selectedAppointment.bookable_resource_name
+                      ? 'Não se aplica'
+                      : selectedAppointment.staff_member_name || 'Não informado'}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="font-semibold text-gray-500">Título</dt>
+                  <dd className="mt-1 break-words">{selectedAppointment.title || 'Não informado'}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="font-semibold text-gray-500">Descrição</dt>
+                  <dd className="mt-1 whitespace-pre-wrap break-words rounded-lg bg-gray-50 p-3">
+                    {selectedAppointment.notes || 'Nenhuma descrição informada.'}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        )}
+
         {isOutcomeQueueOpen && (
           <div
             aria-modal="true"
@@ -1730,9 +1827,9 @@ export default function AppointmentsPage() {
             <section className="w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold">O serviço aconteceu?</h2>
+                  <h2 className="text-lg font-bold">Agendamentos pendentes</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    Confirme os atendimentos cujo horário já terminou. Somente serviços concluídos entram no financeiro.
+                    Confirme o resultado dos serviços e aluguéis cujo horário já terminou.
                   </p>
                 </div>
                 <button
@@ -1746,7 +1843,7 @@ export default function AppointmentsPage() {
 
               {outcomeQueue.length === 0 ? (
                 <p className="py-10 text-center text-sm text-gray-500">
-                  Nenhum atendimento aguardando confirmação.
+                  Nenhum agendamento pendente.
                 </p>
               ) : (
                 <div className="mt-4 space-y-3">
@@ -1760,7 +1857,7 @@ export default function AppointmentsPage() {
                           {appointment.customer_name || appointment.title || 'Cliente sem nome'}
                         </div>
                         <div className="mt-1 text-sm text-gray-600">
-                          {appointment.bookable_resource_name || appointment.service_name || 'Serviço não informado'}
+                          {appointment.bookable_resource_name || appointment.service_name || 'Agendamento não informado'}
                           {appointment.staff_member_name ? ` · ${appointment.staff_member_name}` : ''}
                         </div>
                         <div className="mt-1 text-xs text-gray-500">
@@ -1774,7 +1871,7 @@ export default function AppointmentsPage() {
                           disabled={actingId === appointment.appointment_id}
                           className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
                         >
-                          Serviço realizado
+                          {appointment.bookable_resource_name ? 'Aluguel realizado' : 'Serviço realizado'}
                         </button>
                         <button
                           type="button"

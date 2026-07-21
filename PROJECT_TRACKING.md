@@ -714,6 +714,13 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Os dois workflows foram republicados com leitura UTF-8 segura, eliminando os textos com acentuação corrompida, e permaneceram ativos.
 - Calendários nativos do front fecham após a seleção; menus do WhatsApp evitam títulos abreviados e mantêm `Ver mais horários`.
 - Deploy de produção concluído em `dpl_6pv9QKU8aMv8EP31ih72K6vTsx9E`.
+- Em 2026-07-21, a agenda ganhou detalhes completos por botão, incluindo a descrição sem truncamento, e os quatro atalhos do cabeçalho foram reunidos e padronizados.
+- O card e a página passaram a usar `Ambientes` como categoria geral para quadras, salões de festa, piscinas e outros locais; o retorno respeita a origem Dashboard ou Agenda.
+- A fila foi renomeada para `Agendamentos pendentes` e passou a identificar corretamente serviços e aluguéis, com ações adequadas para ambos.
+- A descrição de profissional adicional mostra somente o valor aplicável ao plano do tenant e cada solicitação pendente exibe seu valor persistido.
+- Migration `060_resource_appointment_notifications.sql` aplicada em produção: confirmações D-1 e lembretes H-1 agora resolvem ambientes e preservam o contexto de confirmar, remarcar e cancelar.
+- Teste read-only com um aluguel real confirmou a Quadra 3 como candidata ao lembrete H-1 e com o rótulo genérico `Agendamento`.
+- Workflow de agenda e workflow `APPOINTMENT_CUSTOMER_NOTIFICATIONS` atualizados, validados e ativos; deploy de produção `dpl_39GjXMjM1gWfWyiMttTQQm7M5jFr` publicado com health HTTP 200.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 

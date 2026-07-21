@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import {
@@ -45,6 +44,11 @@ export default function AppointmentResourcesPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  function goBack() {
+    const origin = new URLSearchParams(window.location.search).get('from')
+    router.push(origin === 'dashboard' ? '/dashboard' : '/appointments')
+  }
+
   const load = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
@@ -57,7 +61,7 @@ export default function AppointmentResourcesPage() {
     })
     const data = await response.json().catch(() => null)
     if (!response.ok) {
-      setError(data?.message || 'Não foi possível carregar quadras e ambientes.')
+      setError(data?.message || 'Não foi possível carregar os ambientes.')
       setLoading(false)
       return
     }
@@ -120,11 +124,11 @@ export default function AppointmentResourcesPage() {
     setSaving(false)
 
     if (!response.ok) {
-      setError(data?.message || 'Não foi possível salvar a quadra ou ambiente.')
+      setError(data?.message || 'Não foi possível salvar o ambiente.')
       return
     }
 
-    setSuccess(editingId ? 'Quadra ou ambiente atualizado.' : 'Quadra ou ambiente criado.')
+    setSuccess(editingId ? 'Ambiente atualizado.' : 'Ambiente criado.')
     cancelEdit()
     await load()
   }
@@ -143,11 +147,11 @@ export default function AppointmentResourcesPage() {
     })
     const data = await response.json().catch(() => null)
     if (!response.ok) {
-      setError(data?.message || 'Não foi possível excluir a quadra ou ambiente.')
+      setError(data?.message || 'Não foi possível excluir o ambiente.')
       return
     }
 
-    setSuccess('Quadra ou ambiente excluído.')
+    setSuccess('Ambiente excluído.')
     await load()
   }
 
@@ -159,10 +163,16 @@ export default function AppointmentResourcesPage() {
     <main className="min-h-screen bg-sky-50 px-4 py-6 text-slate-950">
       <div className="mx-auto max-w-5xl space-y-4">
         <section className="rounded-2xl bg-white p-5 shadow-sm">
-          <Link href="/appointments" className="text-sm text-sky-700">← Voltar para a agenda</Link>
-          <h1 className="mt-3 text-2xl font-bold">Quadras e ambientes</h1>
+          <button
+            type="button"
+            onClick={goBack}
+            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+          >
+            ← Voltar
+          </button>
+          <h1 className="mt-3 text-2xl font-bold">Ambientes</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Cadastre os locais oferecidos para aluguel pelo painel e pelo WhatsApp.
+            Locais para aluguel, como quadras, salões de festa, piscinas e outros espaços.
           </p>
         </section>
 
@@ -244,7 +254,7 @@ export default function AppointmentResourcesPage() {
         <section className="rounded-2xl bg-white p-5 shadow-sm">
           <h2 className="font-bold">Locais cadastrados</h2>
           {resources.length === 0 ? (
-            <p className="py-6 text-sm text-slate-500">Nenhuma quadra ou ambiente cadastrado.</p>
+            <p className="py-6 text-sm text-slate-500">Nenhum ambiente cadastrado.</p>
           ) : (
             <div className="mt-3 divide-y divide-slate-100">
               {resources.map((resource) => (
