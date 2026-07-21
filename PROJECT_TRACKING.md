@@ -704,7 +704,7 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Cadastro público corrigido para separar as ofertas `Plano 3` e `Plano 3 Plus`: ambas usam o código estrutural `plan3`, mas apenas a segunda solicita e ativa o Plus Quadras e ambientes após aprovação administrativa.
 - O Plano 3 base permanece em R$ 79,90/mês; o Plano 3 Plus totaliza R$ 159,80/mês, com R$ 79,90 registrados separadamente como extensão.
 - Migration `058_restore_plan3_base_presentation.sql` criada; a atualização equivalente do catálogo foi aplicada em produção pela API administrativa, pois o histórico remoto da CLI não reconhece as migrations anteriores e um `db push` tentaria reaplicar `001` a `057`.
-- Deploy de produção `dpl_ANnLx51vYbL4ofYi4KzPJNKMKpGJ` publicado. Teste controlado confirmou `requested_plan=plan3_plus`, `resource_booking_plus_requested=true` e total de R$ 159,80; o registro sintético foi removido após a validação.
+- Deploy final de produção `dpl_4FLMwX35iUfKhXLmp7BqRjuVW11S` publicado. Teste controlado confirmou `requested_plan=plan3_plus`, `resource_booking_plus_requested=true` e total de R$ 159,80; o registro sintético foi removido após a validação.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 
