@@ -705,9 +705,9 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 
 - Auditoria confirmou os nove templates anteriores da Meta como `APPROVED`.
-- Template `jack_daily_agenda_summary_v2` submetido como `UTILITY`, ID `1372370631694253`, com status inicial `PENDING`.
+- Template `jack_daily_agenda_summary_v2` submetido como `UTILITY`, ID `1372370631694253`, e aprovado pela Meta em 2026-07-21.
 - Novo texto fala diretamente com o tenant, usa dois emojis, separa o total em um bloco próprio e encerra de forma cordial.
-- Workflow diário permanece no template `jack_daily_agenda_summary` aprovado até a Meta aprovar a v2.
+- Após a aprovação, o workflow diário foi atualizado para usar `jack_daily_agenda_summary_v2` em produção.
 - WABA oficial recuperado da operação anterior e configurado explicitamente em `WHATSAPP_BUSINESS_ACCOUNT_ID` na Vercel Production, removendo dependência da descoberta incompatível com a Graph API v25.
 - Deployment `dpl_53VA7sWHN3i8qJCtzwGKLF4FmeQL` publicado e sincronização validada sem informar `waba_id` manualmente.
 
