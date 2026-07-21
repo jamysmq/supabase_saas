@@ -159,6 +159,19 @@ const templateDefinitions = [
       },
     }],
   },
+  {
+    name: 'jack_daily_agenda_summary_v2',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [{
+      type: 'BODY',
+      text: 'Olá! 😊\n\nEste é o seu resumo da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}\n\nPara consultar ou alterar os detalhes, acesse o painel do Assistente Jack.\n\nQue você tenha um ótimo dia de trabalho! 📅',
+      example: {
+        body_text: [['Salão Exemplo', '21/07/2026', '1) 09:00 - Maria - Corte\n2) 10:30 - João - Barba', '2']],
+      },
+    }],
+  },
 ]
 
 function isAuthorized(request: Request) {
@@ -422,6 +435,7 @@ export async function POST(request: Request) {
   const phoneNumberId = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()
   const graphVersion = process.env.WHATSAPP_CLOUD_GRAPH_VERSION?.trim() || 'v23.0'
   const appSecret = process.env.WHATSAPP_APP_SECRET?.trim()
+  const configuredWabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID?.trim()
 
   if (!accessToken || !phoneNumberId) {
     return Response.json({ error: 'WhatsApp Cloud API is not configured.' }, { status: 503 })
@@ -431,11 +445,32 @@ export async function POST(request: Request) {
     const input = await request.json().catch(() => ({})) as {
       waba_id?: unknown
       include_webhook_subscription?: unknown
+      inspect_template_ids?: unknown
     }
+    const templateIdsToInspect = Array.isArray(input.inspect_template_ids)
+      ? input.inspect_template_ids
+          .map((value) => String(value ?? '').trim())
+          .filter((value) => /^\d+$/.test(value))
+          .slice(0, 10)
+      : []
+
+    if (templateIdsToInspect.length > 0) {
+      const templates = []
+      for (const templateId of templateIdsToInspect) {
+        templates.push(await metaRequest(
+          'https://graph.facebook.com/' + encodeURIComponent(graphVersion) + '/' +
+            encodeURIComponent(templateId) + '?metadata=1',
+          accessToken
+        ))
+      }
+      return Response.json({ ok: true, templates })
+    }
+
     const providedWabaId = typeof input.waba_id === 'string' && /^\d+$/.test(input.waba_id.trim())
       ? input.waba_id.trim()
       : null
     const wabaId = providedWabaId
+      ?? (/^\d+$/.test(configuredWabaId ?? '') ? configuredWabaId : null)
       ?? await resolveWabaId(graphVersion, phoneNumberId, accessToken)
 
     if (!wabaId) {
