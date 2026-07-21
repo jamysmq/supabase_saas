@@ -373,13 +373,30 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
     }
   }
 
-  if (body.includes('Confirme seu agendamento:')) {
+  if (
+    body.includes('Confirme seu agendamento:') ||
+    body.includes('Confirme seu aluguel:')
+  ) {
     return {
       kind: 'buttons',
       body,
       options: [
         { id: 'appointment_confirm_yes', title: 'Confirmar' },
         { id: 'appointment_restart', title: 'Voltar \u00e0 agenda' },
+      ],
+    }
+  }
+
+  if (
+    normalizedBody.includes('nao encontrei horarios livres') &&
+    normalizedBody.includes('alterar a duracao')
+  ) {
+    return {
+      kind: 'buttons',
+      body,
+      options: [
+        { id: 'appointment_change_duration', title: 'Alterar duração' },
+        { id: 'appointment_change_period', title: 'Outro período' },
       ],
     }
   }
@@ -435,6 +452,12 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
 
   if (isSlotMenu) {
     options.push({ id: 'appointment_more', title: 'Ver mais horários' })
+    if (normalizedBody.includes('aluguel de')) {
+      options.push(
+        { id: 'appointment_change_duration', title: 'Alterar duração' },
+        { id: 'appointment_change_period', title: 'Outro período' }
+      )
+    }
   }
 
   if (options.length <= 3) {

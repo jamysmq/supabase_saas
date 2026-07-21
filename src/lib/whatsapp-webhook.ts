@@ -124,6 +124,8 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
           appointment_confirm_yes: 'sim',
           appointment_restart: '0',
           appointment_more: 'mais',
+          appointment_change_duration: 'alterar duração',
+          appointment_change_period: 'outro período',
           tenant_confirm_yes: 'Sim',
           tenant_confirm_no: 'Não',
         }

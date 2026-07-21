@@ -1401,7 +1401,9 @@ export default function AppointmentsPage() {
                     value={appointmentForm.duration_minutes}
                     onChange={(event) => setAppointmentForm({ ...appointmentForm, duration_minutes: event.target.value })}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
-                    min="1"
+                    min="30"
+                    max="480"
+                    step="30"
                     type="number"
                     required
                   />
