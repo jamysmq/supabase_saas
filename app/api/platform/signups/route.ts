@@ -19,6 +19,9 @@ function publicSignupFromPayment(payment: {
     whatsapp_e164: payload.whatsapp_e164 ?? null,
     business_type: payload.business_type ?? null,
     plan: payload.plan ?? null,
+    plan_name: payload.plan_name ?? null,
+    resource_booking_plus_requested:
+      payload.resource_booking_plus_requested ?? false,
     amount_cents: payment.amount_cents,
     due_day: payload.due_day ?? null,
     status: payment.status,

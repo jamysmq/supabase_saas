@@ -26,6 +26,7 @@ export type PlatformTenantCreationInput = {
   status?: unknown
   admin_email?: unknown
   business_type?: unknown
+  resource_booking_plus_enabled?: unknown
   monthly_amount_cents: unknown
   due_day: unknown
 }
@@ -69,6 +70,8 @@ export async function createPlatformTenant(
   const status = String(input.status || 'active').trim()
   const adminEmail = String(input.admin_email || input.email || '').trim().toLowerCase()
   const businessType = String(input.business_type || 'teacher').trim()
+  const resourceBookingPlusEnabled =
+    input.resource_booking_plus_enabled === true && plan === 'plan3'
   const amountCents = toPositiveInteger(input.monthly_amount_cents)
   const dueDay = toPositiveInteger(input.due_day)
 
@@ -148,8 +151,9 @@ export async function createPlatformTenant(
       plan,
       status,
       business_type: businessType,
+      resource_booking_plus_enabled: resourceBookingPlusEnabled,
     })
-    .select('id, legal_name, public_name, email, plan, status, business_type')
+    .select('id, legal_name, public_name, email, plan, status, business_type, resource_booking_plus_enabled')
     .single()
 
   if (tenantError || !tenant) {
@@ -232,6 +236,8 @@ export async function createPlatformTenant(
       tenant_id: tenant.id,
       subscription_id: subscription.id,
       amount_cents: amountCents,
+      base_amount_cents: amountCents - (resourceBookingPlusEnabled ? 7990 : 0),
+      resource_booking_plus_amount_cents: resourceBookingPlusEnabled ? 7990 : 0,
       due_day: dueDay,
       status: 'active',
     })

@@ -235,6 +235,9 @@ export default function PlatformSignupsPage() {
                     return (
                       <tr key={paymentId || index} className="border-b border-gray-100">
                         <td className="py-3 pr-4 font-medium">
+                          <div className="text-xs font-normal text-sky-700">
+                            {textValue(signup.plan_name || signup.plan)}
+                          </div>
                           <div>{getName(signup)}</div>
                           <div className="text-xs font-normal text-gray-400">
                             {textValue(signup.cpf ?? signup.document)}

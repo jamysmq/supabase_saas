@@ -73,6 +73,8 @@ export async function POST(
         plan: payload.plan,
         admin_email: payload.admin_email,
         business_type: payload.business_type,
+        resource_booking_plus_enabled:
+          payload.resource_booking_plus_requested === true,
         status: 'active',
         monthly_amount_cents: payload.amount_cents ?? publicPayment.amount_cents,
         due_day: payload.due_day,

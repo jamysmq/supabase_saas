@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from '../../../../src/lib/platform-admin'
 import { isTenantPlanBusinessTypeCompatible } from '../../../../src/lib/plan-features'
 
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop', 'arena', 'academy'])
+const resourceBookingPlusAmountCents = 7990
 
 function errorResponse(message: string, status = 400) {
   return Response.json({ error: message, message }, { status })
@@ -33,7 +34,9 @@ export async function POST(request: Request) {
   const whatsapp = String(body.whatsapp_e164 || '').trim()
   const whatsappDigits = onlyDigits(whatsapp)
   const businessType = String(body.business_type || 'teacher').trim()
-  const plan = String(body.plan || '').trim()
+  const requestedPlan = String(body.plan || '').trim()
+  const resourceBookingPlusRequested = requestedPlan === 'plan3_plus'
+  const plan = resourceBookingPlusRequested ? 'plan3' : requestedPlan
   const dueDay = Number(body.due_day)
 
   if (!legalName) return errorResponse('Informe o nome legal do cliente.')
@@ -73,9 +76,12 @@ export async function POST(request: Request) {
     return errorResponse('Plano indisponivel para o tipo de negocio selecionado.')
   }
 
-  const amountCents = Number(selectedPlan.monthly_amount_cents)
+  const baseAmountCents = Number(selectedPlan.monthly_amount_cents)
+  const amountCents = baseAmountCents + (
+    resourceBookingPlusRequested ? resourceBookingPlusAmountCents : 0
+  )
 
-  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+  if (!Number.isFinite(baseAmountCents) || baseAmountCents <= 0) {
     return errorResponse('O plano selecionado nao possui mensalidade configurada.', 500)
   }
 
@@ -94,8 +100,16 @@ export async function POST(request: Request) {
     whatsapp_e164: whatsappDigits,
     business_type: businessType,
     plan,
-    plan_name: selectedPlan.name,
+    requested_plan: requestedPlan,
+    plan_name: resourceBookingPlusRequested
+      ? 'Plano 3 Plus'
+      : plan === 'plan3' ? 'Plano 3' : selectedPlan.name,
+    resource_booking_plus_requested: resourceBookingPlusRequested,
     tenant_status: 'pending',
+    base_amount_cents: baseAmountCents,
+    resource_booking_plus_amount_cents: resourceBookingPlusRequested
+      ? resourceBookingPlusAmountCents
+      : 0,
     amount_cents: amountCents,
     due_day: dueDay,
     submitted_at: new Date().toISOString(),

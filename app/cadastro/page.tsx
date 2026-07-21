@@ -79,9 +79,21 @@ export default function SignupPage() {
     return plans.filter((plan) => allowedCodes.includes(plan.code))
   }, [form.business_type, plans])
 
+  const availablePlanOptions = useMemo(() => (
+    availablePlans.flatMap((plan) => (
+      plan.code === 'plan3'
+        ? [
+            { code: 'plan3', label: 'Plano 3' },
+            { code: 'plan3_plus', label: 'Plano 3 Plus' },
+          ]
+        : [{ code: plan.code, label: plan.name }]
+    ))
+  ), [availablePlans])
+
   function selectBusinessType(businessType: string) {
     const allowedCodes = getAllowedPlanCodesForBusinessType(businessType)
-    const nextPlan = allowedCodes.includes(form.plan) ? form.plan : allowedCodes[0]
+    const selectedBasePlan = form.plan === 'plan3_plus' ? 'plan3' : form.plan
+    const nextPlan = allowedCodes.includes(selectedBasePlan) ? form.plan : allowedCodes[0]
 
     setForm({
       ...form,
@@ -95,14 +107,6 @@ export default function SignupPage() {
       ...form,
       plan: planCode,
     })
-  }
-
-  function getPlanLabel(plan: Plan) {
-    if (plan.code === 'plan3') {
-      return 'Plano 3 - Completo para academias, arenas e serviços'
-    }
-
-    return plan.name
   }
 
   async function submitSignup(event: React.FormEvent) {
@@ -337,9 +341,9 @@ export default function SignupPage() {
                     className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
                     required
                   >
-                    {availablePlans.map((plan) => (
+                    {availablePlanOptions.map((plan) => (
                       <option key={plan.code} value={plan.code}>
-                        {getPlanLabel(plan)}
+                        {plan.label}
                       </option>
                     ))}
                   </select>
