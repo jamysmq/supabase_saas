@@ -37,6 +37,13 @@ const emptyForm: SignupForm = {
   due_day: '',
 }
 
+const publicPlanLabels: Record<string, string> = {
+  plan1: 'Plano 1 (Cobranças)',
+  plan2: 'Plano 2 (Agenda)',
+  plan4: 'Plano 4 (Catálogo + pedidos + estoque)',
+  plan5: 'Plano 5 (Catálogo + pedidos + estoque + reservas)',
+}
+
 export default function SignupPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [form, setForm] = useState<SignupForm>(emptyForm)
@@ -83,10 +90,16 @@ export default function SignupPage() {
     availablePlans.flatMap((plan) => (
       plan.code === 'plan3'
         ? [
-            { code: 'plan3', label: 'Plano 3' },
-            { code: 'plan3_plus', label: 'Plano 3 Plus' },
+            { code: 'plan3', label: 'Plano 3 (Cobranças + agenda)' },
+            {
+              code: 'plan3_plus',
+              label: 'Plano 3 Plus (Cobranças + agenda + quadras e ambientes)',
+            },
           ]
-        : [{ code: plan.code, label: plan.name }]
+        : [{
+            code: plan.code,
+            label: publicPlanLabels[plan.code] ?? plan.name,
+          }]
     ))
   ), [availablePlans])
 
