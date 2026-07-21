@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const canUseAppointments = tenantCanUseAppointments(tenantPlan)
   const canUseCatalog = tenantCanUseCatalog(tenantPlan)
   const canUseInventory = tenantCanUseInventory(tenantPlan, businessType)
-  const canUseFinance = canUseCatalog || tenantCanUseOperationalFinance(tenantPlan)
+  const canUseFinance = canUseBilling || canUseCatalog || tenantCanUseOperationalFinance(tenantPlan)
 
   const navigationItems = [
     ...(canUseBilling
@@ -51,11 +51,6 @@ export default function DashboardPage() {
           href: '/pending-payments',
           title: 'Pagamentos pendentes',
           description: 'Confirme mensalidades recebidas e acompanhe cobranças.',
-        },
-        {
-          href: '/payment-history?from=dashboard',
-          title: 'Histórico de pagamentos',
-          description: 'Consulte pagamentos confirmados e alterações de cobrança.',
         },
         {
           href: '/students',

@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
 import { getCurrentTenantUser } from '../../src/services/auth'
-import { tenantCanUseCatalog, tenantCanUseOperationalFinance } from '../../src/lib/plan-features'
+import {
+  tenantCanUseBilling,
+  tenantCanUseCatalog,
+  tenantCanUseOperationalFinance,
+} from '../../src/lib/plan-features'
 import { formatCurrencyFromCents } from '../../src/lib/money'
 import { openNativePicker } from '../../src/lib/open-native-picker'
 
@@ -16,7 +20,7 @@ type FinanceEntry = {
   subtitle: string
   origin: string
   amountCents: number
-  status: 'recognized' | 'voided' | 'cancelled'
+  status: 'recognized' | 'voided' | 'cancelled' | 'pending' | 'overdue'
 }
 
 type CatalogOrder = {
@@ -51,6 +55,21 @@ type ServiceRevenueEvent = {
   source: string
   recognized_at: string
   voided_at: string | null
+}
+
+type BillingCycle = {
+  id: string
+  reference_year: number
+  reference_month: number
+  due_date: string
+  amount_cents: number
+  status: string
+  paid_at: string | null
+  payment_note: string | null
+  updated_at: string
+  tenant_customers: {
+    full_name: string
+  } | null
 }
 
 function dateDaysAgo(days: number) {
@@ -100,12 +119,37 @@ function sourceLabel(source: string) {
   return labels[source] ?? source
 }
 
+function billingStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    pending: 'Pendente',
+    overdue: 'Atrasado',
+    paid_manual: 'Pago manualmente',
+    paid_asaas: 'Pago pelo Asaas',
+    canceled: 'Cancelado',
+  }
+
+  return labels[status] ?? status
+}
+
+function financeStatusLabel(status: FinanceEntry['status']) {
+  const labels: Record<FinanceEntry['status'], string> = {
+    recognized: 'Reconhecido',
+    voided: 'Estornado',
+    cancelled: 'Cancelado',
+    pending: 'Pendente',
+    overdue: 'Atrasado',
+  }
+
+  return labels[status]
+}
+
 export default function FinancePage() {
   const router = useRouter()
 
   const [orders, setOrders] = useState<CatalogOrder[]>([])
   const [catalogRevenue, setCatalogRevenue] = useState<CatalogRevenueEvent[]>([])
   const [serviceEvents, setServiceEvents] = useState<ServiceRevenueEvent[]>([])
+  const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([])
   const [from, setFrom] = useState(dateDaysAgo(30))
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10))
   const [loading, setLoading] = useState(true)
@@ -128,10 +172,11 @@ export default function FinancePage() {
     }
 
     const plan = result.tenant?.plan
+    const canUseBilling = tenantCanUseBilling(plan)
     const canUseCatalog = tenantCanUseCatalog(plan)
     const canUseOperationalFinance = tenantCanUseOperationalFinance(plan)
 
-    if (!canUseCatalog && !canUseOperationalFinance) {
+    if (!canUseBilling && !canUseCatalog && !canUseOperationalFinance) {
       router.push('/dashboard')
       return
     }
@@ -146,6 +191,27 @@ export default function FinancePage() {
     }
 
     const headers = { Authorization: `Bearer ${session.access_token}` }
+
+    if (canUseBilling) {
+      const startsFrom = new Date(`${from}T00:00:00`).toISOString()
+      const startsToDate = new Date(`${to}T00:00:00`)
+      startsToDate.setDate(startsToDate.getDate() + 1)
+      const params = new URLSearchParams({
+        from: startsFrom,
+        to: startsToDate.toISOString(),
+      })
+      const response = await fetch(`/api/payment-history?${params.toString()}`, { headers })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        setError(data?.message || 'Não foi possível carregar as mensalidades.')
+        setLoading(false)
+        return
+      }
+
+      const data = await response.json()
+      setBillingCycles(data.cycles ?? [])
+    }
 
     if (canUseCatalog) {
       const response = await fetch('/api/catalog/orders', { headers })
@@ -177,7 +243,7 @@ export default function FinancePage() {
     }
 
     setLoading(false)
-  }, [router])
+  }, [from, router, to])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -187,7 +253,7 @@ export default function FinancePage() {
     return () => window.clearTimeout(timeoutId)
   }, [load])
 
-  // Junta pedidos e atendimentos numa única lista normalizada.
+  // Junta mensalidades, pedidos e atendimentos numa única lista normalizada.
   const allEntries = useMemo<FinanceEntry[]>(() => {
     const orderById = new Map(orders.map((order) => [order.id, order]))
     const entries: FinanceEntry[] = []
@@ -234,8 +300,30 @@ export default function FinancePage() {
       })
     }
 
+    for (const cycle of billingCycles) {
+      const paid = cycle.status.startsWith('paid')
+      const status: FinanceEntry['status'] = paid
+        ? 'recognized'
+        : cycle.status === 'overdue'
+          ? 'overdue'
+          : cycle.status === 'canceled'
+            ? 'cancelled'
+            : 'pending'
+      const reference = String(cycle.reference_month).padStart(2, '0') + '/' + cycle.reference_year
+
+      entries.push({
+        id: `billing-${cycle.id}`,
+        date: cycle.paid_at || `${cycle.due_date}T12:00:00`,
+        title: cycle.tenant_customers?.full_name || 'Cliente sem nome',
+        subtitle: `Mensalidade ${reference} · vencimento ${formatDay(cycle.due_date)} · ${billingStatusLabel(cycle.status)}${cycle.payment_note ? ` · ${cycle.payment_note}` : ''}`,
+        origin: 'Mensalidade',
+        amountCents: cycle.amount_cents,
+        status,
+      })
+    }
+
     return entries
-  }, [orders, catalogRevenue, serviceEvents])
+  }, [billingCycles, orders, catalogRevenue, serviceEvents])
 
   const filteredEntries = useMemo(() => {
     const fromTs = new Date(`${from}T00:00:00`).getTime()
@@ -288,18 +376,12 @@ export default function FinancePage() {
 
   function exportCsv() {
     const header = ['Data', 'Origem', 'Descrição', 'Detalhe', 'Status', 'Valor']
-    const statusText: Record<FinanceEntry['status'], string> = {
-      recognized: 'Reconhecido',
-      voided: 'Estornado',
-      cancelled: 'Cancelado',
-    }
-
     const rows = filteredEntries.map((entry) => [
       formatDateTime(entry.date),
       entry.origin,
       entry.title,
       entry.subtitle,
-      statusText[entry.status],
+      financeStatusLabel(entry.status),
       (entry.amountCents / 100).toFixed(2).replace('.', ','),
     ])
 
@@ -319,6 +401,13 @@ export default function FinancePage() {
     URL.revokeObjectURL(url)
   }
 
+  function getBackHref() {
+    const searchParams = new URLSearchParams(window.location.search)
+    return searchParams.get('from') === 'pending-payments'
+      ? '/pending-payments'
+      : '/dashboard'
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-100 text-gray-950">
@@ -332,7 +421,7 @@ export default function FinancePage() {
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="rounded-2xl bg-white p-5 shadow print:rounded-none print:p-0 print:shadow-none">
           <div className="mb-3 flex flex-wrap items-center gap-3 print:hidden">
-            <button onClick={() => router.push('/dashboard')} className="text-sm text-gray-500">
+            <button onClick={() => router.push(getBackHref())} className="text-sm text-gray-500">
               Voltar
             </button>
             <button
@@ -353,7 +442,7 @@ export default function FinancePage() {
             <div>
               <h1 className="text-2xl font-bold">Financeiro</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Receitas, despesas e saldo do período. Pedidos pagos, atendimentos e estoque num só lugar.
+                Mensalidades, receitas, despesas e saldo do período em um só lugar.
               </p>
             </div>
 
@@ -394,7 +483,7 @@ export default function FinancePage() {
           <div className="rounded-2xl bg-white p-5 shadow print:rounded-none print:border print:border-gray-200 print:p-3 print:shadow-none">
             <p className="text-sm text-gray-500">Despesas</p>
             <p className="mt-1 text-2xl font-bold text-red-700">-{formatCurrencyFromCents(stats.expenses)}</p>
-            <p className="mt-1 text-xs text-gray-500">{stats.cancelled} pedidos cancelados</p>
+            <p className="mt-1 text-xs text-gray-500">{stats.cancelled} lançamentos cancelados</p>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow print:rounded-none print:border print:border-gray-200 print:p-3 print:shadow-none">
             <p className="text-sm text-gray-500">Saldo do período</p>
@@ -460,17 +549,17 @@ export default function FinancePage() {
                   <div className="lg:text-right">
                     <div
                       className={`text-sm font-bold ${
-                        entry.status === 'cancelled' || entry.amountCents < 0 ? 'text-red-700' : ''
+                        entry.status === 'cancelled' || entry.status === 'overdue' || entry.amountCents < 0
+                          ? 'text-red-700'
+                          : entry.status === 'pending'
+                            ? 'text-amber-700'
+                            : ''
                       }`}
                     >
                       {formatCurrencyFromCents(entry.amountCents)}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
-                      {entry.status === 'recognized'
-                        ? 'Reconhecido'
-                        : entry.status === 'cancelled'
-                          ? 'Cancelado'
-                          : 'Estornado'}
+                      {financeStatusLabel(entry.status)}
                     </div>
                   </div>
                 </article>

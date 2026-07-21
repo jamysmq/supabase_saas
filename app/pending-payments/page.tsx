@@ -173,10 +173,10 @@ function statusLabel(status: string) {
               Voltar
             </button>
             <button
-              onClick={() => router.push('/payment-history?from=pending-payments')}
+              onClick={() => router.push('/financeiro?from=pending-payments')}
               className="text-sm font-medium text-gray-950 underline"
             >
-              Histórico
+              Financeiro
             </button>
           </div>
 
