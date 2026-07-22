@@ -247,6 +247,33 @@ function tenantMenuButtons(plan: unknown) {
   ]
 }
 
+function buildTenantMenuBody(
+  tenantName: string,
+  buttons: ReturnType<typeof tenantMenuButtons>
+) {
+  const descriptions = buttons.map((button) => {
+    if (button.id === 'tenant_appointments') {
+      return `*${button.title}*: para agendar, remarcar ou cancelar um horário.`
+    }
+
+    if (button.id === 'tenant_billing') {
+      return `*${button.title}*: para enviar seus dados e solicitar seu cadastro.`
+    }
+
+    if (button.id === 'tenant_handoff') {
+      return `*${button.title}*: para falar diretamente com a equipe de ${tenantName}.`
+    }
+
+    return `*${button.title}*: para procurar atendimento de outro estabelecimento.`
+  })
+
+  const mainMenuInstruction = buttons.some((button) => button.id === 'main_menu')
+    ? ''
+    : '\n\nQuer atendimento de outro estabelecimento? Digite *Menu do Jack*.'
+
+  return `Tudo certo! 😊 Agora você está no atendimento de *${tenantName}*.\n\nEu sou o Jack e vou ajudar você por aqui. Escolha abaixo o que deseja fazer:\n\n${descriptions.join('\n')}${mainMenuInstruction}`
+}
+
 function isAppointmentActionMenu(body: string) {
   return body.includes('O que deseja fazer?') &&
     body.includes('1) Agendar') &&
@@ -1029,12 +1056,13 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                   ],
                 })
               } else {
-                const tenantMenuBody = `Tudo certo! 😊 Agora você está no atendimento de *${tenantName}*.\n\nEu sou o Jack e vou ajudar você por aqui. Escolha abaixo o que deseja fazer.\n\nQuer atendimento de outro estabelecimento? Toque em *Menu do Jack*.`
+                const tenantButtons = tenantMenuButtons(routerResponse.tenant_plan)
+                const tenantMenuBody = buildTenantMenuBody(tenantName, tenantButtons)
                 recordedReply = tenantMenuBody
                 sendResult = await client.sendButtons({
                   to: message.from,
                   body: tenantMenuBody,
-                  buttons: tenantMenuButtons(routerResponse.tenant_plan),
+                  buttons: tenantButtons,
                 })
               }
             } else {
