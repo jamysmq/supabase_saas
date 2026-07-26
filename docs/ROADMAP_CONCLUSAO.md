@@ -141,6 +141,18 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [ ] Confirmar isolamento entre tenants.
 - [ ] Decidir se conciliação automática de Pix entra no lançamento.
 
+### Pagamentos automáticos — cartão e Pix
+
+- [x] Definir roadmap separado para assinatura da plataforma e recebíveis dos tenants.
+- [ ] Validar conta Asaas PJ, condições comerciais, cartão recorrente e elegibilidade para Pix Automático.
+- [ ] Implementar primeiro a assinatura do Jack com cartão e Pix Automático.
+- [ ] Criar webhook autenticado, persistido e idempotente.
+- [ ] Homologar cartão e Pix Automático no Sandbox antes de movimentar valores reais.
+- [ ] Fazer rollout em produção por allowlist, sem suspensão automática inicial.
+- [ ] Tratar subcontas, KYC e split dos clientes finais apenas em um épico posterior.
+
+Detalhamento: [roadmap de pagamentos automáticos](./automatic-payments-roadmap.md).
+
 ## Qualidade, segurança e regressão
 
 - [ ] Criar testes automatizados para tenant, plano e idempotência.

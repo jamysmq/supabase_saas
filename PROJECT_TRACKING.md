@@ -722,6 +722,17 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Teste read-only com um aluguel real confirmou a Quadra 3 como candidata ao lembrete H-1 e com o rótulo genérico `Agendamento`.
 - Workflow de agenda e workflow `APPOINTMENT_CUSTOMER_NOTIFICATIONS` atualizados, validados e ativos; deploy de produção `dpl_39GjXMjM1gWfWyiMttTQQm7M5jFr` publicado com health HTTP 200.
 
+## Roadmap de pagamentos automáticos (2026-07-26)
+
+- Roadmap detalhado criado em `docs/automatic-payments-roadmap.md`.
+- Asaas permanece como primeiro provedor, atrás de um adaptador interno.
+- O MVP será a cobrança recorrente da assinatura do Jack paga pelo tenant à Soft Ink.
+- Cartão deve usar checkout hospedado; PAN e CVV nunca serão persistidos pelo billing-app.
+- Pix Automático deve usar autorização por QR Code no aplicativo bancário, sem pedir agência, conta ou chave Pix ao pagador.
+- Webhooks autenticados, persistidos e idempotentes serão a fonte de verdade da conciliação.
+- Pagamentos de alunos/clientes finais ficam em fase posterior, condicionados a subcontas, KYC, segregação financeira e decisão de split.
+- Rollout previsto: Sandbox, tenant controlado em produção, allowlist e uma competência completa antes da liberação geral.
+
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 
 - Auditoria confirmou os nove templates anteriores da Meta como `APPROVED`.
