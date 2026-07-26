@@ -235,6 +235,25 @@ export default function Home() {
                 </p>
               </article>
             ))}
+
+            <article className="rounded-md border border-[#8fd8ee] bg-[#eafaff] p-6 shadow-sm sm:col-span-2 lg:col-span-4">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:items-center">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0d65bd]">
+                    Recurso do Plano 3 Plus
+                  </p>
+                  <h3 className="mt-2 text-xl font-black text-[#073a86]">
+                    Controle de quadras e ambientes
+                  </h3>
+                </div>
+                <p className="text-sm leading-6 text-[#34475e]">
+                  Ideal para academias, arenas e negócios de locação: cadastre
+                  quadras, salões de festa, piscinas e outros espaços. Defina
+                  horários e duração, evite conflitos e acompanhe os agendamentos
+                  pelo painel enquanto o Jack atende seus clientes pelo WhatsApp.
+                </p>
+              </div>
+            </article>
           </div>
         </div>
       </section>
