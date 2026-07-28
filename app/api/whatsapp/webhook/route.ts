@@ -423,6 +423,19 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
   }
 
   if (
+    normalizedBody.includes('cpf e opcional') &&
+    normalizedBody.includes('pular cpf')
+  ) {
+    return {
+      kind: 'buttons',
+      body,
+      options: [
+        { id: 'appointment_skip_cpf', title: 'Pular CPF' },
+      ],
+    }
+  }
+
+  if (
     normalizedBody.includes('nao encontrei horarios livres') &&
     normalizedBody.includes('alterar a duracao')
   ) {

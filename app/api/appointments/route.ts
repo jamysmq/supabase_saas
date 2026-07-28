@@ -104,7 +104,8 @@ export async function POST(request: Request) {
   const title = String(body?.title ?? '').trim() || null
   const notes = String(body?.notes ?? '').trim() || null
   const fullName = String(body?.full_name ?? '').trim()
-  const cpf = String(body?.cpf ?? '').replace(/\D/g, '')
+  const cpfInput = String(body?.cpf ?? '').trim()
+  const cpf = cpfInput ? cpfInput.replace(/\D/g, '') : null
   const whatsapp = normalizeBrazilWhatsapp(String(body?.whatsapp_e164 ?? ''))
   const birthDate = String(body?.birth_date ?? '').trim()
   const serviceId = String(body?.service_id ?? '').trim() || null
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
     return errorResponse('Informe o nome completo.')
   }
 
-  if (cpf.length !== 11) {
+  if (cpf !== null && cpf.length !== 11) {
     return errorResponse('CPF inválido. Informe 11 dígitos.')
   }
 

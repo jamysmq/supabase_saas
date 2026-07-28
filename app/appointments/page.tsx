@@ -1278,18 +1278,6 @@ export default function AppointmentsPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-medium">
-                  CPF
-                  <input
-                    value={appointmentForm.cpf}
-                    onChange={(event) => setAppointmentForm({ ...appointmentForm, cpf: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
-                    inputMode="numeric"
-                    placeholder="00000000000"
-                    required
-                  />
-                </label>
-
-                <label className="text-sm font-medium">
                   WhatsApp
                   <input
                     value={appointmentForm.whatsapp_e164}
@@ -1301,7 +1289,7 @@ export default function AppointmentsPage() {
                   />
                 </label>
 
-                <label className="text-sm font-medium sm:col-span-2">
+                <label className="text-sm font-medium">
                   Nascimento
                   <input
                     value={appointmentForm.birth_date}
@@ -1448,6 +1436,17 @@ export default function AppointmentsPage() {
                 className="min-h-20 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 placeholder="Observações"
               />
+
+              <label className="block text-sm font-medium">
+                CPF <span className="font-normal text-gray-500">(opcional)</span>
+                <input
+                  value={appointmentForm.cpf}
+                  onChange={(event) => setAppointmentForm({ ...appointmentForm, cpf: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                />
+              </label>
 
               <button
                 type="submit"
