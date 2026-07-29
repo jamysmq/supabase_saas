@@ -111,14 +111,19 @@ pendente, sem persistir o payload e sem ativar automação.
 
 ### Bloco 2 — conexão Mercado Pago
 
-- [ ] Configurar a chave de criptografia na Vercel antes do primeiro OAuth.
+- [x] Configurar a chave de criptografia na Vercel antes do primeiro OAuth.
 - [ ] Registrar aplicação produtiva e URLs de callback.
-- [ ] Implementar OAuth Authorization Code com `state` de uso único e PKCE.
-- [ ] Trocar e renovar tokens somente no servidor.
-- [ ] Cifrar tokens antes de persistir e nunca retorná-los ao navegador.
-- [ ] Consultar conta autorizada e impedir a mesma conta em dois tenants.
-- [ ] Criar tela Conectar, reconectar e desconectar Mercado Pago.
-- [ ] Exibir somente conta, situação e capacidades não sensíveis.
+- [x] Implementar OAuth Authorization Code com `state` de uso único e PKCE.
+- [x] Trocar e renovar tokens somente no servidor.
+- [x] Cifrar tokens antes de persistir e nunca retorná-los ao navegador.
+- [x] Consultar conta autorizada e impedir a mesma conta em dois tenants.
+- [x] Criar tela Conectar, reconectar e desconectar Mercado Pago.
+- [x] Exibir somente conta, situação e capacidades não sensíveis.
+
+As migrations 066 e 067 criam o estado OAuth efêmero, negam acesso direto pelo
+cliente e vinculam cada tentativa ao usuário do mesmo tenant. Falta cadastrar a
+aplicação produtiva no Mercado Pago, configurar o callback exato e realizar a
+primeira autorização oficial.
 
 **Saída:** um tenant controlado conecta e revoga sua conta sem criar cobrança.
 

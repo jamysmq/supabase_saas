@@ -30,14 +30,17 @@ function getEncryptionKey() {
   return key;
 }
 
-export function encryptProviderCredentials(
-  credentials: ProviderConnectionCredentials
-) {
+export function encryptSensitiveJson(value: unknown, context?: string) {
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv(ALGORITHM, getEncryptionKey(), iv, {
     authTagLength: AUTH_TAG_BYTES,
   });
-  const plaintext = Buffer.from(JSON.stringify(credentials), "utf8");
+
+  if (context) {
+    cipher.setAAD(Buffer.from(context, "utf8"));
+  }
+
+  const plaintext = Buffer.from(JSON.stringify(value), "utf8");
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
@@ -49,9 +52,10 @@ export function encryptProviderCredentials(
   ].join(".");
 }
 
-export function decryptProviderCredentials(
-  encryptedValue: string
-): ProviderConnectionCredentials {
+export function decryptSensitiveJson<T>(
+  encryptedValue: string,
+  context?: string
+): T {
   const [version, encodedIv, encodedAuthTag, encodedCiphertext, ...rest] =
     encryptedValue.split(".");
 
@@ -76,6 +80,11 @@ export function decryptProviderCredentials(
   const decipher = createDecipheriv(ALGORITHM, getEncryptionKey(), iv, {
     authTagLength: AUTH_TAG_BYTES,
   });
+
+  if (context) {
+    decipher.setAAD(Buffer.from(context, "utf8"));
+  }
+
   decipher.setAuthTag(authTag);
 
   const plaintext = Buffer.concat([
@@ -88,5 +97,22 @@ export function decryptProviderCredentials(
     throw new Error("Invalid payment credential contents.");
   }
 
-  return parsed as ProviderConnectionCredentials;
+  return parsed as T;
+}
+
+export function encryptProviderCredentials(
+  credentials: ProviderConnectionCredentials,
+  context?: string
+) {
+  return encryptSensitiveJson(credentials, context);
+}
+
+export function decryptProviderCredentials(
+  encryptedValue: string,
+  context?: string
+): ProviderConnectionCredentials {
+  return decryptSensitiveJson<ProviderConnectionCredentials>(
+    encryptedValue,
+    context
+  );
 }

@@ -146,7 +146,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Reorganizar o roadmap para recebíveis dos tenants em contas próprias.
 - [x] Implementar a fundação neutra de provedor do Bloco 0 na migration 064.
 - [x] Aplicar a migration 064 com automação desativada e tabelas de integração vazias.
-- [ ] Configurar a chave server-only antes do primeiro OAuth.
+- [x] Configurar a chave server-only antes do primeiro OAuth.
 - [x] Entregar QR Pix estático usando prioritariamente a chave configurada do tenant.
 - [ ] Conectar Mercado Pago por OAuth sem expor tokens ao navegador.
 - [ ] Implementar Pix dinâmico, webhook idempotente e conciliação por `billing_cycle`.
