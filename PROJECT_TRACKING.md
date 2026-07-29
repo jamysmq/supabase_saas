@@ -725,13 +725,17 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 ## Roadmap de pagamentos automáticos (2026-07-26)
 
 - Roadmap detalhado criado em `docs/automatic-payments-roadmap.md`.
-- Asaas permanece como primeiro provedor, atrás de um adaptador interno.
-- O MVP será a cobrança recorrente da assinatura do Jack paga pelo tenant à Soft Ink.
-- Cartão deve usar checkout hospedado; PAN e CVV nunca serão persistidos pelo billing-app.
-- Pix Automático deve usar autorização por QR Code no aplicativo bancário, sem pedir agência, conta ou chave Pix ao pagador.
+- Em 2026-07-29, o roadmap foi reorientado para os recebíveis dos alunos e clientes diretamente na conta de cada tenant.
+- A chave Pix do tenant permanece como padrão; QR estático não exige gateway, mas sua confirmação continua manual.
+- Mercado Pago via OAuth será o primeiro adaptador; Asaas entra depois por API Key cifrada ou, mediante aprovação comercial/regulatória, subconta/BaaS.
+- QR dinâmico e cartão só serão oferecidos quando houver provedor conectado e cobrança vinculada ao `billing_cycle`.
+- Cartão sempre usará checkout hospedado; PAN e CVV nunca serão persistidos pelo billing-app.
 - Webhooks autenticados, persistidos e idempotentes serão a fonte de verdade da conciliação.
-- Pagamentos de alunos/clientes finais ficam em fase posterior, condicionados a subcontas, KYC, segregação financeira e decisão de split.
-- Rollout previsto: Sandbox, tenant controlado em produção, allowlist e uma competência completa antes da liberação geral.
+- A fundação do Bloco 0 foi criada na migration 064 e nos contratos server-side, sem habilitar automação ou movimentar valores.
+- Migration 064 aplicada em produção em 2026-07-29; verificação confirmou zero conexões, cobranças e eventos, zero tenants com automação ativa, RLS habilitado e ausência de `SELECT` para `authenticated` nas tabelas sensíveis.
+- Teste transacional com rollback confirmou que a FK composta rejeita cobrança cruzada entre tenants e que a restrição única rejeita evento duplicado do provedor.
+- Criptografia de credenciais validada em round-trip AES-256-GCM; o texto sensível não aparece no valor cifrado.
+- Rollout previsto: modo manual preservado, conexão controlada, pagamento oficial de baixo valor, allowlist e uma competência completa.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 

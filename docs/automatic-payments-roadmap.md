@@ -1,361 +1,231 @@
-# Roadmap — pagamentos automáticos por cartão e Pix
+# Roadmap — pagamentos dos clientes dos tenants
 
-Atualizado em 2026-07-26.
+Atualizado em 2026-07-29.
 
 ## Objetivo
 
-Permitir que o pagador configure uma forma de pagamento recorrente e que o
-billing-app faça cobrança, conciliação e tratamento de falhas sem confirmação
-manual.
+Permitir que cada tenant receba pagamentos dos próprios alunos e clientes em
+sua própria conta financeira, sem que a Soft Ink custodie ou misture valores.
+O billing-app deve gerar cobranças, acompanhar estados e conciliar o financeiro
+automaticamente quando houver um provedor conectado.
 
-A implementação será dividida em dois produtos distintos:
+Este roadmap trata primeiro dos **recebíveis dos tenants**. A cobrança da
+assinatura do Jack paga pelo tenant à Soft Ink reutilizará a mesma arquitetura
+em um épico posterior, mantendo dados e saldos separados.
 
-1. **Assinatura da plataforma:** o tenant paga mensalmente à Soft Ink pelo plano
-   do Jack e seus adicionais.
-2. **Cobranças dos tenants:** alunos e clientes finais pagam mensalidades ao
-   respectivo tenant.
+## Decisões definitivas
 
-O primeiro produto é o MVP. O segundo só começa depois que o primeiro estiver
-estável e após aprovação comercial e regulatória do modelo de subcontas.
+- O Pix configurado em `tenant_billing_settings` continua sendo o padrão e o
+  fallback de todos os tenants.
+- Um QR Pix estático pode ser gerado localmente a partir da chave do tenant; ele
+  não oferece confirmação automática.
+- QR Pix dinâmico, cartão e conciliação automática exigem uma conta de provedor
+  conectada pelo próprio tenant.
+- Em uma cobrança automática não será exibida simultaneamente a chave Pix
+  manual, porque um pagamento fora do provedor não pode ser associado com
+  segurança ao ciclo que originou a cobrança.
+- O primeiro adaptador será **Mercado Pago via OAuth**, por permitir que o
+  titular autorize uma conta existente sem copiar uma credencial ampla.
+- O segundo adaptador será **Asaas**. Conta existente usa API Key criptografada;
+  subcontas/BaaS somente após acordo comercial e avaliação regulatória.
+- Nenhum fluxo armazenará PAN, CVV, senha bancária ou credencial em texto
+  aberto. Cartão usa checkout hospedado/tokenização do provedor.
+- Webhooks persistidos e idempotentes são a fonte de verdade. Consultas à API
+  servem para reconciliação e recuperação.
+- O n8n pode enviar mensagens, mas não decide nem persiste estado financeiro.
+- Toda automação nasce desativada e é liberada por tenant após homologação.
 
-## Decisões de arquitetura
+## Modos de Pix
 
-- Usar o **Asaas como primeiro provedor**, atrás de um adaptador interno para não
-  acoplar regras de negócio diretamente à API externa.
-- Implementar primeiro a assinatura da plataforma; não misturar pagamentos da
-  Soft Ink com recebíveis de alunos ou clientes dos tenants.
-- Para cartão, preferir **checkout hospedado e recorrente do Asaas**. O
-  billing-app não deve armazenar nem registrar número completo do cartão, CVV ou
-  dados sensíveis do portador.
-- Para Pix Automático, o cliente não informa agência, conta ou chave Pix ao
-  Jack. O app gera a autorização e o QR Code; o pagador concede o consentimento
-  no aplicativo do próprio banco.
-- Webhooks são a fonte de verdade para confirmação, falha, estorno,
-  cancelamento e ativação de autorização. Consultas periódicas servem apenas
-  para reconciliação e recuperação.
-- n8n pode enviar avisos operacionais, mas não será responsável por decidir ou
-  persistir o estado financeiro.
-- Manter pagamento manual como fallback durante todo o rollout inicial.
+### Chave do tenant — padrão
 
-## Pré-requisitos comerciais e regulatórios
+- Usa chave e beneficiário já configurados no painel.
+- Pode mostrar chave, copia e cola e QR estático gerado localmente.
+- A confirmação permanece manual e auditada.
+- Não há taxa ou dependência de gateway no billing-app.
 
-Antes do desenvolvimento que movimenta valores reais:
+### Pix dinâmico do provedor — opt-in
 
-- confirmar que a conta Asaas de produção da Soft Ink está aprovada e em nome
-  de pessoa jurídica;
-- solicitar e confirmar a habilitação de tokenização/recorrência de cartão em
-  produção;
-- confirmar a elegibilidade da conta para Pix Automático;
-- validar taxas, prazo de recebimento, chargeback, estorno e política de
-  cancelamento;
-- confirmar com o Asaas o modelo futuro de subcontas, split e KYC para os
-  tenants;
-- revisar termos de uso, política de privacidade, consentimento e comunicação de
-  cobrança com apoio jurídico/contábil.
-
-Referências oficiais:
-
-- [Assinaturas no Asaas](https://docs.asaas.com/docs/assinaturas)
-- [Assinatura com cartão](https://docs.asaas.com/docs/criando-assinatura-com-cartao-de-credito)
-- [Checkout recorrente](https://docs.asaas.com/docs/checkout-com-assinatura-recorrente)
-- [Pix Automático](https://docs.asaas.com/docs/pix-automatico)
-- [Webhooks do Pix Automático](https://docs.asaas.com/docs/fluxos-de-webhook)
-- [Eventos de cobrança](https://docs.asaas.com/docs/webhook-para-cobrancas)
-- [Subcontas](https://docs.asaas.com/reference/criar-subconta)
-- [Split de pagamentos](https://docs.asaas.com/docs/split-de-pagamentos)
-
-## Experiência do tenant — MVP
-
-Criar uma área **Assinatura e pagamento** no painel do tenant.
-
-Ela deve exibir:
-
-- plano base, adicionais e valor mensal total;
-- situação da assinatura;
-- forma de pagamento atual;
-- próximo vencimento;
-- últimas cobranças e seus estados;
-- ação para configurar ou trocar a forma de pagamento;
-- ação para regularizar cobrança pendente;
-- orientação clara para cancelamento ou revogação.
-
-### Cartão
-
-1. O tenant escolhe **Cartão de crédito**.
-2. O backend cria uma sessão de checkout recorrente no Asaas com idempotência.
-3. O navegador abre o checkout hospedado.
-4. O Asaas valida o cartão e cria a recorrência.
-5. O callback apenas devolve o usuário ao painel.
-6. A ativação definitiva ocorre pelo webhook confirmado.
-7. O painel mostra somente dados mascarados permitidos, como bandeira e quatro
-   últimos dígitos, quando fornecidos pelo provedor.
+- Cria uma cobrança individual vinculada ao `billing_cycle`.
+- Exibe somente o QR e o copia e cola retornados pelo provedor.
+- Webhook aprovado baixa o ciclo e registra taxa, líquido e horário.
+- Expiração, cancelamento, estorno e divergência ficam auditáveis.
 
 ### Pix Automático
 
-1. O tenant escolhe **Pix Automático**.
-2. O backend cria uma autorização vinculada ao cliente Asaas.
-3. O painel exibe QR Code, Pix copia e cola, valor inicial e prazo.
-4. O primeiro pagamento registra o consentimento no banco do pagador.
-5. O webhook ativa a autorização dentro do billing-app.
-6. As cobranças seguintes são geradas dentro dos limites autorizados.
-7. Revogação, recusa, expiração e falha ficam visíveis no painel.
+É um produto diferente de uma cobrança Pix dinâmica. Só entrará após confirmar
+elegibilidade, consentimento, recorrência e webhooks no provedor escolhido. Até
+lá, “Pix automático” no produto significa automação de geração e conciliação,
+não débito sem nova autorização do pagador.
 
-## Arquitetura proposta
+## Arquitetura comum
 
-### Adaptador de provedor
+Os componentes de tela e as regras financeiras dependem apenas do contrato
+interno em `src/lib/payments/provider-contract.ts`.
 
-Criar uma interface server-side com operações como:
+Cada adaptador deve normalizar:
 
-- criar ou localizar cliente no provedor;
-- criar checkout recorrente de cartão;
-- criar autorização de Pix Automático;
-- consultar autorização e cobrança;
-- criar cobrança recorrente quando aplicável;
-- cancelar assinatura ou autorização;
-- solicitar estorno;
-- validar e normalizar eventos de webhook.
+- conexão e capacidades da conta;
+- criação, consulta e cancelamento de cobrança;
+- Pix dinâmico e checkout hospedado de cartão;
+- estados `created`, `pending`, `paid`, `failed`, `expired`, `cancelled`,
+  `refunded` e `chargeback`;
+- IDs externos, valor bruto, taxa, líquido e datas;
+- validação e normalização de webhook.
 
-O primeiro adaptador será Asaas. Rotas e componentes não devem depender de
-nomes de campos específicos do provedor.
+Credenciais serão cifradas com AES-256-GCM antes de chegar ao banco. A chave
+`PAYMENT_CREDENTIALS_ENCRYPTION_KEY` é exclusivamente server-side e deve ficar
+nos segredos de produção, com versão preparada para futura rotação.
 
-### Endpoints previstos
+## Blocos de implementação
 
-- GET /api/tenant-subscription
-- POST /api/tenant-subscription/payment-method/card
-- POST /api/tenant-subscription/payment-method/pix-automatic
-- POST /api/tenant-subscription/payment-method/cancel
-- POST /api/tenant-subscription/retry
-- POST /api/webhooks/asaas
-- POST /api/internal/payments/reconcile
+### Bloco 0 — fundação segura e neutra de provedor
 
-Todas as rotas do tenant devem validar autenticação, vínculo com o tenant e
-estado do plano no backend.
+- [x] Definir modos `tenant_key` e `provider_dynamic` sem alterar o padrão atual.
+- [x] Criar contrato TypeScript independente de Mercado Pago e Asaas.
+- [x] Criar migration `064_tenant_payment_provider_foundation.sql`.
+- [x] Modelar conexões, cobranças externas e eventos idempotentes por tenant.
+- [x] Impedir por FK composta que uma conexão ou cobrança atravesse tenants.
+- [x] Negar acesso direto do cliente a credenciais, payloads e eventos brutos.
+- [x] Implementar criptografia AES-256-GCM para credenciais server-side.
+- [x] Aplicar a migration 064 em produção e confirmar automação desativada.
 
-### Modelo de dados
+**Não faz parte:** OAuth, API Key real, webhook público, QR, checkout ou cobrança.
 
-Preservar subscriptions, platform_tenant_billing_profiles, payments e
-platform_payment_events. Acrescentar estruturas específicas de integração:
+**Saída:** banco e contratos prontos, sem movimentar valores e sem alterar a
+experiência existente.
 
-#### payment_provider_customers
+### Bloco 1 — Pix manual aprimorado
 
-- id
-- scope: platform_subscription ou tenant_receivable
-- tenant_id
-- provider
-- provider_customer_id
-- status
-- timestamps
+- [ ] Exibir modo atual e chave Pix nas configurações financeiras.
+- [ ] Gerar copia e cola BR Code e QR estático localmente.
+- [ ] Incluir valor e referência quando compatíveis com o QR estático.
+- [ ] Manter confirmação manual auditada no financeiro.
+- [ ] Tratar chave ausente ou inválida sem interromper lembretes.
 
-#### platform_payment_methods
+**Saída:** tenant usa QR sem gateway, sabendo que a baixa é manual.
 
-- id
-- tenant_id
-- provider_customer_id
-- provider
-- method_type: credit_card ou pix_automatic
-- status
-- provider_subscription_id
-- provider_authorization_id
-- dados mascarados permitidos do cartão
-- is_default
-- timestamps
+### Bloco 2 — conexão Mercado Pago
 
-#### payment_provider_events
+- [ ] Configurar a chave de criptografia na Vercel antes do primeiro OAuth.
+- [ ] Registrar aplicação produtiva e URLs de callback.
+- [ ] Implementar OAuth Authorization Code com `state` de uso único e PKCE.
+- [ ] Trocar e renovar tokens somente no servidor.
+- [ ] Cifrar tokens antes de persistir e nunca retorná-los ao navegador.
+- [ ] Consultar conta autorizada e impedir a mesma conta em dois tenants.
+- [ ] Criar tela Conectar, reconectar e desconectar Mercado Pago.
+- [ ] Exibir somente conta, situação e capacidades não sensíveis.
 
-- id
-- provider
-- provider_event_id com índice único
-- event_type
-- scope
-- tenant_id
-- referências internas de pagamento/assinatura
-- payload bruto restrito ao service role
-- processing_status
-- received_at, processed_at e mensagem de erro
+**Saída:** um tenant controlado conecta e revoga sua conta sem criar cobrança.
 
-#### Evolução de payments
+### Bloco 3 — Pix dinâmico e conciliação
 
-- manter o ID interno como identidade principal;
-- vincular provider_payment_id e provider_event_id;
-- registrar vencimento, confirmação, valor bruto, valor líquido, taxa,
-  estorno e método;
-- mapear estados do provedor para estados internos sem expor texto externo como
-  regra de negócio.
+- [ ] Criar cobrança Pix com idempotência e `external_reference` interna.
+- [ ] Vincular cobrança ao tenant, cliente e `billing_cycle`.
+- [ ] Criar webhook autenticado, persistido e idempotente.
+- [ ] Consultar o recurso no provedor antes de efetivar a baixa.
+- [ ] Atualizar ciclo e histórico em transação única.
+- [ ] Tratar pagamento, expiração, falha, cancelamento e estorno.
+- [ ] Criar reconciliação read-only e fila de divergências.
 
-Nenhuma tabela deve receber PAN, CVV, senha bancária, agência/conta do pagador
-ou chave de API sem criptografia dedicada.
+**Saída:** Pix de baixo valor confirmado automaticamente sem baixa duplicada.
 
-## Processamento de webhook
+### Bloco 4 — cartão e recorrência
 
-1. Validar o header obrigatório asaas-access-token.
-2. Persistir o evento antes de executar efeitos.
-3. Deduplicar por provider_event_id.
-4. Responder 2xx rapidamente.
-5. Processar o evento de forma idempotente.
-6. Atualizar pagamento, assinatura/autorização e evento histórico na mesma
-   operação transacional quando possível.
-7. Ignorar atributos desconhecidos sem interromper a fila.
-8. Registrar falhas para retentativa e alerta.
+- [ ] Usar checkout hospedado; nenhum campo de cartão no billing-app.
+- [ ] Criar pagamento avulso e, quando contratado, assinatura recorrente.
+- [ ] Guardar somente identificadores e dados mascarados permitidos.
+- [ ] Tratar recusa, retentativa, cartão expirado, estorno e chargeback.
+- [ ] Permitir troca e cancelamento do método pelo pagador.
+- [ ] Não suspender cliente automaticamente no primeiro rollout.
 
-Eventos mínimos:
+**Saída:** cartão homologado ponta a ponta com webhook duplicado e fora de ordem.
 
-- criação e atualização da cobrança;
-- confirmação e recebimento;
-- vencimento;
-- falha ou recusa;
-- estorno, chargeback e cancelamento;
-- ativação, recusa, expiração e cancelamento da autorização Pix;
-- criação, agendamento, recusa e cancelamento da instrução Pix recorrente.
+### Bloco 5 — adaptador Asaas
 
-## Fases de implementação
+- [ ] Confirmar condições comerciais e modalidade de integração.
+- [ ] Conectar conta existente por API Key criptografada.
+- [ ] Validar a conta antes de habilitar qualquer capacidade.
+- [ ] Implementar Pix, cartão/assinatura e webhooks no contrato comum.
+- [ ] Avaliar subcontas/BaaS separadamente, sem presumir aprovação regulatória.
 
-### Fase 0 — decisão comercial e desenho final
+**Saída:** trocar o provedor não muda regras de negócio nem telas financeiras.
 
-- [ ] Abrir/validar conta Asaas Sandbox e produção da Soft Ink.
-- [ ] Confirmar cartão recorrente, Pix Automático e tokenização em produção.
-- [ ] Levantar taxas, prazos, limites e políticas.
-- [ ] Definir carência, tentativas e regra de suspensão.
-- [ ] Confirmar que o MVP cobra apenas a assinatura da plataforma.
+### Bloco 6 — WhatsApp e operação financeira
 
-**Saída:** provedor e regras operacionais aprovados antes de criar migrations.
+- [ ] Oferecer link/QR automático somente quando houver cobrança válida.
+- [ ] Preservar o template com chave Pix no modo manual.
+- [ ] Criar segunda via sem gerar cobrança duplicada.
+- [ ] Mostrar origem, provedor, método, taxa e líquido no financeiro.
+- [ ] Criar painel de conexões, webhooks e divergências para a plataforma.
+- [ ] Manter baixa manual como contingência com auditoria.
 
-### Fase 1 — fundação técnica
+**Saída:** suporte consegue explicar e corrigir qualquer divergência pelo painel.
 
-- [ ] Criar adaptador de pagamentos e configuração server-only.
-- [ ] Criar migration de clientes externos, métodos, autorizações e eventos.
-- [ ] Criar webhook autenticado e idempotente.
-- [ ] Criar reconciliação read-only e alertas.
-- [ ] Adicionar feature flag e allowlist de tenants.
+### Bloco 7 — rollout de produção
 
-**Saída:** eventos falsos/duplicados não geram dupla baixa nem mudança cruzada
-entre tenants.
+- [ ] Homologar primeiro com contas e pagadores de teste do provedor.
+- [ ] Ativar somente para um tenant controlado.
+- [ ] Realizar Pix oficial de baixo valor e conferir bruto, taxa e líquido.
+- [ ] Realizar cartão oficial de baixo valor e estorno controlado.
+- [ ] Monitorar eventos duplicados, atrasados e falhas por uma competência.
+- [ ] Expandir por allowlist antes de liberar conexão para todos.
 
-### Fase 2 — cartão recorrente da plataforma
+**Saída:** uma competência conciliada sem mistura entre tenants.
 
-- [ ] Criar checkout hospedado.
-- [ ] Vincular cliente, assinatura e cobranças Asaas aos registros atuais.
-- [ ] Criar tela de configuração e retorno do checkout.
-- [ ] Tratar aprovação, recusa, cartão expirado, estorno e chargeback.
-- [ ] Refletir pagamento no histórico e no financeiro da plataforma.
+### Bloco 8 — extensões posteriores
 
-**Saída:** ciclo completo aprovado no Sandbox, inclusive webhook duplicado.
+- [ ] Pix Automático regulado, se habilitado pelo provedor.
+- [ ] Cobrança da assinatura do Jack usando o mesmo núcleo, em escopo separado.
+- [ ] Novos provedores somente quando houver demanda comercial comprovada.
+- [ ] Split/comissão apenas após decisão jurídica, contábil e regulatória.
 
-### Fase 3 — Pix Automático da plataforma
+## Segurança obrigatória
 
-- [ ] Criar autorização e primeiro QR Code.
-- [ ] Exibir consentimento pendente, ativo, recusado, expirado ou cancelado.
-- [ ] Gerar e conciliar instruções dos ciclos seguintes.
-- [ ] Evitar débito duplicado quando o ciclo já estiver pago.
-- [ ] Permitir revogação e troca de método.
-
-**Saída:** autorização, primeiro pagamento, recorrência seguinte e revogação
-validados ponta a ponta.
-
-### Fase 4 — cobrança, recuperação e operação
-
-- [ ] Definir régua de lembrete anterior ao vencimento.
-- [ ] Implementar retentativas sem duplicidade.
-- [ ] Criar período de carência antes de suspender.
-- [ ] Não suspender automaticamente no primeiro rollout.
-- [ ] Criar painel operacional de divergências, falhas e webhooks.
-- [ ] Manter confirmação manual auditada como contingência.
-
-**Saída:** equipe consegue explicar e corrigir qualquer divergência pelo
-histórico de eventos.
-
-### Fase 5 — rollout de produção
-
-- [ ] Homologar tudo no Sandbox com dados fictícios.
-- [ ] Ativar produção apenas para um tenant controlado.
-- [ ] Fazer uma cobrança oficial de baixo valor em cartão.
-- [ ] Fazer uma autorização e cobrança oficial de baixo valor em Pix
-  Automático.
-- [ ] Conferir valor bruto, taxa, líquido, webhook e baixa interna.
-- [ ] Expandir por allowlist e monitorar uma competência completa.
-- [ ] Só depois tornar a configuração disponível aos demais tenants.
-
-**Saída:** uma competência mensal completa conciliada sem intervenção manual.
-
-### Fase 6 — pagamentos dos clientes finais dos tenants
-
-Esta fase é um épico separado.
-
-- [ ] Confirmar aprovação regulatória/comercial para subcontas.
-- [ ] Definir onboarding KYC de cada tenant.
-- [ ] Definir se a cobrança é emitida pela subconta do tenant.
-- [ ] Definir comissão e split, sem misturar saldos.
-- [ ] Guardar chaves de subconta em cofre/KMS, nunca em tabela aberta.
-- [ ] Adaptar billing_cycles para cobrança externa e conciliação.
-- [ ] Implementar cartão e Pix Automático por tenant.
-- [ ] Garantir que um webhook nunca baixe ciclo de outro tenant.
-- [ ] Tratar repasse, estorno, chargeback, taxas e relatórios.
-
-**Saída:** piloto com um único tenant aprovado, antes de liberar a plataforma.
-
-## Segurança e privacidade
-
-- Checkout hospedado para reduzir exposição a dados de cartão.
-- Nunca armazenar PAN completo ou CVV.
-- Nunca registrar dados sensíveis em logs, analytics ou payload de erro.
-- Chaves Asaas somente no servidor e em segredo de ambiente/cofre.
-- Token de webhook independente das API keys.
-- RLS negando acesso do cliente aos payloads brutos.
-- Idempotência em criação de checkout, autorização, cobrança e webhook.
-- Rate limit nas rotas de criação e retentativa.
-- Auditoria imutável de mudança de método, baixa, estorno e cancelamento.
-- Política de retenção e minimização de dados alinhada à LGPD.
-- Revisão jurídica e contábil antes do go-live; este roadmap não substitui essa
-  validação.
+- Credenciais cifradas com chave fora do banco.
+- Service role como único acesso às tabelas brutas de integração.
+- OAuth com `state`, PKCE, callback exato e proteção contra repetição.
+- Verificação de assinatura/token e consulta confirmatória nos webhooks.
+- Idempotência em conexão, cobrança, webhook, baixa e estorno.
+- FKs compostas com `tenant_id`, conexão e provedor.
+- Nunca registrar tokens, QR copia e cola, PAN ou CVV em logs de aplicação.
+- Minimização e retenção de payloads alinhadas à LGPD.
+- Checkout hospedado para reduzir o escopo PCI.
+- Revisão jurídica e contábil antes da liberação geral.
 
 ## Matriz mínima de testes
 
+### Isolamento e idempotência
+
+- conexão de um tenant não pode ser usada por outro;
+- a mesma conta externa não pode ser conectada a dois tenants;
+- duas entregas do mesmo evento produzem um efeito;
+- evento fora de ordem não regride pagamento confirmado;
+- cobrança paga manualmente não recebe segunda baixa automática;
+- falha parcial pode ser retomada sem gerar nova cobrança indevida.
+
+### Pix
+
+- chave ausente, CPF/CNPJ, telefone, e-mail e chave aleatória;
+- QR estático válido e confirmação manual;
+- Pix dinâmico criado, pago, expirado, cancelado e estornado;
+- pagamento direto na chave não é apresentado como conciliado pelo provedor.
+
 ### Cartão
 
-- aprovado, recusado e em análise de risco;
+- aprovado, recusado e em análise;
 - cartão inválido ou expirado;
-- callback recebido antes/depois do webhook;
-- webhook duplicado e fora de ordem;
-- troca de plano ou adicional;
-- estorno parcial/total e chargeback;
-- troca e cancelamento de método.
+- callback antes e depois do webhook;
+- retentativa e troca de método;
+- estorno parcial/total e chargeback.
 
-### Pix Automático
+## Referências oficiais
 
-- autorização criada, ativada, recusada, expirada e cancelada;
-- primeiro pagamento não concluído;
-- instrução criada, agendada, recusada e cancelada;
-- pagamento antecipado sem débito duplicado;
-- saldo insuficiente e nova tentativa;
-- revogação no banco refletida no Jack.
-
-### Multi-tenant
-
-- IDs externos não podem ser reutilizados em outro tenant;
-- evento de um tenant não altera assinatura ou ciclo de outro;
-- duas entregas do mesmo webhook produzem um único efeito;
-- valores de plano, Plus e profissionais adicionais são preservados;
-- fallback manual gera histórico sem duplicar a baixa automática.
-
-## Critérios para considerar o MVP concluído
-
-- cartão e Pix Automático configuráveis pelo tenant;
-- nenhum dado bruto de cartão armazenado;
-- webhooks autenticados, persistidos e idempotentes;
-- pagamentos refletidos automaticamente no histórico da plataforma;
-- falhas, cancelamentos, estornos e revogações visíveis;
-- reconciliação detecta divergência sem alterar dados silenciosamente;
-- rollout controlado conclui uma competência real;
-- runbook de operação e rollback aprovado.
-
-## Decisões pendentes do produto
-
-Recomendação inicial entre parênteses:
-
-1. Carência após falha: **quantos dias?** (7 dias).
-2. Retentativa de cartão: **quantas e em quais dias?** (D+1 e D+3).
-3. Suspensão: **automática ou revisada?** (revisada no primeiro mês).
-4. Taxas: **absorvidas ou repassadas?** (absorvidas na assinatura do Jack).
-5. Novo tenant: **paga antes ou depois da aprovação?** (depois da aprovação e
-   antes da ativação definitiva).
-6. Clientes finais dos tenants: **há comissão do Jack?** (decidir somente na
-   Fase 6).
+- [OAuth Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/security/oauth/creation)
+- [Webhooks Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks)
+- [Assinaturas Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/overview)
+- [Autenticação Asaas](https://docs.asaas.com/docs/authentication)
+- [Cobranças Pix Asaas](https://docs.asaas.com/docs/cobrancas-via-pix)
+- [Webhooks de cobranças Asaas](https://docs.asaas.com/docs/webhook-para-cobrancas)
+- [Assinaturas Asaas](https://docs.asaas.com/docs/faq-assinaturas)
+- [Subcontas Asaas](https://docs.asaas.com/docs/duvidas-frequentes-subcontas)

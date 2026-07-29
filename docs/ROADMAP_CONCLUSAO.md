@@ -143,13 +143,16 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 
 ### Pagamentos automáticos — cartão e Pix
 
-- [x] Definir roadmap separado para assinatura da plataforma e recebíveis dos tenants.
-- [ ] Validar conta Asaas PJ, condições comerciais, cartão recorrente e elegibilidade para Pix Automático.
-- [ ] Implementar primeiro a assinatura do Jack com cartão e Pix Automático.
-- [ ] Criar webhook autenticado, persistido e idempotente.
-- [ ] Homologar cartão e Pix Automático no Sandbox antes de movimentar valores reais.
-- [ ] Fazer rollout em produção por allowlist, sem suspensão automática inicial.
-- [ ] Tratar subcontas, KYC e split dos clientes finais apenas em um épico posterior.
+- [x] Reorganizar o roadmap para recebíveis dos tenants em contas próprias.
+- [x] Implementar a fundação neutra de provedor do Bloco 0 na migration 064.
+- [x] Aplicar a migration 064 com automação desativada e tabelas de integração vazias.
+- [ ] Configurar a chave server-only antes do primeiro OAuth.
+- [ ] Entregar QR Pix estático usando prioritariamente a chave configurada do tenant.
+- [ ] Conectar Mercado Pago por OAuth sem expor tokens ao navegador.
+- [ ] Implementar Pix dinâmico, webhook idempotente e conciliação por `billing_cycle`.
+- [ ] Implementar checkout hospedado e recorrência de cartão.
+- [ ] Adicionar Asaas como segundo adaptador, sem presumir BaaS ou subcontas.
+- [ ] Homologar por tenant controlado e expandir por allowlist.
 
 Detalhamento: [roadmap de pagamentos automáticos](./automatic-payments-roadmap.md).
 
