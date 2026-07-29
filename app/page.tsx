@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ContactCard } from "./contact-card";
+import { PublicHeader } from "./public-header";
 
 const benefits = [
   [
@@ -37,8 +38,8 @@ const segments = [
     "Cardápio digital, pedidos e financeiro organizados, com atendimento pelo WhatsApp.",
   ],
   [
-    "Autônomos",
-    "Clientes, cobranças e agenda no mesmo lugar, sem planilha e sem caderninho.",
+    "Academias e arenas",
+    "Alunos, mensalidades, serviços e profissionais organizados. No Plus, também é possível controlar quadras e outros ambientes.",
   ],
 ];
 
@@ -72,31 +73,7 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(3,20,47,0.98)_0%,rgba(3,20,47,0.9)_38%,rgba(3,20,47,0.38)_74%,rgba(3,20,47,0.08)_100%)]" />
 
         <div className="mx-auto flex min-h-[86vh] w-full max-w-6xl flex-col px-6 py-6 sm:px-8 lg:px-10">
-          <header className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <Link className="text-sm font-bold uppercase tracking-[0.14em]" href="/">
-              Assistente Jack
-            </Link>
-            <nav className="grid w-full grid-cols-2 gap-2 text-sm text-white/82 sm:flex sm:w-auto sm:items-center sm:gap-5">
-              <Link className="self-center hover:text-white" href="/privacidade">
-                Privacidade
-              </Link>
-              <Link className="self-center text-right hover:text-white sm:text-left" href="/termos">
-                Termos
-              </Link>
-              <Link
-                className="self-center hover:text-white"
-                href="https://app.meuassistentevirtual.com.br/login"
-              >
-                Entrar
-              </Link>
-              <Link
-                className="rounded-md bg-[#68e5ff] px-3 py-2 text-center font-bold text-[#03142f] shadow-sm hover:bg-white sm:px-4"
-                href="/cadastro"
-              >
-                Cadastre-se
-              </Link>
-            </nav>
-          </header>
+          <PublicHeader />
 
           <div className="flex flex-1 items-center py-10">
             <div className="max-w-2xl">
@@ -125,6 +102,13 @@ export default function Home() {
                   Falar com a gente
                 </a>
               </div>
+              <Link
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#68e5ff]/40 bg-[#68e5ff]/10 px-4 py-2 text-sm font-bold text-[#9ceeff] transition hover:border-[#68e5ff] hover:bg-[#68e5ff]/20"
+                href="/planos"
+              >
+                Planos a partir de R$ 49,90/mês
+                <span aria-hidden="true">→</span>
+              </Link>
 
               <div className="mt-10 grid max-w-xl gap-3 sm:grid-cols-3">
                 {steps.map((step, index) => (
@@ -236,24 +220,6 @@ export default function Home() {
               </article>
             ))}
 
-            <article className="rounded-md border border-[#8fd8ee] bg-[#eafaff] p-6 shadow-sm sm:col-span-2 lg:col-span-4">
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:items-center">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0d65bd]">
-                    Recurso do Plano 3 Plus
-                  </p>
-                  <h3 className="mt-2 text-xl font-black text-[#073a86]">
-                    Controle de quadras e ambientes
-                  </h3>
-                </div>
-                <p className="text-sm leading-6 text-[#34475e]">
-                  Ideal para academias, arenas e negócios de locação: cadastre
-                  quadras, salões de festa, piscinas e outros espaços. Defina
-                  horários e duração, evite conflitos e acompanhe os agendamentos
-                  pelo painel enquanto o Jack atende seus clientes pelo WhatsApp.
-                </p>
-              </div>
-            </article>
           </div>
         </div>
       </section>

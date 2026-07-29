@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import { clearPublicSessionMarker, markPublicSessionActive } from '../../../src/lib/public-session'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
 import { getAllowedPlanCodesForBusinessType } from '../../../src/lib/plan-features'
 import { openNativePicker } from '../../../src/lib/open-native-picker'
@@ -137,6 +138,7 @@ export default function PlatformTenantsPage() {
     }
 
     const data = await response.json()
+    markPublicSessionActive('platform')
     setTenants(data.tenants ?? [])
 
     if (plansResponse.ok) {
@@ -201,6 +203,7 @@ export default function PlatformTenantsPage() {
 
   async function logout() {
     await supabase.auth.signOut()
+    clearPublicSessionMarker()
     router.push('/login')
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
+import { clearPublicSessionMarker, markPublicSessionActive } from '../../src/lib/public-session'
 import { getBusinessLabels, getCatalogLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
 import {
@@ -122,6 +123,8 @@ export default function DashboardPage() {
         return
       }
 
+      markPublicSessionActive('tenant')
+
       if (result.tenantUser.must_change_password) {
         router.push('/change-password')
         return
@@ -139,6 +142,7 @@ export default function DashboardPage() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
+    clearPublicSessionMarker()
     window.location.assign('https://www.meuassistentevirtual.com.br/')
   }
 

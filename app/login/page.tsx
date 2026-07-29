@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
+import { markPublicSessionActive } from '../../src/lib/public-session'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -41,11 +42,13 @@ export default function LoginPage() {
       })
 
       if (platformResponse.ok) {
+        markPublicSessionActive('platform')
         router.push('/platform/tenants')
         return
       }
     }
 
+    markPublicSessionActive('tenant')
     router.push('/dashboard')
   }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../src/lib/supabase'
+import { clearPublicSessionMarker } from '../../src/lib/public-session'
 import { getBusinessLabels } from '../../src/lib/business-labels'
 import { getCurrentTenantUser } from '../../src/services/auth'
 
@@ -278,6 +279,7 @@ export default function SettingsPage() {
 
   async function logout() {
     await supabase.auth.signOut()
+    clearPublicSessionMarker()
     window.location.assign('https://www.meuassistentevirtual.com.br/')
   }
 

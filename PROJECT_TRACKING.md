@@ -795,3 +795,14 @@ Proxima prioridade:
 6. Aplicar migrations consolidadas em staging e comparar schema/dados essenciais com o Supabase alvo.
 7. Manter tudo idempotente, auditavel, seguro por tenant e sem depender apenas do front para regra de negocio.
 ```
+
+## Página pública de planos e identificação de sessão (2026-07-29)
+
+- Nova página pública `/planos` criada no padrão visual da home, carregando os cinco planos ativos e seus preços diretamente de `GET /api/public/plans`.
+- Plano 3 Plus apresentado como Plano 3 + extensão Ambientes de R$ 79,90/mês, com total calculado a partir do preço vigente do Plano 3.
+- Valores de profissionais adicionais explicitados: R$ 25,00/mês no Plano 2 e R$ 50,00/mês no Plano 3, sempre após aprovação.
+- Home ganhou CTA “Planos a partir de R$ 49,90/mês”, link de Planos no cabeçalho e card explícito para academias e arenas.
+- Descrição extensa de quadras e ambientes removida da seção de exemplos da home e concentrada na página de planos.
+- Cabeçalho público identifica sessão ativa e direciona ao painel correto de tenant ou plataforma; o marcador compartilhado entre subdomínios é apenas visual, enquanto a autorização continua validada pelo Supabase.
+- Logout dos painéis remove o marcador visual de sessão.
+- Validações concluídas: `npm run lint`, `tsc --noEmit`, `npm run build`, `git diff --check`, home e `/planos` HTTP 200 e catálogo público conferido em execução local.
