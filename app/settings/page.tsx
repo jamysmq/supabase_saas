@@ -21,6 +21,8 @@ type BillingSettings = {
   pix_key: string | null
   pix_key_type: string | null
   pix_beneficiary_name: string | null
+  pix_beneficiary_city: string | null
+  pix_collection_mode: string | null
   timezone: string | null
   max_customer_groups: number | null
 }
@@ -49,6 +51,7 @@ export default function SettingsPage() {
     pix_key: '',
     pix_key_type: 'cpf',
     pix_beneficiary_name: '',
+    pix_beneficiary_city: '',
   })
   const [passwordForm, setPasswordForm] = useState({
     current_password: '',
@@ -100,7 +103,7 @@ export default function SettingsPage() {
         .single(),
       supabase
         .from('tenant_billing_settings')
-        .select('pix_key, pix_key_type, pix_beneficiary_name, timezone, max_customer_groups')
+        .select('pix_key, pix_key_type, pix_beneficiary_name, pix_beneficiary_city, pix_collection_mode, timezone, max_customer_groups')
         .eq('tenant_id', result.tenantUser.tenant_id)
         .maybeSingle(),
     ])
@@ -123,6 +126,7 @@ export default function SettingsPage() {
       pix_key: settingsResult.data?.pix_key ?? '',
       pix_key_type: settingsResult.data?.pix_key_type ?? 'cpf',
       pix_beneficiary_name: settingsResult.data?.pix_beneficiary_name ?? '',
+      pix_beneficiary_city: settingsResult.data?.pix_beneficiary_city ?? '',
     })
     setLoading(false)
   }, [router])
@@ -199,6 +203,7 @@ export default function SettingsPage() {
         pix_key: pixForm.pix_key,
         pix_key_type: pixForm.pix_key_type,
         pix_beneficiary_name: pixForm.pix_beneficiary_name,
+        pix_beneficiary_city: pixForm.pix_beneficiary_city,
       }),
     })
 
@@ -419,9 +424,17 @@ export default function SettingsPage() {
 
             <form onSubmit={savePix} className="bg-white rounded-2xl shadow p-5 space-y-4">
               <div>
-                <h2 className="font-bold">Pix de recebimento</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-bold">Pix de recebimento</h2>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    {billingSettings?.pix_collection_mode === 'provider_dynamic'
+                      ? 'Pix dinâmico'
+                      : 'Pix manual'}
+                  </span>
+                </div>
                 <p className="text-sm text-gray-500">
-                  Estes dados podem aparecer nas mensagens de cobrança dos seus {labels.customerPluralLower}.
+                  A chave aparece nas mensagens e gera QR Codes com o valor de cada cobrança.
+                  A confirmação do recebimento continua manual.
                 </p>
               </div>
 
@@ -438,6 +451,24 @@ export default function SettingsPage() {
                 />
               </label>
 
+              <label className="block text-sm font-medium">
+                Cidade do beneficiário
+                <input
+                  value={pixForm.pix_beneficiary_city}
+                  onChange={(event) => setPixForm({
+                    ...pixForm,
+                    pix_beneficiary_city: event.target.value,
+                  })}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 font-normal"
+                  placeholder="Ex.: Fortaleza"
+                  maxLength={60}
+                  required
+                />
+                <span className="mt-1 block text-xs font-normal text-gray-500">
+                  Usada na montagem do QR Pix conforme o padrão BR Code.
+                </span>
+              </label>
+
               <div className="grid gap-4 md:grid-cols-[180px_1fr]">
                 <label className="block text-sm font-medium">
                   Tipo da chave
@@ -451,9 +482,9 @@ export default function SettingsPage() {
                   >
                     <option value="cpf">CPF</option>
                     <option value="cnpj">CNPJ</option>
-                    <option value="email">Email</option>
+                    <option value="email">E-mail</option>
                     <option value="phone">Telefone</option>
-                    <option value="random">Aleatoria</option>
+                    <option value="random">Aleatória</option>
                   </select>
                 </label>
 
@@ -470,6 +501,11 @@ export default function SettingsPage() {
                   />
                 </label>
               </div>
+
+              <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                O QR estático facilita o pagamento, mas não consulta o banco. Depois de receber,
+                confirme a baixa em Pagamentos pendentes.
+              </p>
 
               <button
                 type="submit"

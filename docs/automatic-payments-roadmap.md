@@ -97,11 +97,15 @@ experiência existente.
 
 ### Bloco 1 — Pix manual aprimorado
 
-- [ ] Exibir modo atual e chave Pix nas configurações financeiras.
-- [ ] Gerar copia e cola BR Code e QR estático localmente.
-- [ ] Incluir valor e referência quando compatíveis com o QR estático.
-- [ ] Manter confirmação manual auditada no financeiro.
-- [ ] Tratar chave ausente ou inválida sem interromper lembretes.
+- [x] Exibir modo atual e chave Pix nas configurações financeiras.
+- [x] Gerar copia e cola BR Code e QR estático localmente.
+- [x] Incluir valor e referência quando compatíveis com o QR estático.
+- [x] Manter confirmação manual auditada no financeiro.
+- [x] Tratar chave ausente ou inválida sem interromper lembretes.
+
+Implementado pela migration 065, gerador BR Code validado contra o vetor oficial
+do BCB e rota autenticada por tenant. O QR é criado sob demanda para um ciclo
+pendente, sem persistir o payload e sem ativar automação.
 
 **Saída:** tenant usa QR sem gateway, sabendo que a baixa é manual.
 
@@ -221,6 +225,7 @@ experiência existente.
 
 ## Referências oficiais
 
+- [Manual de Padrões para Iniciação do Pix — Banco Central](https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf)
 - [OAuth Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/security/oauth/creation)
 - [Webhooks Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks)
 - [Assinaturas Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/overview)

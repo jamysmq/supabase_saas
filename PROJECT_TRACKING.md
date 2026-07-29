@@ -735,6 +735,10 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Migration 064 aplicada em produção em 2026-07-29; verificação confirmou zero conexões, cobranças e eventos, zero tenants com automação ativa, RLS habilitado e ausência de `SELECT` para `authenticated` nas tabelas sensíveis.
 - Teste transacional com rollback confirmou que a FK composta rejeita cobrança cruzada entre tenants e que a restrição única rejeita evento duplicado do provedor.
 - Criptografia de credenciais validada em round-trip AES-256-GCM; o texto sensível não aparece no valor cifrado.
+- Bloco 1 concluído em 2026-07-29: migration 065 adicionou a cidade do beneficiário e o painel passou a gerar Pix Copia e Cola e QR estático por ciclo, com valor e referência.
+- Gerador BR Code conferido contra o vetor oficial do BCB; chaves são normalizadas por tipo e o endpoint permanece isolado por tenant.
+- A baixa continua manual e auditada; chave ausente ou inválida bloqueia apenas a geração do QR, sem interromper os lembretes existentes.
+- Migration 065 aplicada em produção; verificação confirmou a coluna nova, zero tenants com automação ativa e todos no modo manual.
 - Rollout previsto: modo manual preservado, conexão controlada, pagamento oficial de baixo valor, allowlist e uma competência completa.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
