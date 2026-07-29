@@ -23,6 +23,8 @@ type BillingSettings = {
   pix_beneficiary_name: string | null
   pix_beneficiary_city: string | null
   pix_collection_mode: string | null
+  payment_automation_enabled: boolean | null
+  default_payment_provider: string | null
   timezone: string | null
   max_customer_groups: number | null
 }
@@ -53,6 +55,8 @@ export default function SettingsPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [billingSettings, setBillingSettings] = useState<BillingSettings | null>(null)
   const [mercadoPagoConfigured, setMercadoPagoConfigured] = useState(false)
+  const [mercadoPagoWebhookConfigured, setMercadoPagoWebhookConfigured] =
+    useState(false)
   const [mercadoPagoConnection, setMercadoPagoConnection] =
     useState<PaymentProviderConnection | null>(null)
   const [profileForm, setProfileForm] = useState({
@@ -78,6 +82,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
   const [connectingMercadoPago, setConnectingMercadoPago] = useState(false)
   const [disconnectingMercadoPago, setDisconnectingMercadoPago] = useState(false)
+  const [savingPaymentAutomation, setSavingPaymentAutomation] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const labels = getBusinessLabels(businessType)
@@ -119,7 +124,7 @@ export default function SettingsPage() {
         .single(),
       supabase
         .from('tenant_billing_settings')
-        .select('pix_key, pix_key_type, pix_beneficiary_name, pix_beneficiary_city, pix_collection_mode, timezone, max_customer_groups')
+        .select('pix_key, pix_key_type, pix_beneficiary_name, pix_beneficiary_city, pix_collection_mode, payment_automation_enabled, default_payment_provider, timezone, max_customer_groups')
         .eq('tenant_id', result.tenantUser.tenant_id)
         .maybeSingle(),
       fetch('/api/payment-providers/mercado-pago/connection', {
@@ -146,6 +151,10 @@ export default function SettingsPage() {
     const mercadoPagoPayload = await mercadoPagoResponse.json().catch(() => null)
     setMercadoPagoConfigured(
       mercadoPagoResponse.ok && mercadoPagoPayload?.configured === true
+    )
+    setMercadoPagoWebhookConfigured(
+      mercadoPagoResponse.ok &&
+        mercadoPagoPayload?.webhook_configured === true
     )
     setMercadoPagoConnection(
       mercadoPagoResponse.ok ? mercadoPagoPayload?.connection ?? null : null
@@ -366,6 +375,61 @@ export default function SettingsPage() {
 
     await load()
     setSuccess('Conta Mercado Pago desconectada do billing-app.')
+  }
+
+  async function updatePaymentAutomation(enabled: boolean) {
+    const action = enabled ? 'ativar' : 'desativar'
+    if (
+      !confirm(
+        `Deseja ${action} o Pix dinâmico? ${enabled ? 'Os novos QR Codes serão conciliados automaticamente.' : 'O estabelecimento voltará a usar a chave Pix manual.'}`
+      )
+    ) {
+      return
+    }
+
+    setSavingPaymentAutomation(true)
+    setError('')
+    setSuccess('')
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setSavingPaymentAutomation(false)
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch(
+      '/api/payment-providers/mercado-pago/automation',
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled }),
+      }
+    )
+    const payload = await response.json().catch(() => null)
+
+    setSavingPaymentAutomation(false)
+
+    if (!response.ok) {
+      setError(
+        payload?.message ??
+          'Não foi possível alterar a automação de pagamentos.'
+      )
+      return
+    }
+
+    setSuccess(
+      enabled
+        ? 'Pix dinâmico ativado. As confirmações serão conciliadas pelo Mercado Pago.'
+        : 'Pix dinâmico desativado. A chave Pix manual voltou a ser o padrão.'
+    )
+    await load()
   }
 
   async function changePassword(event: React.FormEvent) {
@@ -727,9 +791,17 @@ export default function SettingsPage() {
               )}
 
               <p className="rounded-xl bg-sky-50 p-3 text-xs text-sky-800">
-                Conectar a conta não ativa cobranças automáticas. O Pix manual
-                continua sendo o padrão até a homologação do próximo bloco.
+                {billingSettings?.payment_automation_enabled
+                  ? 'O Pix dinâmico está ativo. Cada QR Code é vinculado à mensalidade e a baixa só ocorre após conferência direta no Mercado Pago.'
+                  : 'A conta está isolada e o Pix manual continua sendo o padrão até você ativar a conciliação automática.'}
               </p>
+
+              {!mercadoPagoWebhookConfigured && (
+                <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                  A assinatura do webhook ainda precisa ser configurada e validada
+                  antes de liberar o Pix dinâmico.
+                </p>
+              )}
 
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
@@ -758,6 +830,33 @@ export default function SettingsPage() {
                   {disconnectingMercadoPago ? 'Desconectando...' : 'Desconectar'}
                 </button>
               </div>
+
+              {mercadoPagoConnection?.status === 'connected' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void updatePaymentAutomation(
+                      !billingSettings?.payment_automation_enabled
+                    )
+                  }
+                  disabled={
+                    savingPaymentAutomation ||
+                    (!billingSettings?.payment_automation_enabled &&
+                      !mercadoPagoWebhookConfigured)
+                  }
+                  className={`w-full rounded-lg px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${
+                    billingSettings?.payment_automation_enabled
+                      ? 'border border-amber-200 text-amber-800'
+                      : 'bg-emerald-600 text-white'
+                  }`}
+                >
+                  {savingPaymentAutomation
+                    ? 'Salvando...'
+                    : billingSettings?.payment_automation_enabled
+                      ? 'Voltar para Pix manual'
+                      : 'Ativar Pix dinâmico'}
+                </button>
+              )}
 
               <p className="text-xs text-gray-500">
                 Para revogar também a autorização no Mercado Pago, o titular

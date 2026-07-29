@@ -21,9 +21,13 @@ export async function GET(request: Request) {
     return errorResponse('Cobranças disponíveis apenas em planos com cobrança mensal.', 403)
   }
 
-  const { data, error } = await result.supabase
-    .from('billing_cycles')
-    .select(`
+  const [
+    { data, error },
+    { data: settings, error: settingsError },
+  ] = await Promise.all([
+    result.supabase
+      .from('billing_cycles')
+      .select(`
       id,
       customer_id,
       due_date,
@@ -35,17 +39,37 @@ export async function GET(request: Request) {
         phone_e164,
         is_active
       )
-    `)
-    .eq('tenant_id', result.tenantUser.tenant_id)
-    .eq('status', 'overdue')
-    .eq('tenant_customers.is_active', true)
-    .order('due_date', { ascending: true })
+      `)
+      .eq('tenant_id', result.tenantUser.tenant_id)
+      .eq('status', 'overdue')
+      .eq('tenant_customers.is_active', true)
+      .order('due_date', { ascending: true }),
+    result.supabase
+      .from('tenant_billing_settings')
+      .select('payment_automation_enabled, pix_collection_mode, default_payment_provider')
+      .eq('tenant_id', result.tenantUser.tenant_id)
+      .maybeSingle(),
+  ])
 
   if (error) {
     return errorResponse('Não foi possível carregar pagamentos pendentes.', 500, error.message)
   }
 
+  if (settingsError) {
+    return errorResponse(
+      'Não foi possível carregar a configuração de pagamento.',
+      500,
+      settingsError.message
+    )
+  }
+
   return Response.json({
+    pix_mode:
+      settings?.payment_automation_enabled &&
+      settings.pix_collection_mode === 'provider_dynamic' &&
+      settings.default_payment_provider === 'mercado_pago'
+        ? 'provider_dynamic'
+        : 'tenant_key',
     payments: (data ?? []).map((cycle) => {
       const customer = firstRelation(cycle.tenant_customers)
 

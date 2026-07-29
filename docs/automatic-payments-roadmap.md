@@ -129,13 +129,19 @@ validados sem habilitar cobranças automáticas.
 
 ### Bloco 3 — Pix dinâmico e conciliação
 
-- [ ] Criar cobrança Pix com idempotência e `external_reference` interna.
-- [ ] Vincular cobrança ao tenant, cliente e `billing_cycle`.
-- [ ] Criar webhook autenticado, persistido e idempotente.
-- [ ] Consultar o recurso no provedor antes de efetivar a baixa.
-- [ ] Atualizar ciclo e histórico em transação única.
-- [ ] Tratar pagamento, expiração, falha, cancelamento e estorno.
-- [ ] Criar reconciliação read-only e fila de divergências.
+- [x] Criar cobrança Pix com idempotência e `external_reference` interna.
+- [x] Vincular cobrança ao tenant, cliente e `billing_cycle`.
+- [ ] Configurar e homologar o webhook autenticado, persistido e idempotente.
+- [x] Consultar o recurso no provedor antes de efetivar a baixa.
+- [x] Atualizar ciclo e histórico em transação única.
+- [x] Tratar pagamento, expiração, falha, cancelamento, estorno e chargeback.
+- [x] Criar reconciliação read-only e fila de divergências.
+
+A migration 068 foi aplicada em produção com a automação desligada. O código
+exige assinatura HMAC válida, confirma o recurso diretamente no Mercado Pago e
+só baixa o ciclo quando referência, tenant e valor conferem. Falta cadastrar a
+URL produtiva no painel do Mercado Pago, instalar o segredo do webhook e
+realizar o primeiro Pix oficial de baixo valor.
 
 **Saída:** Pix de baixo valor confirmado automaticamente sem baixa duplicada.
 

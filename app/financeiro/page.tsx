@@ -125,6 +125,9 @@ function billingStatusLabel(status: string) {
     overdue: 'Atrasado',
     paid_manual: 'Pago manualmente',
     paid_asaas: 'Pago pelo Asaas',
+    paid_mercado_pago: 'Pago pelo Mercado Pago',
+    refunded: 'Estornado',
+    chargeback: 'Chargeback',
     canceled: 'Cancelado',
   }
 

@@ -19,17 +19,31 @@ type PendingPayment = {
   message_sent_at: string | null
 }
 
-type StaticPixDetails = {
+type PixDetails = {
   billing_cycle_id: string
   customer_name: string
   due_date: string
   amount_cents: number
   beneficiary_name: string
-  beneficiary_city: string
+  beneficiary_city?: string
   txid: string
   payload: string
   qr_data_url: string
-  confirmation_mode: 'manual'
+  checkout_url?: string
+  expires_at?: string
+  provider?: string
+  confirmation_mode: 'manual' | 'automatic'
+}
+
+type ReconciliationItem = {
+  id: string
+  provider_charge_id: string
+  status: string
+  provider_status: string | null
+  provider_status_detail: string | null
+  reconciliation_status: 'pending' | 'divergent'
+  divergence_reason: string | null
+  last_reconciled_at: string | null
 }
 
 export default function PendingPaymentsPage() {
@@ -40,8 +54,11 @@ export default function PendingPaymentsPage() {
   const [items, setItems] = useState<PendingPayment[]>([])
   const [deactivatingCustomerId, setDeactivatingCustomerId] = useState('')
   const [loadingPixId, setLoadingPixId] = useState('')
-  const [pixDetails, setPixDetails] = useState<StaticPixDetails | null>(null)
+  const [pixMode, setPixMode] = useState<'tenant_key' | 'provider_dynamic'>('tenant_key')
+  const [pixDetails, setPixDetails] = useState<PixDetails | null>(null)
   const [pixCopied, setPixCopied] = useState(false)
+  const [reconciliationItems, setReconciliationItems] = useState<ReconciliationItem[]>([])
+  const [reconcilingChargeId, setReconcilingChargeId] = useState('')
   const [error, setError] = useState('')
   const labels = getBusinessLabels(businessType)
 
@@ -77,11 +94,11 @@ export default function PendingPaymentsPage() {
       return
     }
 
-    const response = await fetch('/api/pending-payments', {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    })
+    const headers = { Authorization: `Bearer ${session.access_token}` }
+    const [response, reconciliationResponse] = await Promise.all([
+      fetch('/api/pending-payments', { headers }),
+      fetch('/api/payment-providers/reconciliation', { headers }),
+    ])
 
     if (!response.ok) {
       setError('Não foi possível carregar os pagamentos pendentes.')
@@ -90,7 +107,14 @@ export default function PendingPaymentsPage() {
     }
 
     const data = await response.json()
+    const reconciliationData = reconciliationResponse.ok
+      ? await reconciliationResponse.json()
+      : { items: [] }
     setItems(data.payments ?? [])
+    setReconciliationItems(reconciliationData.items ?? [])
+    setPixMode(
+      data.pix_mode === 'provider_dynamic' ? 'provider_dynamic' : 'tenant_key'
+    )
     setLoading(false)
   }, [router])
 
@@ -145,7 +169,13 @@ export default function PendingPaymentsPage() {
       return
     }
 
-    const response = await fetch(`/api/pending-payments/${billingCycleId}/pix`, {
+    const dynamicPix = pixMode === 'provider_dynamic'
+    const response = await fetch(
+      dynamicPix
+        ? `/api/pending-payments/${billingCycleId}/dynamic-pix`
+        : `/api/pending-payments/${billingCycleId}/pix`,
+      {
+      method: dynamicPix ? 'POST' : 'GET',
       headers: {
         Authorization: `Bearer ${session.access_token}`,
       },
@@ -171,6 +201,38 @@ export default function PendingPaymentsPage() {
     } catch {
       alert('Não foi possível copiar automaticamente. Selecione o código e copie manualmente.')
     }
+  }
+
+  async function reconcileCharge(chargeId: string) {
+    setReconcilingChargeId(chargeId)
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setReconcilingChargeId('')
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/payment-providers/reconciliation', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ charge_id: chargeId }),
+    })
+    const payload = await response.json().catch(() => null)
+    setReconcilingChargeId('')
+
+    if (!response.ok) {
+      alert(payload?.message || 'Não foi possível reconciliar esta cobrança.')
+      return
+    }
+
+    await load()
   }
 
   async function deactivateCustomer(customerId: string) {
@@ -277,6 +339,49 @@ function statusLabel(status: string) {
           <div className="bg-red-50 text-red-700 rounded-xl p-4 text-sm">
             {error}
           </div>
+        )}
+
+        {reconciliationItems.length > 0 && (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="font-bold text-amber-950">Conciliação de pagamentos</h2>
+            <p className="mt-1 text-sm text-amber-800">
+              Cobranças aguardando conferência ou com divergência. A consulta
+              abaixo apenas lê o estado oficial no Mercado Pago.
+            </p>
+            <div className="mt-4 space-y-2">
+              {reconciliationItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-xl bg-white p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {item.reconciliation_status === 'divergent'
+                        ? 'Divergência'
+                        : 'Aguardando conciliação'}
+                    </p>
+                    <p className="break-all text-xs text-gray-500">
+                      Pagamento {item.provider_charge_id}
+                      {item.provider_status ? ` · ${item.provider_status}` : ''}
+                      {item.divergence_reason
+                        ? ` · ${item.divergence_reason}`
+                        : ''}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void reconcileCharge(item.id)}
+                    disabled={reconcilingChargeId === item.id}
+                    className="h-9 rounded-lg bg-amber-700 px-4 text-xs font-medium text-white disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {reconcilingChargeId === item.id
+                      ? 'Consultando...'
+                      : 'Consultar Mercado Pago'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {items.length === 0 && (
@@ -396,6 +501,14 @@ function statusLabel(status: string) {
                 <dt className="text-gray-500">Referência Pix</dt>
                 <dd className="break-all font-mono text-xs">{pixDetails.txid}</dd>
               </div>
+              {pixDetails.expires_at && (
+                <div className="sm:col-span-2">
+                  <dt className="text-gray-500">QR válido até</dt>
+                  <dd className="font-medium">
+                    {new Date(pixDetails.expires_at).toLocaleString('pt-BR')}
+                  </dd>
+                </div>
+              )}
             </dl>
 
             <label className="mt-4 block text-sm font-medium">
@@ -417,10 +530,18 @@ function statusLabel(status: string) {
               {pixCopied ? 'Código copiado!' : 'Copiar código Pix'}
             </button>
 
-            <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-              Este QR usa a chave do estabelecimento e não confirma o pagamento automaticamente.
-              Após conferir o recebimento, faça a baixa manual nesta página.
-            </p>
+            {pixDetails.confirmation_mode === 'automatic' ? (
+              <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">
+                Este QR está vinculado à mensalidade. Após o pagamento, o
+                billing-app consulta o Mercado Pago e confirma a baixa
+                automaticamente.
+              </p>
+            ) : (
+              <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                Este QR usa a chave do estabelecimento e não confirma o pagamento automaticamente.
+                Após conferir o recebimento, faça a baixa manual nesta página.
+              </p>
+            )}
           </section>
         </div>
       )}

@@ -13,6 +13,7 @@ import {
 import {
   refreshMercadoPagoConnectionIfNeeded,
 } from '../../../../../src/lib/payments/mercado-pago-connection'
+import { isMercadoPagoWebhookConfigured } from '../../../../../src/lib/payments/mercado-pago-webhook'
 import { requireTenantUser } from '../../../../../src/lib/tenant-admin'
 
 export const runtime = 'nodejs'
@@ -82,6 +83,7 @@ export async function GET(request: Request) {
   return Response.json(
     {
       configured: isMercadoPagoOAuthConfigured(),
+      webhook_configured: isMercadoPagoWebhookConfigured(),
       connection,
     },
     { headers: { 'Cache-Control': 'private, no-store' } }
@@ -197,6 +199,26 @@ export async function DELETE(request: Request) {
       500,
       error.message
     )
+  }
+
+  if (data) {
+    const { error: settingsError } = await result.supabase
+      .from('tenant_billing_settings')
+      .update({
+        payment_automation_enabled: false,
+        pix_collection_mode: 'tenant_key',
+        default_payment_provider: null,
+        updated_at: now,
+      })
+      .eq('tenant_id', result.tenantUser.tenant_id)
+
+    if (settingsError) {
+      return errorResponse(
+        'A conta foi desconectada, mas não foi possível restaurar o Pix manual.',
+        500,
+        settingsError.message
+      )
+    }
   }
 
   return Response.json({ ok: true, disconnected: Boolean(data) })

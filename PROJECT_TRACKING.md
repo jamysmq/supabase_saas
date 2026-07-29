@@ -747,6 +747,10 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - A tela permite conectar, reconectar e desligar localmente o Mercado Pago, sem ativar o modo de cobrança automática.
 - A primeira conexão OAuth foi validada em modo produtivo, com credenciais cifradas, token vigente, escopos esperados e nenhuma automação ou Pix dinâmico habilitado.
 - A conta usada nessa validação poderá futuramente receber as assinaturas da plataforma, mas essa conexão central será separada das conexões por tenant.
+- Bloco 3 implementado e migration 068 aplicada em produção em 2026-07-29, ainda com automação e Pix dinâmico desligados.
+- A emissão Pix usa idempotência por ciclo e tentativa; a baixa exige consulta confirmatória ao Mercado Pago e concilia ciclo, cobrança e auditoria em transação única.
+- Pagamento, expiração, falha, cancelamento, estorno e chargeback foram modelados, com fila operacional para divergências e consulta read-only ao provedor.
+- A homologação do Bloco 3 depende apenas de cadastrar a URL produtiva de webhook, instalar seu segredo HMAC e executar um Pix oficial de baixo valor.
 - Rollout previsto: modo manual preservado, conexão controlada, pagamento oficial de baixo valor, allowlist e uma competência completa.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
