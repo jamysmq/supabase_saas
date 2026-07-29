@@ -148,7 +148,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Aplicar a migration 064 com automação desativada e tabelas de integração vazias.
 - [x] Configurar a chave server-only antes do primeiro OAuth.
 - [x] Entregar QR Pix estático usando prioritariamente a chave configurada do tenant.
-- [ ] Conectar Mercado Pago por OAuth sem expor tokens ao navegador.
+- [x] Conectar Mercado Pago por OAuth sem expor tokens ao navegador.
 - [ ] Implementar Pix dinâmico, webhook idempotente e conciliação por `billing_cycle`.
 - [ ] Implementar checkout hospedado e recorrência de cartão.
 - [ ] Adicionar Asaas como segundo adaptador, sem presumir BaaS ou subcontas.

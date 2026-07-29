@@ -739,12 +739,14 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Gerador BR Code conferido contra o vetor oficial do BCB; chaves são normalizadas por tipo e o endpoint permanece isolado por tenant.
 - A baixa continua manual e auditada; chave ausente ou inválida bloqueia apenas a geração do QR, sem interromper os lembretes existentes.
 - Migration 065 aplicada em produção; verificação confirmou a coluna nova, zero tenants com automação ativa e todos no modo manual.
-- Bloco 2 implementado localmente em 2026-07-29, pendente apenas da aplicação produtiva no Mercado Pago e da primeira autorização oficial.
+- Bloco 2 concluído em produção em 2026-07-29, incluindo aplicação produtiva, callback exato e primeira autorização oficial.
 - Migrations 066 e 067 aplicadas em produção: estado OAuth efêmero com RLS, sem acesso de `authenticated`, e FK composta entre tenant e usuário.
 - OAuth usa `state` de uso único, PKCE S256 e callback estático; verificadores e tokens são cifrados com contexto do tenant.
-- A chave AES-256 foi cadastrada como segredo sensível na Vercel Production; Client ID e Client Secret do Mercado Pago ainda não foram configurados.
+- A chave AES-256, o Client ID, o Client Secret e o callback do Mercado Pago foram cadastrados como segredos sensíveis na Vercel Production.
 - Regressões locais cobriram PKCE, criptografia contextual, troca e renovação simulada de token; teste produtivo com rollback rejeitou estado duplicado e usuário cruzado entre tenants.
 - A tela permite conectar, reconectar e desligar localmente o Mercado Pago, sem ativar o modo de cobrança automática.
+- A primeira conexão OAuth foi validada em modo produtivo, com credenciais cifradas, token vigente, escopos esperados e nenhuma automação ou Pix dinâmico habilitado.
+- A conta usada nessa validação poderá futuramente receber as assinaturas da plataforma, mas essa conexão central será separada das conexões por tenant.
 - Rollout previsto: modo manual preservado, conexão controlada, pagamento oficial de baixo valor, allowlist e uma competência completa.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
