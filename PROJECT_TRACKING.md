@@ -752,6 +752,9 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Pagamento, expiração, falha, cancelamento, estorno e chargeback foram modelados, com fila operacional para divergências e consulta read-only ao provedor.
 - A homologação do Bloco 3 depende apenas de cadastrar a URL produtiva de webhook, instalar seu segredo HMAC e executar um Pix oficial de baixo valor.
 - Rollout previsto: modo manual preservado, conexão controlada, pagamento oficial de baixo valor, allowlist e uma competência completa.
+- Em 2026-07-30, a prontidão produtiva confirmou 1 tenant conectado e 2 ciclos pendentes/vencidos; ambos têm CPF, mas ainda não têm e-mail, dado obrigatório para criar o pagador do Pix via API do Mercado Pago.
+- Teste produtivo integralmente revertido validou duplicidade, replay fora de ordem após estorno, divergência de valor e colisão com baixa manual. A conferência posterior confirmou zero cobranças, webhooks ou eventos sintéticos persistidos e zero tenants com automação ativa.
+- Roteiro operacional versionado em `docs/mercado-pago-pix-homologation.md`; teste repetível e seguro em `scripts/check-payment-reconciliation-rollback.sql`.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 

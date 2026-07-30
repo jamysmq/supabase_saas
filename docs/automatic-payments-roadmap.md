@@ -143,6 +143,13 @@ só baixa o ciclo quando referência, tenant e valor conferem. Falta cadastrar a
 URL produtiva no painel do Mercado Pago, instalar o segredo do webhook e
 realizar o primeiro Pix oficial de baixo valor.
 
+Em 2026-07-30, um teste produtivo com `ROLLBACK` validou evento duplicado, replay
+fora de ordem depois de estorno, divergência de valor e colisão com baixa manual.
+Nenhum registro sintético permaneceu no banco e a automação continuou desligada.
+A checagem de prontidão encontrou dois ciclos elegíveis, ambos sem e-mail do
+pagador; o primeiro teste oficial deverá usar um cadastro controlado com e-mail
+válido. O roteiro está em `docs/mercado-pago-pix-homologation.md`.
+
 **Saída:** Pix de baixo valor confirmado automaticamente sem baixa duplicada.
 
 ### Bloco 4 — cartão e recorrência
