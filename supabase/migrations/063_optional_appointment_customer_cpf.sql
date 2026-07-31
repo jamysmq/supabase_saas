@@ -294,6 +294,6 @@ grant execute on function public.admin_create_external_resource_appointment(
 update public.wa_conversations
 set step = 'collect_birth_date',
     payload_draft = coalesce(payload_draft, '{}'::jsonb) #- '{appointment,cpf}'
-where closed = false
+where is_closed = false
   and step = 'collect_cpf'
   and payload_draft ->> 'module' = 'appointments';

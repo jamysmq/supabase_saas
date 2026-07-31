@@ -721,6 +721,8 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Migration `060_resource_appointment_notifications.sql` aplicada em produção: confirmações D-1 e lembretes H-1 agora resolvem ambientes e preservam o contexto de confirmar, remarcar e cancelar.
 - Teste read-only com um aluguel real confirmou a Quadra 3 como candidata ao lembrete H-1 e com o rótulo genérico `Agendamento`.
 - Workflow de agenda e workflow `APPOINTMENT_CUSTOMER_NOTIFICATIONS` atualizados, validados e ativos; deploy de produção `dpl_39GjXMjM1gWfWyiMttTQQm7M5jFr` publicado com health HTTP 200.
+- Em 2026-07-31, uma demonstração real revelou que a migration 063 era revertida ao referenciar `closed` em vez de `is_closed`; a correção foi validada com rollback e a migration reaplicada em produção.
+- A migration 069 removeu o índice legado que tratava CPF omitido (`''`) como valor único por tenant. Testes produtivos com rollback confirmaram dois agendamentos sem CPF e preservaram a rejeição de CPF informado duplicado.
 
 ## Roadmap de pagamentos automáticos (2026-07-26)
 
