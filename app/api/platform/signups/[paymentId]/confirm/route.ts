@@ -29,6 +29,8 @@ export async function POST(
   const { paymentId } = await context.params
   const body = await request.json().catch(() => null)
   const note = typeof body?.note === 'string' ? body.note.trim() : ''
+  const accessInviteEnabled =
+    process.env.TENANT_ACCESS_INVITE_ENABLED?.trim().toLowerCase() === 'true'
 
   const { data: publicPayment, error: publicPaymentError } = await result.supabase
     .from('payments')
@@ -60,7 +62,7 @@ export async function POST(
 
     const payload = asPayloadRecord(publicPayment.payload)
 
-    let createdTenant
+    let createdAccount
 
     try {
       const created = await createPlatformTenant(result.supabase, {
@@ -75,11 +77,12 @@ export async function POST(
         business_type: payload.business_type,
         resource_booking_plus_enabled:
           payload.resource_booking_plus_requested === true,
+        send_access_invite: accessInviteEnabled,
         status: 'active',
         monthly_amount_cents: payload.amount_cents ?? publicPayment.amount_cents,
         due_day: payload.due_day,
       })
-      createdTenant = created.tenant
+      createdAccount = created
     } catch (error) {
       if (error instanceof PlatformTenantCreationError) {
         return errorResponse(error.message, error.status, error.details)
@@ -87,6 +90,8 @@ export async function POST(
 
       return errorResponse('Nao foi possivel criar o tenant da solicitacao publica.', 500)
     }
+
+    const createdTenant = createdAccount.tenant
 
     const { error: updateError } = await result.supabase
       .from('payments')
@@ -100,6 +105,11 @@ export async function POST(
           tenant_status: 'active',
           created_tenant_id: createdTenant.id,
           approved_at: new Date().toISOString(),
+          access_delivery: createdAccount.access_delivery,
+          access_invite_sent_at:
+            createdAccount.access_delivery === 'invite_email_sent'
+              ? new Date().toISOString()
+              : null,
         },
       })
       .eq('id', paymentId)
@@ -112,7 +122,12 @@ export async function POST(
       )
     }
 
-    return Response.json({ ok: true, tenant_id: createdTenant.id })
+    return Response.json({
+      ok: true,
+      tenant_id: createdTenant.id,
+      access_delivery: createdAccount.access_delivery,
+      admin_email: createdAccount.admin_email,
+    })
   }
 
   const { error } = await result.supabase.rpc(

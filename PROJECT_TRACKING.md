@@ -757,6 +757,14 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Em 2026-07-30, a prontidão produtiva confirmou 1 tenant conectado e 2 ciclos pendentes/vencidos; ambos têm CPF, mas ainda não têm e-mail, dado obrigatório para criar o pagador do Pix via API do Mercado Pago.
 - Teste produtivo integralmente revertido validou duplicidade, replay fora de ordem após estorno, divergência de valor e colisão com baixa manual. A conferência posterior confirmou zero cobranças, webhooks ou eventos sintéticos persistidos e zero tenants com automação ativa.
 - Roteiro operacional versionado em `docs/mercado-pago-pix-homologation.md`; teste repetível e seguro em `scripts/check-payment-reconciliation-rollback.sql`.
+- Em 2026-07-31, a evolução do Mercado Pago foi pausada por decisão de produto. Conexão e fundação permanecem preservadas, com automação e Pix dinâmico desligados.
+
+## Cadastro público e convite de acesso (2026-07-31)
+
+- O campo de nascimento/abertura deixou de depender do calendário nativo e passou a aceitar digitação mascarada em DD/MM/AAAA, com validação equivalente também no servidor.
+- A aprovação pública ganhou suporte a convite seguro por e-mail: o destinatário confirma o e-mail e define a própria primeira senha em `/activate-account`; credenciais não são enviadas em texto pelo e-mail ou WhatsApp.
+- O envio permanece protegido por `TENANT_ACCESS_INVITE_ENABLED=false` até configurar SMTP próprio, permitir a URL de ativação no Supabase e homologar uma entrega oficial.
+- Runbook e template humanizado registrados em `docs/account-access-invites.md`.
 
 ## Resumo diário da agenda — revisão humanizada (2026-07-21)
 

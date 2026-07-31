@@ -2,8 +2,11 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import {
+  brazilianDateToIso,
+  formatBrazilianDateInput,
+} from '../../src/lib/brazilian-date'
 import { getAllowedPlanCodesForBusinessType } from '../../src/lib/plan-features'
-import { openNativePicker } from '../../src/lib/open-native-picker'
 
 type Plan = {
   code: string
@@ -124,14 +127,22 @@ export default function SignupPage() {
 
   async function submitSignup(event: React.FormEvent) {
     event.preventDefault()
-    setSaving(true)
     setError('')
     setSuccess('')
+
+    const birthDate = brazilianDateToIso(form.birth_date)
+
+    if (!birthDate) {
+      setError('Informe uma data válida no formato DD/MM/AAAA.')
+      return
+    }
+
+    setSaving(true)
 
     const response = await fetch('/api/public/signup-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, birth_date: birthDate }),
     })
 
     setSaving(false)
@@ -282,10 +293,13 @@ export default function SignupPage() {
                   Data de nascimento ou abertura
                   <input
                     value={form.birth_date}
-                    onChange={(event) => setForm({ ...form, birth_date: event.target.value })}
-                    onClick={openNativePicker}
-                    className="mt-1 w-full cursor-pointer rounded-lg border border-sky-100 px-3 py-2 font-normal"
-                    type="date"
+                    onChange={(event) => setForm({ ...form, birth_date: formatBrazilianDateInput(event.target.value) })}
+                    autoComplete="bday"
+                    className="mt-1 w-full rounded-lg border border-sky-100 px-3 py-2 font-normal"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="DD/MM/AAAA"
+                    type="text"
                     required
                   />
                 </label>

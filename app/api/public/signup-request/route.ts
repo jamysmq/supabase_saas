@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from '../../../../src/lib/platform-admin'
+import { isValidIsoDateNotFuture } from '../../../../src/lib/brazilian-date'
 import { isTenantPlanBusinessTypeCompatible } from '../../../../src/lib/plan-features'
 
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop', 'arena', 'academy'])
@@ -48,7 +49,9 @@ export async function POST(request: Request) {
 
   if (!email || !isValidEmail(email)) return errorResponse('E-mail do negócio inválido.')
   if (!adminEmail || !isValidEmail(adminEmail)) return errorResponse('E-mail admin invalido.')
-  if (!birthDate) return errorResponse('Informe a data de nascimento ou abertura.')
+  if (!isValidIsoDateNotFuture(birthDate)) {
+    return errorResponse('Informe uma data de nascimento ou abertura válida.')
+  }
 
   if (whatsappDigits.length < 12 || whatsappDigits.length > 13) {
     return errorResponse('WhatsApp invalido. Use o formato com pais e DDD, por exemplo 5583999999999.')

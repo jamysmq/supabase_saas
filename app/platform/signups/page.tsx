@@ -54,6 +54,7 @@ export default function PlatformSignupsPage() {
   const [loading, setLoading] = useState(true)
   const [actingId, setActingId] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const load = useCallback(async function load() {
     setLoading(true)
@@ -125,6 +126,7 @@ export default function PlatformSignupsPage() {
 
     setActingId(paymentId)
     setError('')
+    setSuccess('')
 
     const {
       data: { session },
@@ -147,15 +149,27 @@ export default function PlatformSignupsPage() {
     setActingId('')
 
     if (!response.ok) {
-      setError(
+      const payload = await response.json().catch(() => null)
+      setError(payload?.message ?? (
         action === 'confirm'
           ? 'Não foi possível confirmar o cadastro.'
           : 'Não foi possível cancelar o cadastro.'
-      )
+      ))
       return
     }
 
+    const payload = await response.json().catch(() => null)
     await load()
+
+    if (action === 'confirm') {
+      setSuccess(
+        payload?.access_delivery === 'invite_email_sent'
+          ? 'Cadastro aprovado. O convite para definir a primeira senha foi enviado por e-mail.'
+          : payload?.access_delivery === 'existing_account'
+            ? 'Cadastro aprovado. O e-mail informado já possuía uma conta e recebeu acesso ao novo tenant.'
+            : 'Cadastro aprovado com sucesso.'
+      )
+    }
   }
 
   if (loading) {
@@ -197,6 +211,12 @@ export default function PlatformSignupsPage() {
         {error && (
           <div className="bg-red-50 text-red-700 rounded-xl p-4 text-sm">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+            {success}
           </div>
         )}
 

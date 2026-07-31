@@ -34,13 +34,18 @@ export async function PATCH(request: Request) {
   const currentPassword = String(body?.current_password ?? '')
   const newPassword = String(body?.new_password ?? '')
   const confirmPassword = String(body?.confirm_password ?? '')
+  const onboarding = body?.onboarding === true
   const email = result.user.email ?? result.tenantUser.email
 
   if (!email) {
     return errorResponse('Nao foi possivel validar o email do usuario.', 403)
   }
 
-  if (!currentPassword) {
+  if (onboarding && result.tenantUser.must_change_password !== true) {
+    return errorResponse('Este convite de acesso já foi concluído.', 409)
+  }
+
+  if (!onboarding && !currentPassword) {
     return errorResponse('Informe a senha atual.')
   }
 
@@ -52,18 +57,20 @@ export async function PATCH(request: Request) {
     return errorResponse('As senhas nao conferem.')
   }
 
-  const authClient = createPasswordAuthClient()
-  const { data: signInData, error: signInError } =
-    await authClient.auth.signInWithPassword({
-      email,
-      password: currentPassword,
-    })
+  if (!onboarding) {
+    const authClient = createPasswordAuthClient()
+    const { data: signInData, error: signInError } =
+      await authClient.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      })
 
-  if (signInError || signInData.user?.id !== result.user.id) {
-    return errorResponse('Senha atual invalida.', 401)
+    if (signInError || signInData.user?.id !== result.user.id) {
+      return errorResponse('Senha atual invalida.', 401)
+    }
+
+    await authClient.auth.signOut()
   }
-
-  await authClient.auth.signOut()
 
   const { error: updateError } =
     await result.supabase.auth.admin.updateUserById(result.user.id, {

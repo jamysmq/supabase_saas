@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isValidIsoDateNotFuture } from '../lib/brazilian-date'
 import { isTenantPlanBusinessTypeCompatible } from '../lib/plan-features'
 
 const allowedBusinessTypes = new Set(['teacher', 'autonomous', 'clinic', 'salon', 'restaurant', 'loja_material', 'petshop', 'arena', 'academy'])
@@ -27,6 +28,7 @@ export type PlatformTenantCreationInput = {
   admin_email?: unknown
   business_type?: unknown
   resource_booking_plus_enabled?: unknown
+  send_access_invite?: unknown
   monthly_amount_cents: unknown
   due_day: unknown
 }
@@ -72,6 +74,7 @@ export async function createPlatformTenant(
   const businessType = String(input.business_type || 'teacher').trim()
   const resourceBookingPlusEnabled =
     input.resource_booking_plus_enabled === true && plan === 'plan3'
+  const sendAccessInvite = input.send_access_invite === true
   const amountCents = toPositiveInteger(input.monthly_amount_cents)
   const dueDay = toPositiveInteger(input.due_day)
 
@@ -95,8 +98,8 @@ export async function createPlatformTenant(
     throw new PlatformTenantCreationError('E-mail admin invalido.')
   }
 
-  if (!birthDate) {
-    throw new PlatformTenantCreationError('Informe a data de nascimento ou abertura.')
+  if (!isValidIsoDateNotFuture(birthDate)) {
+    throw new PlatformTenantCreationError('Informe uma data de nascimento ou abertura válida.')
   }
 
   if (whatsappDigits.length < 12 || whatsappDigits.length > 13) {
@@ -216,7 +219,7 @@ export async function createPlatformTenant(
       role: 'admin',
       email: adminEmail,
       must_change_password: true,
-      temp_password_created_at: new Date().toISOString(),
+      temp_password_created_at: sendAccessInvite ? null : new Date().toISOString(),
     })
     .select('id')
     .single()
@@ -283,18 +286,31 @@ export async function createPlatformTenant(
   const { data: existingUsers } = await supabase.auth.admin.listUsers()
   const existingUser = existingUsers.users.find((user) => user.email === adminEmail)
 
+  const activationUrl = (
+    process.env.APP_BASE_URL?.trim() || 'https://app.meuassistentevirtual.com.br'
+  ).replace(/\/$/, '') + '/activate-account'
   const authResult = existingUser
     ? { data: { user: existingUser }, error: null }
-    : await supabase.auth.admin.createUser({
-        email: adminEmail,
-        password: temporaryPassword,
-        email_confirm: true,
-      })
+    : sendAccessInvite
+      ? await supabase.auth.admin.inviteUserByEmail(adminEmail, {
+          redirectTo: activationUrl,
+          data: {
+            tenant_name: publicName,
+            onboarding: true,
+          },
+        })
+      : await supabase.auth.admin.createUser({
+          email: adminEmail,
+          password: temporaryPassword,
+          email_confirm: true,
+        })
 
   if (authResult.error || !authResult.data.user) {
     await cleanupTenant()
     throw new PlatformTenantCreationError(
-      'Tenant criado, mas nao foi possivel criar o usuario de acesso.',
+      sendAccessInvite
+        ? 'Não foi possível enviar o convite de acesso por e-mail.'
+        : 'Tenant criado, mas não foi possível criar o usuário de acesso.',
       500,
       authResult.error?.message
     )
@@ -324,7 +340,12 @@ export async function createPlatformTenant(
   return {
     tenant,
     admin_email: adminEmail,
-    temporary_password: existingUser ? null : temporaryPassword,
+    temporary_password: existingUser || sendAccessInvite ? null : temporaryPassword,
     auth_user_existed: Boolean(existingUser),
+    access_delivery: existingUser
+      ? 'existing_account'
+      : sendAccessInvite
+        ? 'invite_email_sent'
+        : 'temporary_password',
   }
 }

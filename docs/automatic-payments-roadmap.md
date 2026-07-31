@@ -204,6 +204,10 @@ válido. O roteiro está em `docs/mercado-pago-pix-homologation.md`.
 
 ## Segurança obrigatória
 
+> Status em 2026-07-31: implementação do Mercado Pago pausada por decisão de
+> produto. A integração existente permanece preservada e desligada; a retomada
+> começa pela configuração do webhook e pelo Pix oficial de baixo valor.
+
 - Credenciais cifradas com chave fora do banco.
 - Service role como único acesso às tabelas brutas de integração.
 - OAuth com `state`, PKCE, callback exato e proteção contra repetição.

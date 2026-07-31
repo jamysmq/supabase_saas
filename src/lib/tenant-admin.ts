@@ -50,7 +50,7 @@ export async function requireTenantUser(request: Request) {
 
   const { data: tenantUser, error: tenantUserError } = await supabase
     .from('tenant_users')
-    .select('id, tenant_id, role, email')
+    .select('id, tenant_id, role, email, must_change_password')
     .eq('auth_user_id', user.id)
     .single()
 
