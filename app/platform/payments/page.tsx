@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type PaymentTenant = {
   legal_name: string
@@ -194,12 +195,7 @@ export default function PlatformPaymentsPage() {
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
           <div className="mb-3 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => router.push('/platform/tenants')}
-              className="text-sm text-gray-500"
-            >
-              Voltar
-            </button>
+            <PlatformDashboardButton />
             <button
               onClick={() => router.push('/platform/payment-history')}
               className="text-sm font-medium text-gray-950 underline"

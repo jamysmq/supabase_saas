@@ -839,3 +839,23 @@ Proxima prioridade:
 - Cabeçalho público identifica sessão ativa e direciona ao painel correto de tenant ou plataforma; o marcador compartilhado entre subdomínios é apenas visual, enquanto a autorização continua validada pelo Supabase.
 - Logout dos painéis remove o marcador visual de sessão.
 - Validações concluídas: `npm run lint`, `tsc --noEmit`, `npm run build`, `git diff --check`, home e `/planos` HTTP 200 e catálogo público conferido em execução local.
+
+## Regressão automatizada da agenda (2026-07-31)
+
+- `scripts/check-appointment-workflow.mjs` valida o JSON e as conexões do workflow de agenda, compila seus Code nodes e protege as regras de CPF opcional, formatos de nascimento, durações de 30 em 30 minutos até 4h e opção de ver mais horários.
+- `scripts/check-appointment-regression-rollback.sql` percorre as RPCs produtivas de serviço e ambiente dentro de uma transação sempre revertida.
+- A regressão produtiva cobriu dois clientes sem CPF, CPF pontuado e reutilizado, rejeição de CPF inválido, criação, auditoria, confirmação, cancelamento, remarcação, conflito de profissional, durações de ambiente e conflito do mesmo ambiente.
+- O rollback foi verificado após a execução: nenhum cliente ou agendamento sintético permaneceu no banco.
+- O workflow remoto de agenda está ativo, tem os mesmos 19 nós e os mesmos parâmetros da versão local. As cinco execuções mais recentes consultadas terminaram com sucesso.
+- Os workflows críticos consultados estavam ativos e com execução recente bem-sucedida. As falhas antigas da agenda eram as execuções 5525 e 5552, já corrigidas pelas migrations 063 e 069; nenhuma falha posterior foi encontrada na amostra.
+- Saúde pública confirmada com HTTP 200 em `/api/health`, `/appointments` e `/cadastro`.
+
+## Central de pendências e monitoramento operacional (2026-07-31)
+
+- `/platform` deixou de ser apenas um redirecionamento e passou a ser o Dashboard administrativo da plataforma.
+- O painel agrega novas contas, profissionais adicionais, pagamentos, mensagens de contato e conversas institucionais do WhatsApp não lidas.
+- O botão Dashboard recebeu sino e contador, fica âmbar para pendências administrativas e vermelho para falhas operacionais ou consultas incompletas.
+- O indicador foi integrado às telas administrativas de negócios, planos, pagamentos, histórico, cadastros, profissionais, contatos e WhatsApp.
+- A saúde operacional consulta os seis workflows críticos do n8n e detecta workflow desativado, última execução com erro e atraso em workflows agendados.
+- `N8N_BASE_URL` e `N8N_API_KEY` foram adicionados como segredos Sensitive no ambiente Production da Vercel.
+- Nesta etapa o monitoramento ocorre ao abrir o painel e é atualizado a cada 60 segundos. Persistência em segundo plano e alerta proativo por WhatsApp permanecem como próximo bloco.

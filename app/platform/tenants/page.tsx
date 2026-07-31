@@ -7,6 +7,7 @@ import { clearPublicSessionMarker, markPublicSessionActive } from '../../../src/
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
 import { getAllowedPlanCodesForBusinessType } from '../../../src/lib/plan-features'
 import { openNativePicker } from '../../../src/lib/open-native-picker'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type Tenant = {
   id: string
@@ -393,6 +394,8 @@ export default function PlatformTenantsPage() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
+              <PlatformDashboardButton />
+
               <button
                 onClick={() => {
                   setCreateError('')

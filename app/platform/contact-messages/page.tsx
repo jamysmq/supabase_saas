@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type ContactMessage = {
   id: string
@@ -162,12 +163,7 @@ export default function PlatformContactMessagesPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="rounded-2xl bg-white p-5 shadow">
-          <button
-            onClick={() => router.push('/platform/tenants')}
-            className="mb-3 text-sm text-gray-500"
-          >
-            Voltar
-          </button>
+          <PlatformDashboardButton className="mb-3" />
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>

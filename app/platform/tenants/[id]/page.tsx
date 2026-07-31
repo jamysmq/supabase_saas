@@ -6,6 +6,7 @@ import { supabase } from '../../../../src/lib/supabase'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../../src/lib/money'
 import { getAllowedPlanCodesForBusinessType } from '../../../../src/lib/plan-features'
 import { openNativePicker } from '../../../../src/lib/open-native-picker'
+import PlatformDashboardButton from '../../platform-dashboard-button'
 
 type Tenant = {
   id: string
@@ -389,12 +390,15 @@ export default function PlatformTenantDetailPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-5xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
-          <button
-            onClick={() => router.push('/platform/tenants')}
-            className="text-sm text-gray-500 mb-3"
-          >
-            Voltar
-          </button>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <PlatformDashboardButton />
+            <button
+              onClick={() => router.push('/platform/tenants')}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
+            >
+              Negócios
+            </button>
+          </div>
 
           <h1 className="text-2xl font-bold">{tenant?.legal_name}</h1>
           <p className="text-sm text-gray-500 mt-1">

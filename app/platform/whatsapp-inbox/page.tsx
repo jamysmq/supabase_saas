@@ -3,6 +3,7 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type Thread = {
   id: string
@@ -218,9 +219,7 @@ export default function PlatformWhatsAppInboxPage() {
     <main className="min-h-screen bg-gray-100 p-4 text-gray-950">
       <div className="mx-auto max-w-7xl space-y-4">
         <header className="rounded-2xl bg-white p-5 shadow">
-          <button onClick={() => router.push('/platform/tenants')} className="mb-3 text-sm text-gray-500">
-            Voltar
-          </button>
+          <PlatformDashboardButton className="mb-3" />
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold">WhatsApp do Jack</h1>

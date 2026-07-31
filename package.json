@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:appointments:workflow": "node scripts/check-appointment-workflow.mjs",
+    "check:appointments:production": ".\\node_modules\\@supabase\\cli-windows-x64\\bin\\supabase-go.exe db query --linked --file scripts\\check-appointment-regression-rollback.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",

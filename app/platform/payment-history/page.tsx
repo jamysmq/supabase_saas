@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
 import { openNativePicker } from '../../../src/lib/open-native-picker'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type PaymentTenant = {
   legal_name: string
@@ -255,6 +256,7 @@ export default function PlatformPaymentHistoryPage() {
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="rounded-2xl bg-white p-5 shadow print:rounded-none print:p-0 print:shadow-none">
           <div className="mb-3 flex flex-wrap items-center gap-3 print:hidden">
+            <PlatformDashboardButton />
             <button
               onClick={() => router.push('/platform/payments')}
               className="text-sm text-gray-500"

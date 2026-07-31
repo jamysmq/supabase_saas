@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../src/lib/supabase'
+import PlatformDashboardButton from '../../platform-dashboard-button'
 
 type SignupDetail = {
   detail: unknown
@@ -125,12 +126,15 @@ export default function PlatformSignupDetailPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-5xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
-          <button
-            onClick={() => router.push('/platform/signups')}
-            className="text-sm text-gray-500 mb-3"
-          >
-            Voltar
-          </button>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <PlatformDashboardButton />
+            <button
+              onClick={() => router.push('/platform/signups')}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
+            >
+              Cadastros pendentes
+            </button>
+          </div>
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>

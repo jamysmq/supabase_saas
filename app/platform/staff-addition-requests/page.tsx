@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
 import { formatCurrencyFromCents } from '../../../src/lib/money'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type StaffRequest = {
   id: string
@@ -163,13 +164,7 @@ export default function StaffAdditionRequestsPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="rounded-2xl bg-white p-5 shadow">
-          <button
-            type="button"
-            onClick={() => router.push('/platform/tenants')}
-            className="mb-3 text-sm text-gray-500"
-          >
-            Voltar
-          </button>
+          <PlatformDashboardButton className="mb-3" />
           <h1 className="text-2xl font-bold">Profissionais adicionais</h1>
           <p className="mt-1 text-sm text-gray-500">
             Aprove ou recuse profissionais adicionais de salões. Cada aprovação acrescenta R$ 25,00 à mensalidade.

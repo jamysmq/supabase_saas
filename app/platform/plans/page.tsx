@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../../src/lib/supabase'
 import { formatCentsAsMoneyInput, formatCurrencyFromCents, formatMoneyInput } from '../../../src/lib/money'
+import PlatformDashboardButton from '../platform-dashboard-button'
 
 type Plan = {
   code: string
@@ -220,12 +221,7 @@ export default function PlatformPlansPage() {
     <main className="min-h-screen bg-gray-100 px-4 py-6 text-gray-950">
       <div className="mx-auto max-w-6xl space-y-4">
         <section className="bg-white rounded-2xl shadow p-5">
-          <button
-            onClick={() => router.push('/platform/tenants')}
-            className="text-sm text-gray-500 mb-3"
-          >
-            Voltar
-          </button>
+          <PlatformDashboardButton className="mb-3" />
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>

@@ -160,6 +160,8 @@ Detalhamento: [roadmap de pagamentos automáticos](./automatic-payments-roadmap.
 
 - [ ] Criar testes automatizados para tenant, plano e idempotência.
 - [ ] Cobrir agenda, cadastro do Professor e catálogo ou pedidos.
+- [x] Validar estaticamente o workflow de agenda: conexões, JavaScript, CPF opcional, formatos de nascimento, durações e paginação de horários.
+- [x] Cobrir em produção, com `ROLLBACK`, agenda de serviço e ambiente: criação sem CPF, CPF formatado/reutilizado, conflitos, confirmação, remarcação e cancelamento.
 - [ ] Testar webhook duplicado sem duplicar efeitos.
 - [x] Auditar RLS e grants das migrations 042–047.
 - [ ] Confirmar validações de plano e tenant nas APIs.
@@ -176,6 +178,9 @@ Detalhamento: [roadmap de pagamentos automáticos](./automatic-payments-roadmap.
 - [ ] Preparar staging ou procedimento reversível equivalente.
 - [ ] Monitorar crons de D-1, H-1 e retenção.
 - [ ] Criar alertas para falhas dos workflows críticos do n8n.
+- [x] Exibir no Dashboard administrativo workflows inativos, última execução com erro e atraso de crons críticos.
+- [x] Consolidar no sino do Dashboard contas, profissionais, pagamentos, contatos e conversas não lidas.
+- [ ] Persistir incidentes em segundo plano e enviar alerta proativo ao WhatsApp administrativo mesmo sem sessão aberta.
 - [ ] Garantir exportação e versionamento dos workflows ativos.
 - [ ] Revisar segredos de Vercel, Supabase, Meta e n8n.
 - [ ] Confirmar backup e restauração do Supabase.
