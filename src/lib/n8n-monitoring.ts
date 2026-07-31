@@ -73,7 +73,7 @@ function executionIssue(
   if (!['error', 'crashed'].includes(execution.status)) return null
 
   return {
-    id: `n8n-execution-${workflow.id}-${execution.id}`,
+    id: `n8n-execution-${workflow.id}`,
     severity: 'critical',
     title: `${workflow.name} falhou`,
     description: `A execução ${execution.id} terminou com status ${execution.status}.`,

@@ -172,6 +172,29 @@ const templateDefinitions = [
       },
     }],
   },
+  {
+    name: 'jack_platform_operational_update_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, Jamys! 🔔\n\nAtualização operacional do Assistente Jack:\n\n{{1}}\n\nAcesse o Dashboard administrativo para consultar os detalhes.',
+        example: {
+          body_text: [['A automação Lembretes de cobrança precisa de atenção.']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [{
+          type: 'URL',
+          text: 'Abrir Dashboard',
+          url: 'https://app.meuassistentevirtual.com.br/platform',
+        }],
+      },
+    ],
+  },
 ]
 
 function isAuthorized(request: Request) {

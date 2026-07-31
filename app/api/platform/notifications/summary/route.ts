@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     paymentsResult,
     contactMessagesResult,
     whatsappThreadsResult,
+    incidentHistoryResult,
     operations,
   ] = await Promise.all([
     result.supabase.rpc('admin_list_pending_signups'),
@@ -48,6 +49,11 @@ export async function GET(request: Request) {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'open')
       .gt('unread_count', 0),
+    result.supabase
+      .from('platform_operational_incidents')
+      .select('id, severity, title, status, first_detected_at, last_detected_at, resolved_at, notified_at, notification_attempts')
+      .order('last_detected_at', { ascending: false })
+      .limit(10),
     inspectN8nWorkflows(),
   ])
 
@@ -58,6 +64,7 @@ export async function GET(request: Request) {
   if (paymentsResult.error) warnings.push('payments')
   if (contactMessagesResult.error) warnings.push('contact_messages')
   if (whatsappThreadsResult.error) warnings.push('whatsapp_threads')
+  if (incidentHistoryResult.error) warnings.push('incident_history')
 
   const signupCount =
     (legacySignupsResult.data?.length ?? 0) + (publicSignupsResult.count ?? 0)
@@ -122,7 +129,10 @@ export async function GET(request: Request) {
       warnings.length > 0 ||
       operations.issues.some((issue) => issue.severity === 'critical'),
     categories,
-    operations,
+    operations: {
+      ...operations,
+      history: incidentHistoryResult.data ?? [],
+    },
     warnings,
   })
 }

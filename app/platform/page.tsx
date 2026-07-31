@@ -38,6 +38,17 @@ type Summary = {
     healthyWorkflows: number
     totalWorkflows: number
     issues: OperationalIssue[]
+    history: Array<{
+      id: string
+      severity: 'critical' | 'warning'
+      title: string
+      status: 'active' | 'resolved'
+      first_detected_at: string
+      last_detected_at: string
+      resolved_at: string | null
+      notified_at: string | null
+      notification_attempts: number
+    }>
   }
   warnings: string[]
 }
@@ -223,6 +234,27 @@ export default function PlatformPage() {
                 <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
                   Algumas filas não puderam ser consultadas: {summary.warnings.join(', ')}.
                 </p>
+              )}
+
+              {summary.operations.history.length > 0 && (
+                <details className="mt-4 rounded-xl border border-gray-200 p-4">
+                  <summary className="cursor-pointer text-sm font-bold">Histórico recente de incidentes</summary>
+                  <div className="mt-3 space-y-2">
+                    {summary.operations.history.map((incident) => (
+                      <div key={incident.id} className="flex flex-col gap-1 rounded-lg bg-gray-50 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium">{incident.title}</p>
+                          <p className="text-xs text-gray-500">
+                            Detectado em {new Date(incident.first_detected_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                        <span className={`w-fit rounded-full px-2 py-1 text-xs font-bold ${incident.status === 'active' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                          {incident.status === 'active' ? 'Ativo' : 'Resolvido'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               )}
             </section>
           </>
