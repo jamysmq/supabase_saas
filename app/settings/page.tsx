@@ -47,6 +47,74 @@ type PaymentProviderConnection = {
   last_error_code: string | null
 }
 
+type PlatformBillingProfile = {
+  amount_cents: number
+  currency: string
+  due_day: number
+}
+
+type PlatformSubscription = {
+  id: string
+  provider: string
+  status: string
+  amount_cents: number
+  currency: string
+  checkout_url: string | null
+  payment_method_id: string | null
+  next_payment_at: string | null
+  authorized_at: string | null
+  last_synced_at: string | null
+  amount_matches_profile: boolean
+}
+
+type PlatformSubscriptionPayload = {
+  configured: boolean
+  billing_profile: PlatformBillingProfile | null
+  subscription: PlatformSubscription | null
+}
+
+function humanizePlatformSubscriptionStatus(status?: string) {
+  const statuses: Record<string, string> = {
+    creating: 'Em preparação',
+    pending: 'Aguardando autorização',
+    authorized: 'Ativa',
+    paused: 'Pausada',
+    cancelled: 'Cancelada',
+    error: 'Com erro',
+  }
+
+  return status ? statuses[status] ?? status : 'Não iniciada'
+}
+
+function getValidMercadoPagoCheckoutUrl(value: string | null) {
+  if (!value) return null
+
+  try {
+    const authority = value.match(/^https:\/\/([^/?#]+)/i)?.[1]
+    const url = new URL(value)
+    const validHostname =
+      url.hostname === 'mercadopago.com.br' ||
+      url.hostname.endsWith('.mercadopago.com.br')
+
+    if (
+      !authority ||
+      authority.includes('@') ||
+      authority.includes(':') ||
+      url.protocol !== 'https:' ||
+      url.username ||
+      url.password ||
+      url.port ||
+      !validHostname
+    ) {
+      return null
+    }
+
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
 export default function SettingsPage() {
   const router = useRouter()
 
@@ -59,6 +127,12 @@ export default function SettingsPage() {
     useState(false)
   const [mercadoPagoConnection, setMercadoPagoConnection] =
     useState<PaymentProviderConnection | null>(null)
+  const [platformSubscriptionConfigured, setPlatformSubscriptionConfigured] =
+    useState(false)
+  const [platformBillingProfile, setPlatformBillingProfile] =
+    useState<PlatformBillingProfile | null>(null)
+  const [platformSubscription, setPlatformSubscription] =
+    useState<PlatformSubscription | null>(null)
   const [profileForm, setProfileForm] = useState({
     legal_name: '',
     public_name: '',
@@ -83,6 +157,8 @@ export default function SettingsPage() {
   const [connectingMercadoPago, setConnectingMercadoPago] = useState(false)
   const [disconnectingMercadoPago, setDisconnectingMercadoPago] = useState(false)
   const [savingPaymentAutomation, setSavingPaymentAutomation] = useState(false)
+  const [startingPlatformSubscription, setStartingPlatformSubscription] =
+    useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const labels = getBusinessLabels(businessType)
@@ -116,7 +192,12 @@ export default function SettingsPage() {
       return
     }
 
-    const [tenantResult, settingsResult, mercadoPagoResponse] = await Promise.all([
+    const [
+      tenantResult,
+      settingsResult,
+      mercadoPagoResponse,
+      platformSubscriptionResponse,
+    ] = await Promise.all([
       supabase
         .from('tenants')
         .select('id, legal_name, public_name, email, whatsapp_e164, plan, status')
@@ -128,6 +209,11 @@ export default function SettingsPage() {
         .eq('tenant_id', result.tenantUser.tenant_id)
         .maybeSingle(),
       fetch('/api/payment-providers/mercado-pago/connection', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      }),
+      fetch('/api/platform-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -159,6 +245,23 @@ export default function SettingsPage() {
     setMercadoPagoConnection(
       mercadoPagoResponse.ok ? mercadoPagoPayload?.connection ?? null : null
     )
+    const platformSubscriptionPayload = (await platformSubscriptionResponse
+      .json()
+      .catch(() => null)) as PlatformSubscriptionPayload | null
+    setPlatformSubscriptionConfigured(
+      platformSubscriptionResponse.ok &&
+        platformSubscriptionPayload?.configured === true
+    )
+    setPlatformBillingProfile(
+      platformSubscriptionResponse.ok
+        ? platformSubscriptionPayload?.billing_profile ?? null
+        : null
+    )
+    setPlatformSubscription(
+      platformSubscriptionResponse.ok
+        ? platformSubscriptionPayload?.subscription ?? null
+        : null
+    )
     setPixForm({
       pix_key: settingsResult.data?.pix_key ?? '',
       pix_key_type: settingsResult.data?.pix_key_type ?? 'cpf',
@@ -166,9 +269,11 @@ export default function SettingsPage() {
       pix_beneficiary_city: settingsResult.data?.pix_beneficiary_city ?? '',
     })
 
-    const paymentConnectionResult = new URLSearchParams(
-      window.location.search
-    ).get('payment_connection')
+    const searchParams = new URLSearchParams(window.location.search)
+    const paymentConnectionResult = searchParams.get('payment_connection')
+    const platformSubscriptionReturn =
+      searchParams.get('platform_subscription') === 'return'
+    let shouldCleanReturnQuery = false
 
     if (paymentConnectionResult) {
       const successMessages: Record<string, string> = {
@@ -191,7 +296,34 @@ export default function SettingsPage() {
         setError(errorMessages[paymentConnectionResult])
       }
 
-      window.history.replaceState({}, '', window.location.pathname)
+      searchParams.delete('payment_connection')
+      shouldCleanReturnQuery = true
+    }
+
+    if (platformSubscriptionReturn) {
+      if (!platformSubscriptionResponse.ok || !platformSubscriptionPayload) {
+        setError('Não foi possível confirmar o retorno da assinatura do Assistente Jack.')
+      } else if (platformSubscriptionPayload.subscription?.status === 'authorized') {
+        setSuccess('Assinatura do Assistente Jack autorizada com sucesso.')
+      } else {
+        setSuccess(
+          `Retorno recebido. Status da assinatura: ${humanizePlatformSubscriptionStatus(
+            platformSubscriptionPayload.subscription?.status
+          )}.`
+        )
+      }
+
+      searchParams.delete('platform_subscription')
+      shouldCleanReturnQuery = true
+    }
+
+    if (shouldCleanReturnQuery) {
+      const remainingQuery = searchParams.toString()
+      window.history.replaceState(
+        {},
+        '',
+        `${window.location.pathname}${remainingQuery ? `?${remainingQuery}` : ''}${window.location.hash}`
+      )
     }
 
     setLoading(false)
@@ -283,6 +415,62 @@ export default function SettingsPage() {
 
     setSuccess('Dados de Pix atualizados.')
     await load()
+  }
+
+  async function startPlatformSubscription() {
+    setStartingPlatformSubscription(true)
+    setError('')
+    setSuccess('')
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setStartingPlatformSubscription(false)
+      router.push('/login')
+      return
+    }
+
+    const response = await fetch('/api/platform-subscription', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    const payload = (await response.json().catch(() => null)) as
+      | { subscription?: PlatformSubscription; message?: string }
+      | null
+
+    if (!response.ok || !payload?.subscription) {
+      setStartingPlatformSubscription(false)
+      setError(
+        payload?.message ??
+          'Não foi possível iniciar a assinatura do Assistente Jack.'
+      )
+      return
+    }
+
+    setPlatformSubscription(payload.subscription)
+
+    if (payload.subscription.status === 'authorized') {
+      setStartingPlatformSubscription(false)
+      setSuccess('A assinatura do Assistente Jack já está ativa.')
+      return
+    }
+
+    const checkoutUrl = getValidMercadoPagoCheckoutUrl(
+      payload.subscription.checkout_url
+    )
+
+    if (!checkoutUrl) {
+      setStartingPlatformSubscription(false)
+      setError('O Mercado Pago retornou uma URL de checkout inválida.')
+      return
+    }
+
+    window.location.assign(checkoutUrl)
   }
 
   async function connectMercadoPago() {
@@ -732,9 +920,133 @@ export default function SettingsPage() {
             <section className="space-y-4 rounded-2xl bg-white p-5 shadow">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-bold">Pagamentos automáticos</h2>
+                  <h2 className="font-bold">Assinatura do Assistente Jack</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    Conecte a conta Mercado Pago do próprio estabelecimento sem
+                    A mensalidade do Assistente Jack é cobrada separadamente dos
+                    recebimentos dos seus clientes.
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    platformSubscription?.status === 'authorized'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : platformSubscription?.status === 'pending'
+                        ? 'bg-amber-50 text-amber-800'
+                        : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {humanizePlatformSubscriptionStatus(
+                    platformSubscription?.status
+                  )}
+                </span>
+              </div>
+
+              <dl className="grid gap-3 rounded-xl bg-gray-50 p-4 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-gray-500">Valor mensal</dt>
+                  <dd className="font-medium">
+                    {platformBillingProfile
+                      ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: platformBillingProfile.currency,
+                        }).format(platformBillingProfile.amount_cents / 100)
+                      : '-'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Dia de vencimento</dt>
+                  <dd className="font-medium">
+                    {platformBillingProfile?.due_day ?? '-'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Status</dt>
+                  <dd className="font-medium">
+                    {humanizePlatformSubscriptionStatus(
+                      platformSubscription?.status
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Próximo pagamento</dt>
+                  <dd className="font-medium">
+                    {platformSubscription?.next_payment_at
+                      ? new Date(
+                          platformSubscription.next_payment_at
+                        ).toLocaleDateString('pt-BR')
+                      : '-'}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-gray-500">Forma de pagamento</dt>
+                  <dd className="break-all font-medium">
+                    {platformSubscription?.payment_method_id ?? 'Não informada'}
+                  </dd>
+                </div>
+              </dl>
+
+              <p className="rounded-xl bg-sky-50 p-3 text-xs text-sky-800">
+                O checkout é hospedado pelo Mercado Pago. Nenhum dado de cartão
+                passa pelo Assistente Jack ou por este aplicativo.
+              </p>
+
+              {!platformSubscriptionConfigured && (
+                <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                  A assinatura ainda não está disponível para esta conta.
+                </p>
+              )}
+
+              {platformSubscription?.amount_matches_profile === false && (
+                <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                  O valor da assinatura atual precisa ser revisado antes da
+                  próxima cobrança.
+                </p>
+              )}
+
+              {platformSubscription?.status === 'paused' && (
+                <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+                  A assinatura está pausada. Fale com a nossa equipe para
+                  regularizar a cobrança automática.
+                </p>
+              )}
+
+              {(!platformSubscription ||
+                ['pending', 'creating'].includes(
+                  platformSubscription.status
+                )) && (
+                <button
+                  type="button"
+                  onClick={() => void startPlatformSubscription()}
+                  disabled={
+                    !platformSubscriptionConfigured ||
+                    !platformBillingProfile ||
+                    tenantUser?.role !== 'admin' ||
+                    platformSubscription?.status === 'creating' ||
+                    startingPlatformSubscription
+                  }
+                  className="w-full rounded-lg bg-sky-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {startingPlatformSubscription
+                    ? 'Abrindo checkout...'
+                    : platformSubscription?.status === 'pending'
+                      ? 'Continuar cadastro'
+                      : platformSubscription?.status === 'creating'
+                        ? 'Preparando assinatura...'
+                        : 'Cadastrar cartão e ativar cobrança automática'}
+                </button>
+              )}
+            </section>
+
+            <section className="space-y-4 rounded-2xl bg-white p-5 shadow">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-bold">
+                    Recebimentos automáticos dos seus clientes
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Esta conexão recebe e concilia cobranças dos seus clientes;
+                    ela é separada da assinatura do Assistente Jack. Conecte a
+                    conta Mercado Pago do próprio estabelecimento sem
                     compartilhar senha ou token com o navegador.
                   </p>
                 </div>

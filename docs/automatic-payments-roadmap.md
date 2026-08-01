@@ -1,6 +1,6 @@
 # Roadmap — pagamentos dos clientes dos tenants
 
-Atualizado em 2026-07-29.
+Atualizado em 2026-08-01.
 
 ## Objetivo
 
@@ -17,8 +17,11 @@ A conta oficial de recebimento da plataforma tem escopo próprio e não reutiliz
 as conexões OAuth pertencentes aos tenants. Seu access token permanece somente
 nas variáveis server-side da Vercel; o banco guarda apenas ID, nome, status e
 metadados não sensíveis na tabela server-only
-`platform_payment_provider_accounts`. A validação dessa conta não implementa a
-cobrança recorrente da assinatura do Jack, que continua pendente.
+`platform_payment_provider_accounts`. A migration 073, o adaptador Mercado Pago,
+a rota autenticada e a UI com checkout hospedado formam a fundação da cobrança
+recorrente da assinatura do Jack. A recorrência continua pendente e protegida
+por `PLATFORM_SUBSCRIPTIONS_ENABLED=false` até concluir webhook, reconciliação e
+homologação.
 
 ## Decisões definitivas
 
@@ -211,6 +214,12 @@ válido. O roteiro está em `docs/mercado-pago-pix-homologation.md`.
   oficial, em escopo separado dos recebíveis dos tenants.
 - [ ] Novos provedores somente quando houver demanda comercial comprovada.
 - [ ] Split/comissão apenas após decisão jurídica, contábil e regulatória.
+
+A migration `073_platform_recurring_subscriptions.sql`, o adaptador server-side,
+a rota autenticada e a UI de checkout hospedado já compõem a fundação desta
+recorrência, sem marcá-la como concluída. A flag
+`PLATFORM_SUBSCRIPTIONS_ENABLED` permanece desligada até a implementação e a
+validação de webhook, reconciliação e homologação ponta a ponta.
 
 ## Segurança obrigatória
 

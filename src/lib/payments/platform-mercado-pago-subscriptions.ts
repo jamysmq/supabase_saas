@@ -1,0 +1,230 @@
+import 'server-only'
+
+import { getPlatformMercadoPagoConfig } from './platform-mercado-pago'
+
+const MERCADO_PAGO_PREAPPROVAL_URL = 'https://api.mercadopago.com/preapproval'
+
+export function isPlatformSubscriptionsEnabled() {
+  return process.env.PLATFORM_SUBSCRIPTIONS_ENABLED?.trim().toLowerCase() === 'true'
+}
+
+export type PlatformProviderSubscriptionStatus =
+  | 'pending'
+  | 'authorized'
+  | 'paused'
+  | 'cancelled'
+
+export type PlatformMercadoPagoSubscription = {
+  providerSubscriptionId: string
+  externalReference: string
+  status: PlatformProviderSubscriptionStatus
+  checkoutUrl: string | null
+  amountCents: number
+  currency: 'BRL'
+  payerEmail: string
+  payerId: string | null
+  paymentMethodId: string | null
+  nextPaymentAt: string | null
+}
+
+type MercadoPagoPreapprovalResponse = {
+  id?: unknown
+  collector_id?: unknown
+  external_reference?: unknown
+  status?: unknown
+  init_point?: unknown
+  payer_email?: unknown
+  payer_id?: unknown
+  payment_method_id?: unknown
+  next_payment_date?: unknown
+  auto_recurring?: {
+    transaction_amount?: unknown
+    currency_id?: unknown
+  } | null
+  message?: unknown
+  error?: unknown
+}
+
+export class PlatformMercadoPagoSubscriptionError extends Error {
+  constructor(
+    public readonly safeCode: string,
+    public readonly status = 502
+  ) {
+    super('Platform Mercado Pago subscription request failed.')
+    this.name = 'PlatformMercadoPagoSubscriptionError'
+  }
+}
+
+function readString(value: unknown) {
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number') return String(value)
+  return ''
+}
+
+function mapStatus(value: unknown): PlatformProviderSubscriptionStatus {
+  const status = readString(value)
+  if (status === 'authorized' || status === 'paused' || status === 'cancelled') {
+    return status
+  }
+  return 'pending'
+}
+
+function amountToCents(value: unknown) {
+  const amount = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0
+}
+
+function normalizeSubscription(
+  payload: MercadoPagoPreapprovalResponse,
+  expectedAccountId: string
+): PlatformMercadoPagoSubscription {
+  const providerSubscriptionId = readString(payload.id)
+  const collectorId = readString(payload.collector_id)
+  const externalReference = readString(payload.external_reference)
+  const payerEmail = readString(payload.payer_email)
+  const currency = readString(payload.auto_recurring?.currency_id)
+  const amountCents = amountToCents(payload.auto_recurring?.transaction_amount)
+
+  if (
+    !providerSubscriptionId ||
+    !externalReference ||
+    !payerEmail ||
+    currency !== 'BRL' ||
+    amountCents <= 0
+  ) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_invalid_subscription_response'
+    )
+  }
+
+  if (!collectorId || collectorId !== expectedAccountId) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_platform_account_mismatch'
+    )
+  }
+
+  const checkoutUrl = readString(payload.init_point)
+  if (checkoutUrl) {
+    let parsed: URL
+    try {
+      parsed = new URL(checkoutUrl)
+    } catch {
+      throw new PlatformMercadoPagoSubscriptionError(
+        'mercado_pago_invalid_checkout_url'
+      )
+    }
+
+    if (
+      parsed.protocol !== 'https:' ||
+      (parsed.hostname !== 'mercadopago.com.br' &&
+        !parsed.hostname.endsWith('.mercadopago.com.br'))
+    ) {
+      throw new PlatformMercadoPagoSubscriptionError(
+        'mercado_pago_invalid_checkout_url'
+      )
+    }
+  }
+
+  return {
+    providerSubscriptionId,
+    externalReference,
+    status: mapStatus(payload.status),
+    checkoutUrl: checkoutUrl || null,
+    amountCents,
+    currency: 'BRL',
+    payerEmail,
+    payerId: readString(payload.payer_id) || null,
+    paymentMethodId: readString(payload.payment_method_id) || null,
+    nextPaymentAt: readString(payload.next_payment_date) || null,
+  }
+}
+
+async function parseResponse(
+  response: Response,
+  expectedAccountId: string
+) {
+  const payload = (await response.json().catch(() => null)) as
+    | MercadoPagoPreapprovalResponse
+    | null
+
+  if (!response.ok || !payload) {
+    const providerCode = readString(payload?.error)
+    throw new PlatformMercadoPagoSubscriptionError(
+      providerCode
+        ? `mercado_pago_${providerCode.replace(/[^a-z0-9_-]/gi, '_').toLowerCase()}`
+        : 'mercado_pago_subscription_rejected',
+      response.status || 502
+    )
+  }
+
+  return normalizeSubscription(payload, expectedAccountId)
+}
+
+export function getPlatformSubscriptionBackUrl() {
+  const baseUrl =
+    process.env.APP_BASE_URL?.trim() ||
+    'https://app.meuassistentevirtual.com.br'
+  const url = new URL('/settings', baseUrl)
+  url.searchParams.set('platform_subscription', 'return')
+  return url.toString()
+}
+
+export async function createPlatformMercadoPagoSubscription(input: {
+  externalReference: string
+  tenantName: string
+  payerEmail: string
+  amountCents: number
+}) {
+  const { accessToken, accountId } = getPlatformMercadoPagoConfig()
+  const response = await fetch(MERCADO_PAGO_PREAPPROVAL_URL, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reason: `Assistente Jack - ${input.tenantName}`.slice(0, 255),
+      external_reference: input.externalReference,
+      payer_email: input.payerEmail,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: input.amountCents / 100,
+        currency_id: 'BRL',
+      },
+      back_url: getPlatformSubscriptionBackUrl(),
+      status: 'pending',
+    }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+  })
+
+  return parseResponse(response, accountId)
+}
+
+export async function getPlatformMercadoPagoSubscription(
+  providerSubscriptionId: string
+) {
+  if (!/^[A-Za-z0-9_-]+$/.test(providerSubscriptionId)) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'invalid_provider_subscription_id',
+      400
+    )
+  }
+
+  const { accessToken, accountId } = getPlatformMercadoPagoConfig()
+  const response = await fetch(
+    `${MERCADO_PAGO_PREAPPROVAL_URL}/${encodeURIComponent(providerSubscriptionId)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(20_000),
+    }
+  )
+
+  return parseResponse(response, accountId)
+}
