@@ -752,7 +752,8 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - Bloco 3 implementado e migration 068 aplicada em produção em 2026-07-29, ainda com automação e Pix dinâmico desligados.
 - A emissão Pix usa idempotência por ciclo e tentativa; a baixa exige consulta confirmatória ao Mercado Pago e concilia ciclo, cobrança e auditoria em transação única.
 - Pagamento, expiração, falha, cancelamento, estorno e chargeback foram modelados, com fila operacional para divergências e consulta read-only ao provedor.
-- A homologação do Bloco 3 depende apenas de cadastrar a URL produtiva de webhook, instalar seu segredo HMAC e executar um Pix oficial de baixo valor.
+- O ambiente produtivo já possui a URL oficial `https://app.meuassistentevirtual.com.br/api/payment-providers/mercado-pago/webhook` e o segredo HMAC configurados, com os tópicos `payment`, `mp-connect` e o futuro tópico de assinaturas habilitados; probes assinados confirmaram respostas 401 sem assinatura, 401 com assinatura inválida e 200 `ignored` com assinatura válida.
+- O simulador oficial do provedor e um Pix real de baixo valor ainda estão pendentes para concluir a homologação do Bloco 3.
 - Rollout previsto: modo manual preservado, conexão controlada, pagamento oficial de baixo valor, allowlist e uma competência completa.
 - Em 2026-07-30, a prontidão produtiva confirmou 1 tenant conectado e 2 ciclos pendentes/vencidos; ambos têm CPF, mas ainda não têm e-mail, dado obrigatório para criar o pagador do Pix via API do Mercado Pago.
 - Teste produtivo integralmente revertido validou duplicidade, replay fora de ordem após estorno, divergência de valor e colisão com baixa manual. A conferência posterior confirmou zero cobranças, webhooks ou eventos sintéticos persistidos e zero tenants com automação ativa.

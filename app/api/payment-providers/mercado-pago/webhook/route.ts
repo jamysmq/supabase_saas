@@ -62,12 +62,13 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid signature.' }, { status: 401 })
   }
 
-  if (String(payload.type ?? '') !== 'payment' || !dataId) {
+  const notificationType = String(payload.type ?? '')
+  if (notificationType !== 'payment' && notificationType !== 'mp-connect') {
     return Response.json({ ok: true, ignored: true })
   }
 
   const providerAccountId = String(payload.user_id ?? '').trim()
-  if (!providerAccountId) {
+  if (!dataId || !providerAccountId) {
     return Response.json({ ok: true, ignored: true })
   }
 
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
   )}`
   const { data: existingEvent } = await supabase
     .from('tenant_payment_provider_events')
-    .select('id, processing_status')
+    .select('id, processing_status, processing_attempts')
     .eq('provider', 'mercado_pago')
     .eq('provider_event_id', providerEventId)
     .maybeSingle()
@@ -103,6 +104,7 @@ export async function POST(request: Request) {
   }
 
   let eventId = existingEvent?.id
+  const eventAttempts = existingEvent?.processing_attempts ?? 0
   if (!eventId) {
     const { data: insertedEvent, error: eventError } = await supabase
       .from('tenant_payment_provider_events')
@@ -111,8 +113,14 @@ export async function POST(request: Request) {
         connection_id: connection.id,
         provider: 'mercado_pago',
         provider_event_id: providerEventId,
-        event_type: String(payload.action ?? 'payment.updated'),
-        resource_type: 'payment',
+        event_type: String(
+          payload.action ??
+            (notificationType === 'mp-connect'
+              ? 'application.updated'
+              : 'payment.updated')
+        ),
+        resource_type:
+          notificationType === 'mp-connect' ? 'oauth_connection' : 'payment',
         provider_resource_id: dataId,
         processing_status: 'received',
         payload,
@@ -127,6 +135,106 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Event persistence failed.' }, { status: 500 })
     }
     eventId = insertedEvent.id
+  }
+
+  if (notificationType === 'mp-connect') {
+    const action = String(payload.action ?? 'application.updated')
+    const processedAt = new Date().toISOString()
+
+    try {
+      if (action === 'application.deauthorized') {
+        const {
+          data: updatedConnection,
+          error: connectionUpdateError,
+        } = await supabase
+          .from('tenant_payment_provider_connections')
+          .update({
+            status: 'needs_reauthorization',
+            credentials_ciphertext: null,
+            granted_scopes: [],
+            capabilities: {},
+            token_expires_at: null,
+            disconnected_at: processedAt,
+            updated_at: processedAt,
+            last_error_code: 'mercado_pago_application_deauthorized',
+          })
+          .eq('id', connection.id)
+          .eq('tenant_id', connection.tenant_id)
+          .eq('provider', 'mercado_pago')
+          .select('id')
+          .maybeSingle()
+
+        if (connectionUpdateError || !updatedConnection) {
+          throw connectionUpdateError ?? new Error('Connection update failed.')
+        }
+
+        const { data: updatedSettings, error: settingsUpdateError } =
+          await supabase
+          .from('tenant_billing_settings')
+          .update({
+            payment_automation_enabled: false,
+            pix_collection_mode: 'tenant_key',
+            default_payment_provider: null,
+            updated_at: processedAt,
+          })
+          .eq('tenant_id', connection.tenant_id)
+          .select('tenant_id')
+          .maybeSingle()
+
+        if (settingsUpdateError || !updatedSettings) {
+          throw settingsUpdateError ?? new Error('Billing settings update failed.')
+        }
+      }
+
+      const { error: processedEventError } = await supabase
+        .from('tenant_payment_provider_events')
+        .update({
+          processing_status: 'processed',
+          processing_attempts: eventAttempts + 1,
+          error_code: null,
+          error_message: null,
+          processed_at: processedAt,
+        })
+        .eq('id', eventId)
+        .eq('tenant_id', connection.tenant_id)
+        .eq('connection_id', connection.id)
+        .eq('provider', 'mercado_pago')
+
+      if (processedEventError) throw processedEventError
+
+      return Response.json({
+        ok: true,
+        handled: true,
+        type: 'mp-connect',
+        action,
+      })
+    } catch {
+      const { error: failedEventError } = await supabase
+        .from('tenant_payment_provider_events')
+        .update({
+          processing_status: 'failed',
+          processing_attempts: eventAttempts + 1,
+          error_code: 'connection_event_processing_failed',
+          error_message: 'Mercado Pago connection event processing failed.',
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', eventId)
+        .eq('tenant_id', connection.tenant_id)
+        .eq('connection_id', connection.id)
+        .eq('provider', 'mercado_pago')
+
+      if (failedEventError) {
+        return Response.json(
+          { error: 'Connection event processing failed.' },
+          { status: 500 }
+        )
+      }
+
+      return Response.json(
+        { error: 'Connection event processing failed.' },
+        { status: 500 }
+      )
+    }
   }
 
   try {

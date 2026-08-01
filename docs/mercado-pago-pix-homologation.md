@@ -8,8 +8,15 @@ manual antes de a integração oficial estar confirmada.
 - conexão OAuth do tenant em modo produção e com token válido;
 - e-mail válido no cadastro do pagador usado no teste;
 - URL de webhook cadastrada no painel do Mercado Pago:
-  `https://supabase-saas-nine.vercel.app/api/payment-providers/mercado-pago/webhook`;
-- evento `Payments` (`payment`) habilitado;
+  `https://app.meuassistentevirtual.com.br/api/payment-providers/mercado-pago/webhook`;
+- tópicos de produção habilitados no Mercado Pago:
+  - `Pagamentos` legado (`payment`), para conciliação das cobranças;
+  - `Vinculação de aplicações` (`mp-connect`), para autorização e
+    desautorização da conexão OAuth;
+  - `Planos e assinaturas`, reservado para o bloco de recorrência; enquanto não
+    houver assinaturas, seus eventos são ignorados com segurança;
+- os demais tópicos devem permanecer desabilitados até que seus handlers sejam
+  implementados no webhook;
 - assinatura secreta do webhook salva somente em ambiente seguro como
   `MERCADO_PAGO_WEBHOOK_SECRET`;
 - automação de cobrança e modo `provider_dynamic` ainda desligados.
@@ -21,7 +28,7 @@ manual antes de a integração oficial estar confirmada.
 2. Publicar `MERCADO_PAGO_WEBHOOK_SECRET` como variável sensível no ambiente
    Production da Vercel.
 3. Confirmar a variável
-   `MERCADO_PAGO_WEBHOOK_URL=https://supabase-saas-nine.vercel.app/api/payment-providers/mercado-pago/webhook`.
+   `MERCADO_PAGO_WEBHOOK_URL=https://app.meuassistentevirtual.com.br/api/payment-providers/mercado-pago/webhook`.
 4. Fazer novo deploy de produção.
 5. Confirmar que uma chamada sem assinatura é recusada e que o simulador oficial
    do Mercado Pago é aceito.
