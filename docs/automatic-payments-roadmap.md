@@ -13,6 +13,13 @@ Este roadmap trata primeiro dos **recebíveis dos tenants**. A cobrança da
 assinatura do Jack paga pelo tenant à Soft Ink reutilizará a mesma arquitetura
 em um épico posterior, mantendo dados e saldos separados.
 
+A conta oficial de recebimento da plataforma tem escopo próprio e não reutiliza
+as conexões OAuth pertencentes aos tenants. Seu access token permanece somente
+nas variáveis server-side da Vercel; o banco guarda apenas ID, nome, status e
+metadados não sensíveis na tabela server-only
+`platform_payment_provider_accounts`. A validação dessa conta não implementa a
+cobrança recorrente da assinatura do Jack, que continua pendente.
+
 ## Decisões definitivas
 
 - O Pix configurado em `tenant_billing_settings` continua sendo o padrão e o
@@ -198,7 +205,10 @@ válido. O roteiro está em `docs/mercado-pago-pix-homologation.md`.
 ### Bloco 8 — extensões posteriores
 
 - [ ] Pix Automático regulado, se habilitado pelo provedor.
-- [ ] Cobrança da assinatura do Jack usando o mesmo núcleo, em escopo separado.
+- [x] Separar a conta oficial da plataforma das conexões OAuth dos tenants e
+  persistir somente seus metadados não sensíveis.
+- [ ] Implementar a cobrança recorrente da assinatura do Jack usando a conta
+  oficial, em escopo separado dos recebíveis dos tenants.
 - [ ] Novos provedores somente quando houver demanda comercial comprovada.
 - [ ] Split/comissão apenas após decisão jurídica, contábil e regulatória.
 

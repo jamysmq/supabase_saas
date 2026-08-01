@@ -1,5 +1,10 @@
 import { inspectN8nWorkflows } from '../../../../../src/lib/n8n-monitoring'
 import { requirePlatformAdmin } from '../../../../../src/lib/platform-admin'
+import {
+  isPlatformMercadoPagoConfigured,
+  sanitizePlatformPaymentAccount,
+  type PlatformPaymentAccountRow,
+} from '../../../../../src/lib/payments/platform-mercado-pago'
 
 type PendingCategory = {
   id: string
@@ -22,6 +27,7 @@ export async function GET(request: Request) {
     contactMessagesResult,
     whatsappThreadsResult,
     incidentHistoryResult,
+    officialPaymentAccountResult,
     operations,
   ] = await Promise.all([
     result.supabase.rpc('admin_list_pending_signups'),
@@ -54,6 +60,13 @@ export async function GET(request: Request) {
       .select('id, severity, title, status, first_detected_at, last_detected_at, resolved_at')
       .order('last_detected_at', { ascending: false })
       .limit(10),
+    result.supabase
+      .from('platform_payment_provider_accounts')
+      .select(
+        'provider, status, provider_account_id, provider_account_name, credential_source, metadata, connected_at, last_validated_at, last_error_code'
+      )
+      .eq('provider', 'mercado_pago')
+      .maybeSingle(),
     inspectN8nWorkflows(),
   ])
 
@@ -65,6 +78,7 @@ export async function GET(request: Request) {
   if (contactMessagesResult.error) warnings.push('contact_messages')
   if (whatsappThreadsResult.error) warnings.push('whatsapp_threads')
   if (incidentHistoryResult.error) warnings.push('incident_history')
+  if (officialPaymentAccountResult.error) warnings.push('official_payment_account')
 
   const signupCount =
     (legacySignupsResult.data?.length ?? 0) + (publicSignupsResult.count ?? 0)
@@ -133,6 +147,12 @@ export async function GET(request: Request) {
       ...operations,
       history: incidentHistoryResult.data ?? [],
     },
+    officialPaymentProviderConfigured: isPlatformMercadoPagoConfigured(),
+    officialPaymentAccount: officialPaymentAccountResult.error
+      ? null
+      : sanitizePlatformPaymentAccount(
+          officialPaymentAccountResult.data as PlatformPaymentAccountRow | null
+        ),
     warnings,
   })
 }

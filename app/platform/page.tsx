@@ -26,6 +26,19 @@ type OperationalIssue = {
   detectedAt: string
 }
 
+type OfficialPaymentAccount = {
+  provider: string
+  status: string
+  providerAccountId: string
+  providerAccountName: string | null
+  credentialSource: string
+  nickname: string | null
+  siteId: string | null
+  connectedAt: string | null
+  lastValidatedAt: string | null
+  lastErrorCode: string | null
+}
+
 type Summary = {
   total: number
   administrativeCount: number
@@ -48,7 +61,28 @@ type Summary = {
       resolved_at: string | null
     }>
   }
+  officialPaymentProviderConfigured: boolean
+  officialPaymentAccount: OfficialPaymentAccount | null
   warnings: string[]
+}
+
+function officialPaymentAccountStatusLabel(
+  account: OfficialPaymentAccount | null
+) {
+  if (!account) return 'Ainda não validada'
+
+  switch (account.status) {
+    case 'connected':
+      return 'Conectada'
+    case 'needs_reauthorization':
+      return 'Requer reautorização'
+    case 'disabled':
+      return 'Desativada'
+    case 'error':
+      return 'Erro de validação'
+    default:
+      return 'Status desconhecido'
+  }
 }
 
 export default function PlatformPage() {
@@ -56,6 +90,11 @@ export default function PlatformPage() {
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [validatingOfficialAccount, setValidatingOfficialAccount] = useState(false)
+  const [officialAccountFeedback, setOfficialAccountFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   const load = useCallback(async () => {
     setError('')
@@ -108,6 +147,63 @@ export default function PlatformPage() {
     await supabase.auth.signOut()
     clearPublicSessionMarker()
     router.push('/login')
+  }
+
+  async function validateOfficialAccount() {
+    setValidatingOfficialAccount(true)
+    setOfficialAccountFeedback(null)
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      setValidatingOfficialAccount(false)
+      router.push('/login')
+      return
+    }
+
+    try {
+      const response = await fetch(
+        '/api/platform/payment-provider/mercado-pago',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }
+      )
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; message?: string }
+        | null
+
+      if (response.status === 401) {
+        router.push('/login')
+        return
+      }
+
+      if (!response.ok) {
+        setOfficialAccountFeedback({
+          type: 'error',
+          message:
+            payload?.error ??
+            'Não foi possível validar a conta oficial do Mercado Pago.',
+        })
+        await load()
+        return
+      }
+
+      setOfficialAccountFeedback({
+        type: 'success',
+        message: payload?.message ?? 'Conta oficial validada com sucesso.',
+      })
+      await load()
+    } catch {
+      setOfficialAccountFeedback({
+        type: 'error',
+        message: 'Não foi possível validar a conta oficial do Mercado Pago.',
+      })
+    } finally {
+      setValidatingOfficialAccount(false)
+    }
   }
 
   if (loading) {
@@ -165,6 +261,86 @@ export default function PlatformPage() {
                 <p className="text-sm">Alertas operacionais</p>
                 <p className="mt-2 text-3xl font-bold">{summary.operationalCount}</p>
               </div>
+            </section>
+
+            <section className="rounded-2xl bg-white p-5 shadow">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">Conta oficial de recebimento</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Conta Mercado Pago da plataforma, separada das conexões dos tenants.
+                  </p>
+                </div>
+                <span
+                  className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${
+                    summary.officialPaymentAccount?.status === 'connected'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
+                  {officialPaymentAccountStatusLabel(
+                    summary.officialPaymentAccount
+                  )}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-xs font-medium uppercase text-gray-500">Ambiente</p>
+                  <p className="mt-1 font-semibold">
+                    {summary.officialPaymentProviderConfigured
+                      ? 'Configurado no servidor'
+                      : 'Não configurado'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-xs font-medium uppercase text-gray-500">Conta</p>
+                  <p className="mt-1 font-semibold">
+                    {summary.officialPaymentAccount?.providerAccountName ??
+                      summary.officialPaymentAccount?.nickname ??
+                      'Sem nome armazenado'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-xs font-medium uppercase text-gray-500">ID da conta</p>
+                  <p className="mt-1 break-all font-mono text-xs">
+                    {summary.officialPaymentAccount?.providerAccountId ?? '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-xs font-medium uppercase text-gray-500">Última validação</p>
+                  <p className="mt-1 font-semibold">
+                    {summary.officialPaymentAccount?.lastValidatedAt
+                      ? new Date(
+                          summary.officialPaymentAccount.lastValidatedAt
+                        ).toLocaleString('pt-BR')
+                      : 'Nunca'}
+                  </p>
+                </div>
+              </div>
+
+              {officialAccountFeedback && (
+                <p
+                  className={`mt-4 rounded-xl p-3 text-sm ${
+                    officialAccountFeedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-800'
+                      : 'bg-red-50 text-red-700'
+                  }`}
+                >
+                  {officialAccountFeedback.message}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => void validateOfficialAccount()}
+                disabled={validatingOfficialAccount}
+                className="mt-4 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {validatingOfficialAccount
+                  ? 'Validando conta oficial...'
+                  : 'Validar conta oficial'}
+              </button>
             </section>
 
             <section className="rounded-2xl bg-white p-5 shadow">

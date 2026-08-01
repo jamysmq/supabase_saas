@@ -749,6 +749,8 @@ Concluidos: `WA_TENANT_APPOINTMENTS_INBOUND_v1` esta ativo desde 2026-07-14; `DA
 - A tela permite conectar, reconectar e desligar localmente o Mercado Pago, sem ativar o modo de cobrança automática.
 - A primeira conexão OAuth foi validada em modo produtivo, com credenciais cifradas, token vigente, escopos esperados e nenhuma automação ou Pix dinâmico habilitado.
 - A conta usada nessa validação poderá futuramente receber as assinaturas da plataforma, mas essa conexão central será separada das conexões por tenant.
+- A conta oficial Mercado Pago da plataforma passou a ter escopo próprio, sem reutilizar ou alterar as conexões OAuth pertencentes aos tenants. O access token fica exclusivamente nas variáveis server-side da Vercel, e a tabela server-only `platform_payment_provider_accounts` armazena somente ID, nome, status e metadados não sensíveis.
+- O painel administrativo pode validar a identidade dessa conta oficial e consultar seu estado sem expor credenciais. A cobrança recorrente da assinatura do Jack ainda não foi implementada e permanece pendente.
 - Bloco 3 implementado e migration 068 aplicada em produção em 2026-07-29, ainda com automação e Pix dinâmico desligados.
 - A emissão Pix usa idempotência por ciclo e tentativa; a baixa exige consulta confirmatória ao Mercado Pago e concilia ciclo, cobrança e auditoria em transação única.
 - Pagamento, expiração, falha, cancelamento, estorno e chargeback foram modelados, com fila operacional para divergências e consulta read-only ao provedor.
