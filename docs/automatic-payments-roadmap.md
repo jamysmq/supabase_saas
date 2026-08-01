@@ -17,11 +17,12 @@ A conta oficial de recebimento da plataforma tem escopo próprio e não reutiliz
 as conexões OAuth pertencentes aos tenants. Seu access token permanece somente
 nas variáveis server-side da Vercel; o banco guarda apenas ID, nome, status e
 metadados não sensíveis na tabela server-only
-`platform_payment_provider_accounts`. A migration 073, o adaptador Mercado Pago,
-a rota autenticada e a UI com checkout hospedado formam a fundação da cobrança
-recorrente da assinatura do Jack. A recorrência continua pendente e protegida
-por `PLATFORM_SUBSCRIPTIONS_ENABLED=false` até concluir webhook, reconciliação e
-homologação.
+`platform_payment_provider_accounts`. As migrations 073 e 074, o adaptador
+Mercado Pago, a rota autenticada, a UI com checkout hospedado, o webhook e a
+reconciliação formam a fundação completa da cobrança recorrente da assinatura
+do Jack. A recorrência ainda não está concluída e permanece protegida por
+`PLATFORM_SUBSCRIPTIONS_ENABLED=false`; falta somente a homologação oficial e
+controlada, ponta a ponta, de checkout, pagamento e estorno antes do rollout.
 
 ## Decisões definitivas
 
@@ -215,11 +216,29 @@ válido. O roteiro está em `docs/mercado-pago-pix-homologation.md`.
 - [ ] Novos provedores somente quando houver demanda comercial comprovada.
 - [ ] Split/comissão apenas após decisão jurídica, contábil e regulatória.
 
-A migration `073_platform_recurring_subscriptions.sql`, o adaptador server-side,
-a rota autenticada e a UI de checkout hospedado já compõem a fundação desta
-recorrência, sem marcá-la como concluída. A flag
-`PLATFORM_SUBSCRIPTIONS_ENABLED` permanece desligada até a implementação e a
-validação de webhook, reconciliação e homologação ponta a ponta.
+As migrations `073_platform_recurring_subscriptions.sql` e
+`074_platform_subscription_reconciliation.sql`, o adaptador server-side, a rota
+autenticada e a UI de checkout hospedado compõem a fundação desta recorrência.
+A migration 074 foi aplicada em produção em 2026-08-01. Os webhooks da conta
+oficial do Mercado Pago agora cobrem `subscription_preapproval`,
+`subscription_authorized_payment` e `payment`, sempre após validação HMAC e
+consulta direta ao recurso no provedor. A persistência dos eventos é server-only
+e idempotente; `anon` e `authenticated` não possuem `SELECT` na tabela de
+eventos do provedor nem permissão para executar a RPC de reconciliação.
+
+A reconciliação de fatura e pagamento é atômica, registra bruto, status, taxas,
+líquido e timestamps de pagamento e estorno, impede regressão de estados
+`paid`, `refunded` e `chargeback` e não suspende tenants automaticamente. Um
+teste transacional em produção, integralmente revertido, partiu de uma fatura
+pendente, anexou um pagamento aprovado a uma única linha de pagamento e
+confirmou que o replay para `pending` não regrediu o estado `paid`; foram
+registrados três eventos de auditoria e permaneceram zero linhas sintéticas após
+o rollback.
+
+A cobrança recorrente ainda não está marcada como concluída. A flag
+`PLATFORM_SUBSCRIPTIONS_ENABLED` permanece desligada, e o único passo restante
+antes do rollout é uma homologação oficial e controlada, ponta a ponta, de
+checkout, pagamento e estorno.
 
 ## Segurança obrigatória
 

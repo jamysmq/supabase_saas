@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { createTenantAdminClient } from '../../../../../src/lib/tenant-admin'
 import { getMercadoPagoPayment } from '../../../../../src/lib/payments/mercado-pago-payments'
 import { getUsableMercadoPagoConnection } from '../../../../../src/lib/payments/mercado-pago-runtime'
+import { handlePlatformMercadoPagoWebhook } from '../../../../../src/lib/payments/platform-mercado-pago-webhook'
 import {
   isMercadoPagoWebhookConfigured,
   validateMercadoPagoWebhookSignature,
@@ -63,7 +64,12 @@ export async function POST(request: Request) {
   }
 
   const notificationType = String(payload.type ?? '')
-  if (notificationType !== 'payment' && notificationType !== 'mp-connect') {
+  if (
+    notificationType !== 'payment' &&
+    notificationType !== 'mp-connect' &&
+    notificationType !== 'subscription_preapproval' &&
+    notificationType !== 'subscription_authorized_payment'
+  ) {
     return Response.json({ ok: true, ignored: true })
   }
 
@@ -73,6 +79,30 @@ export async function POST(request: Request) {
   }
 
   const supabase = createTenantAdminClient()
+  if (notificationType !== 'mp-connect') {
+    const platformResponse = await handlePlatformMercadoPagoWebhook({
+      supabase,
+      payload,
+      notificationType,
+      dataId,
+      providerAccountId,
+      providerEventId: `${providerAccountId}:${notificationType}:${safeEventId(
+        payload,
+        requestId,
+        rawBody
+      )}`,
+    })
+
+    if (platformResponse instanceof Response) return platformResponse
+  }
+
+  if (
+    notificationType === 'subscription_preapproval' ||
+    notificationType === 'subscription_authorized_payment'
+  ) {
+    return Response.json({ ok: true, ignored: true })
+  }
+
   const { data: connection, error: connectionError } = await supabase
     .from('tenant_payment_provider_connections')
     .select('id, tenant_id, status')

@@ -3,6 +3,10 @@ import 'server-only'
 import { getPlatformMercadoPagoConfig } from './platform-mercado-pago'
 
 const MERCADO_PAGO_PREAPPROVAL_URL = 'https://api.mercadopago.com/preapproval'
+const MERCADO_PAGO_AUTHORIZED_PAYMENTS_URL =
+  'https://api.mercadopago.com/authorized_payments'
+const MERCADO_PAGO_PAYMENTS_URL = 'https://api.mercadopago.com/v1/payments'
+const MERCADO_PAGO_REQUEST_TIMEOUT_MS = 20_000
 
 export function isPlatformSubscriptionsEnabled() {
   return process.env.PLATFORM_SUBSCRIPTIONS_ENABLED?.trim().toLowerCase() === 'true'
@@ -27,6 +31,39 @@ export type PlatformMercadoPagoSubscription = {
   nextPaymentAt: string | null
 }
 
+export type PlatformMercadoPagoAuthorizedPayment = {
+  invoiceId: string
+  preapprovalId: string
+  externalReference: string
+  currency: 'BRL'
+  amountCents: number
+  debitDate: string
+  status: string
+  summarized: string
+  payment: {
+    id: string
+    status: string
+    statusDetail: string | null
+  } | null
+}
+
+export type PlatformMercadoPagoRecurringPayment = {
+  paymentId: string
+  collectorId: string
+  externalReference: string
+  currency: 'BRL'
+  amountCents: number
+  status: string
+  statusDetail: string | null
+  dateCreated: string | null
+  dateApproved: string | null
+  dateLastUpdated: string | null
+  paymentMethodId: string | null
+  feeCents: number
+  netReceivedAmountCents: number
+  refundedAmountCents: number
+}
+
 type MercadoPagoPreapprovalResponse = {
   id?: unknown
   collector_id?: unknown
@@ -43,6 +80,43 @@ type MercadoPagoPreapprovalResponse = {
   } | null
   message?: unknown
   error?: unknown
+}
+
+type MercadoPagoAuthorizedPaymentResponse = {
+  id?: unknown
+  preapproval_id?: unknown
+  external_reference?: unknown
+  currency_id?: unknown
+  transaction_amount?: unknown
+  debit_date?: unknown
+  status?: unknown
+  summarized?: unknown
+  payment?: {
+    id?: unknown
+    status?: unknown
+    status_detail?: unknown
+  } | null
+}
+
+type MercadoPagoRecurringPaymentResponse = {
+  id?: unknown
+  collector_id?: unknown
+  external_reference?: unknown
+  currency_id?: unknown
+  transaction_amount?: unknown
+  status?: unknown
+  status_detail?: unknown
+  date_created?: unknown
+  date_approved?: unknown
+  date_last_updated?: unknown
+  payment_method_id?: unknown
+  fee_details?: Array<{
+    amount?: unknown
+  }> | null
+  transaction_details?: {
+    net_received_amount?: unknown
+  } | null
+  transaction_amount_refunded?: unknown
 }
 
 export class PlatformMercadoPagoSubscriptionError extends Error {
@@ -63,7 +137,8 @@ function readString(value: unknown) {
 
 function mapStatus(value: unknown): PlatformProviderSubscriptionStatus {
   const status = readString(value)
-  if (status === 'authorized' || status === 'paused' || status === 'cancelled') {
+  if (status === 'canceled' || status === 'cancelled') return 'cancelled'
+  if (status === 'authorized' || status === 'paused') {
     return status
   }
   return 'pending'
@@ -72,6 +147,17 @@ function mapStatus(value: unknown): PlatformProviderSubscriptionStatus {
 function amountToCents(value: unknown) {
   const amount = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(amount) ? Math.round(amount * 100) : 0
+}
+
+function getSubscriptionRequestConfig() {
+  try {
+    return getPlatformMercadoPagoConfig()
+  } catch {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'platform_mercado_pago_not_configured',
+      500
+    )
+  }
 }
 
 function normalizeSubscription(
@@ -137,6 +223,153 @@ function normalizeSubscription(
     paymentMethodId: readString(payload.payment_method_id) || null,
     nextPaymentAt: readString(payload.next_payment_date) || null,
   }
+}
+
+function normalizeAuthorizedPayment(
+  payload: MercadoPagoAuthorizedPaymentResponse
+): PlatformMercadoPagoAuthorizedPayment {
+  const invoiceId = readString(payload.id)
+  const preapprovalId = readString(payload.preapproval_id)
+  const externalReference = readString(payload.external_reference)
+  const currency = readString(payload.currency_id)
+  const amountCents = amountToCents(payload.transaction_amount)
+  const debitDate = readString(payload.debit_date)
+  const status = readString(payload.status)
+  const summarized = readString(payload.summarized)
+
+  if (
+    !/^\d+$/.test(invoiceId) ||
+    !preapprovalId ||
+    !externalReference ||
+    currency !== 'BRL' ||
+    amountCents <= 0 ||
+    !debitDate ||
+    !status ||
+    !summarized
+  ) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_invalid_authorized_payment_response'
+    )
+  }
+
+  let payment: PlatformMercadoPagoAuthorizedPayment['payment'] = null
+  if (payload.payment != null) {
+    const id = readString(payload.payment.id)
+    const paymentStatus = readString(payload.payment.status)
+
+    if (!id || !paymentStatus) {
+      throw new PlatformMercadoPagoSubscriptionError(
+        'mercado_pago_invalid_authorized_payment_response'
+      )
+    }
+
+    payment = {
+      id,
+      status: paymentStatus,
+      statusDetail: readString(payload.payment.status_detail) || null,
+    }
+  }
+
+  return {
+    invoiceId,
+    preapprovalId,
+    externalReference,
+    currency: 'BRL',
+    amountCents,
+    debitDate,
+    status,
+    summarized,
+    payment,
+  }
+}
+
+function normalizeRecurringPayment(
+  payload: MercadoPagoRecurringPaymentResponse,
+  expectedAccountId: string
+): PlatformMercadoPagoRecurringPayment {
+  const paymentId = readString(payload.id)
+  const collectorId = readString(payload.collector_id)
+  const externalReference = readString(payload.external_reference)
+  const currency = readString(payload.currency_id)
+  const amountCents = amountToCents(payload.transaction_amount)
+  const status = readString(payload.status)
+
+  if (
+    !paymentId ||
+    !externalReference ||
+    currency !== 'BRL' ||
+    amountCents <= 0 ||
+    !status
+  ) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_invalid_recurring_payment_response'
+    )
+  }
+
+  if (!collectorId || collectorId !== expectedAccountId) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_platform_account_mismatch'
+    )
+  }
+
+  const feeCents = Array.isArray(payload.fee_details)
+    ? payload.fee_details.reduce(
+        (total, fee) => total + amountToCents(fee?.amount),
+        0
+      )
+    : 0
+
+  return {
+    paymentId,
+    collectorId,
+    externalReference,
+    currency: 'BRL',
+    amountCents,
+    status,
+    statusDetail: readString(payload.status_detail) || null,
+    dateCreated: readString(payload.date_created) || null,
+    dateApproved: readString(payload.date_approved) || null,
+    dateLastUpdated: readString(payload.date_last_updated) || null,
+    paymentMethodId: readString(payload.payment_method_id) || null,
+    feeCents,
+    netReceivedAmountCents: amountToCents(
+      payload.transaction_details?.net_received_amount
+    ),
+    refundedAmountCents: amountToCents(payload.transaction_amount_refunded),
+  }
+}
+
+async function parseAuthorizedPaymentResponse(response: Response) {
+  const payload = (await response.json().catch(() => null)) as
+    | MercadoPagoAuthorizedPaymentResponse
+    | null
+
+  if (!response.ok || !payload) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_authorized_payment_rejected',
+      response.status || 502
+    )
+  }
+
+  return normalizeAuthorizedPayment(payload)
+}
+
+async function parseRecurringPaymentResponse(
+  response: Response,
+  expectedAccountId: string
+) {
+  const payload = (await response.json().catch(() => null)) as
+    | MercadoPagoRecurringPaymentResponse
+    | null
+
+  if (!response.ok || !payload) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_recurring_payment_rejected',
+      response.status || 502
+    )
+  }
+
+  return normalizeRecurringPayment(payload, expectedAccountId)
 }
 
 async function parseResponse(
@@ -227,4 +460,68 @@ export async function getPlatformMercadoPagoSubscription(
   )
 
   return parseResponse(response, accountId)
+}
+
+export async function getPlatformMercadoPagoAuthorizedPayment(
+  invoiceId: string
+) {
+  if (!/^\d+$/.test(invoiceId)) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'invalid_authorized_payment_id',
+      400
+    )
+  }
+
+  const { accessToken } = getSubscriptionRequestConfig()
+  let response: Response
+  try {
+    response = await fetch(
+      `${MERCADO_PAGO_AUTHORIZED_PAYMENTS_URL}/${encodeURIComponent(invoiceId)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(MERCADO_PAGO_REQUEST_TIMEOUT_MS),
+      }
+    )
+  } catch {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_authorized_payment_unavailable'
+    )
+  }
+
+  return parseAuthorizedPaymentResponse(response)
+}
+
+export async function getPlatformMercadoPagoRecurringPayment(paymentId: string) {
+  if (!/^[A-Za-z0-9_-]+$/.test(paymentId)) {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'invalid_recurring_payment_id',
+      400
+    )
+  }
+
+  const { accessToken, accountId } = getSubscriptionRequestConfig()
+  let response: Response
+  try {
+    response = await fetch(
+      `${MERCADO_PAGO_PAYMENTS_URL}/${encodeURIComponent(paymentId)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(MERCADO_PAGO_REQUEST_TIMEOUT_MS),
+      }
+    )
+  } catch {
+    throw new PlatformMercadoPagoSubscriptionError(
+      'mercado_pago_recurring_payment_unavailable'
+    )
+  }
+
+  return parseRecurringPaymentResponse(response, accountId)
 }
