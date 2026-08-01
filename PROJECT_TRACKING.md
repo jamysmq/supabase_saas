@@ -864,6 +864,7 @@ Proxima prioridade:
 
 - A migration `070_platform_operational_incidents.sql` foi aplicada em produção e criou uma tabela server-only com RLS, sem acesso para `anon` ou `authenticated`.
 - A rota protegida `/api/internal/monitoring/n8n` registra incidentes por chave estável, evita alertas duplicados, resolve automaticamente recuperações e guarda falhas de notificação.
-- O cron da Vercel foi configurado em `vercel.json` para executar a cada 10 minutos em produção, autenticado por `CRON_SECRET`.
+- O Vercel Hobby rejeitou o cron de 10 minutos antes da publicação.
+- O agendamento foi movido para o workflow versionado `n8n/PLATFORM_OPERATIONAL_MONITOR.workflow.json`, que usa a credencial interna segura de Header Auth a cada 10 minutos.
 - O Dashboard passou a exibir o histórico recente de incidentes ativos e resolvidos.
 - O destino administrativo foi configurado para o WhatsApp final 6994, mas `PLATFORM_OPERATIONAL_ALERTS_ENABLED` permanece `false` até a aprovação do template `jack_platform_operational_update_v1` pela Meta.

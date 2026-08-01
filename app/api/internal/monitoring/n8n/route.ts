@@ -16,8 +16,13 @@ type StoredIncident = {
 }
 
 function isAuthorized(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim()
-  return Boolean(secret && request.headers.get('authorization') === `Bearer ${secret}`)
+  const cronSecret = process.env.CRON_SECRET?.trim()
+  const whatsappToken = process.env.WHATSAPP_INTERNAL_SEND_TOKEN?.trim()
+  const authorization = request.headers.get('authorization')
+  return Boolean(
+    (cronSecret && authorization === `Bearer ${cronSecret}`) ||
+    (whatsappToken && authorization === `Bearer ${whatsappToken}`)
+  )
 }
 
 function alertsEnabled() {
@@ -164,8 +169,8 @@ export async function GET(request: Request) {
 
   if (newAlerts.length > 0 && alertsEnabled()) {
     try {
-      const summary = newAlerts.map((incident) => `• ${incident.title}`).join('\n')
-      const providerMessageId = await sendOperationalUpdate(`⚠️ Atenção necessária:\n${summary}`)
+      const summary = newAlerts.map((incident) => `\u2022 ${incident.title}`).join('\n')
+      const providerMessageId = await sendOperationalUpdate(`\u26a0\ufe0f Aten\u00e7\u00e3o necess\u00e1ria:\n${summary}`)
       if (providerMessageId) {
         const { error } = await supabase
           .from('platform_operational_incidents')
@@ -186,8 +191,8 @@ export async function GET(request: Request) {
 
   if (recoveries.length > 0 && alertsEnabled()) {
     try {
-      const summary = recoveries.map((incident) => `• ${incident.title}`).join('\n')
-      const providerMessageId = await sendOperationalUpdate(`✅ Situação normalizada:\n${summary}`)
+      const summary = recoveries.map((incident) => `\u2022 ${incident.title}`).join('\n')
+      const providerMessageId = await sendOperationalUpdate(`\u2705 Situa\u00e7\u00e3o normalizada:\n${summary}`)
       if (providerMessageId) {
         const { error } = await supabase
           .from('platform_operational_incidents')
