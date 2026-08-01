@@ -858,13 +858,14 @@ Proxima prioridade:
 - O indicador foi integrado às telas administrativas de negócios, planos, pagamentos, histórico, cadastros, profissionais, contatos e WhatsApp.
 - A saúde operacional consulta os seis workflows críticos do n8n e detecta workflow desativado, última execução com erro e atraso em workflows agendados.
 - `N8N_BASE_URL` e `N8N_API_KEY` foram adicionados como segredos Sensitive no ambiente Production da Vercel.
-- Nesta etapa o monitoramento ocorre ao abrir o painel e é atualizado a cada 60 segundos. Persistência em segundo plano e alerta proativo por WhatsApp permanecem como próximo bloco.
+- O painel atualiza a saúde operacional a cada 60 segundos, enquanto a persistência ocorre em segundo plano pelo n8n e fica visível no Dashboard.
 
 ### Monitoramento em segundo plano
 
 - A migration `070_platform_operational_incidents.sql` foi aplicada em produção e criou uma tabela server-only com RLS, sem acesso para `anon` ou `authenticated`.
-- A rota protegida `/api/internal/monitoring/n8n` registra incidentes por chave estável, evita alertas duplicados, resolve automaticamente recuperações e guarda falhas de notificação.
+- A rota protegida `/api/internal/monitoring/n8n` registra incidentes por chave estável e resolve automaticamente as recuperações.
 - O Vercel Hobby rejeitou o cron de 10 minutos antes da publicação.
 - O agendamento foi movido para o workflow versionado `n8n/PLATFORM_OPERATIONAL_MONITOR.workflow.json`, que usa a credencial interna segura de Header Auth a cada 10 minutos.
 - O Dashboard passou a exibir o histórico recente de incidentes ativos e resolvidos.
-- O destino administrativo foi configurado para o WhatsApp final 6994, mas `PLATFORM_OPERATIONAL_ALERTS_ENABLED` permanece `false` até a aprovação do template `jack_platform_operational_update_v1` pela Meta.
+- O workflow n8n de produção `PLATFORM_OPERATIONAL_MONITOR` (ID `Q2IANqxG6TYIvroW`) está ativo, a cada 10 minutos, no fuso `America/Fortaleza`.
+- A execução controlada `5911` terminou com sucesso, e a tabela de incidentes de produção tinha zero incidentes ativos.

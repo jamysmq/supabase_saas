@@ -177,11 +177,10 @@ Detalhamento: [roadmap de pagamentos automáticos](./automatic-payments-roadmap.
 - [ ] Comparar migrations consolidadas com o schema de produção.
 - [ ] Preparar staging ou procedimento reversível equivalente.
 - [ ] Monitorar crons de D-1, H-1 e retenção.
-- [ ] Criar alertas para falhas dos workflows críticos do n8n.
+- [x] Criar alertas no Dashboard para falhas dos workflows críticos do n8n.
 - [x] Exibir no Dashboard administrativo workflows inativos, última execução com erro e atraso de crons críticos.
 - [x] Consolidar no sino do Dashboard contas, profissionais, pagamentos, contatos e conversas não lidas.
 - [x] Persistir e resolver incidentes automaticamente em segundo plano pelo n8n (não pela Vercel), a cada 10 minutos, mesmo sem sessão aberta.
-- [ ] Ativar o alerta proativo ao WhatsApp administrativo após aprovação do template utilitário da Meta.
 - [ ] Garantir exportação e versionamento dos workflows ativos.
 - [ ] Revisar segredos de Vercel, Supabase, Meta e n8n.
 - [ ] Confirmar backup e restauração do Supabase.

@@ -46,8 +46,6 @@ type Summary = {
       first_detected_at: string
       last_detected_at: string
       resolved_at: string | null
-      notified_at: string | null
-      notification_attempts: number
     }>
   }
   warnings: string[]

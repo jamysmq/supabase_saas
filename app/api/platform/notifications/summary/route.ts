@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       .gt('unread_count', 0),
     result.supabase
       .from('platform_operational_incidents')
-      .select('id, severity, title, status, first_detected_at, last_detected_at, resolved_at, notified_at, notification_attempts')
+      .select('id, severity, title, status, first_detected_at, last_detected_at, resolved_at')
       .order('last_detected_at', { ascending: false })
       .limit(10),
     inspectN8nWorkflows(),
