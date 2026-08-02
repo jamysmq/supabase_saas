@@ -12,6 +12,17 @@ export function isPlatformSubscriptionsEnabled() {
   return process.env.PLATFORM_SUBSCRIPTIONS_ENABLED?.trim().toLowerCase() === 'true'
 }
 
+export function isPlatformSubscriptionsEnabledForTenant(tenantId: string) {
+  if (!isPlatformSubscriptionsEnabled()) return false
+
+  const allowlist = (process.env.PLATFORM_SUBSCRIPTIONS_TENANT_ALLOWLIST ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return allowlist.includes('*') || allowlist.includes(tenantId)
+}
+
 export type PlatformProviderSubscriptionStatus =
   | 'pending'
   | 'authorized'

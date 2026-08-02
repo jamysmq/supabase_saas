@@ -3,7 +3,7 @@ import { requireTenantUser } from '../../../src/lib/tenant-admin'
 import {
   createPlatformMercadoPagoSubscription,
   getPlatformMercadoPagoSubscription,
-  isPlatformSubscriptionsEnabled,
+  isPlatformSubscriptionsEnabledForTenant,
   PlatformMercadoPagoSubscriptionError,
 } from '../../../src/lib/payments/platform-mercado-pago-subscriptions'
 
@@ -173,7 +173,7 @@ export async function GET(request: Request) {
 
     return Response.json({
       configured:
-        isPlatformSubscriptionsEnabled() &&
+        isPlatformSubscriptionsEnabledForTenant(result.tenantUser.tenant_id) &&
         context.account?.status === 'connected' &&
         Boolean(context.profile),
       billing_profile: context.profile
@@ -202,7 +202,9 @@ export async function POST(request: Request) {
   if (result.tenantUser.role !== 'admin') {
     return errorResponse('Apenas o administrador pode configurar a assinatura.', 403)
   }
-  if (!isPlatformSubscriptionsEnabled()) {
+  if (
+    !isPlatformSubscriptionsEnabledForTenant(result.tenantUser.tenant_id)
+  ) {
     return errorResponse(
       'A cobrança automática da assinatura ainda não está disponível.',
       503
