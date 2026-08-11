@@ -36,7 +36,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_load_or_create_context_v2'}}",
+        "url": "={{$env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/rpc/wa_appointment_load_or_create_context_v3'}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -224,7 +224,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const appointmentId = $json.data ?? $json.body ?? $json;\nreturn [{ json: {\n  reply: 'Agendamento confirmado! Se precisar ajustar este horário ou marcar outro, use o botão Agendamentos abaixo.',\n  conversation_id: $node.FN_appointment_state_machine.json.conversation_id,\n  next_step: 'appointment_created',\n  p_close: true,\n  data_patch: {\n    appointment: {\n      appointment_id: Array.isArray(appointmentId) ? appointmentId[0] : appointmentId,\n      last_action: 'create'\n    },\n    metadata: {\n      completed_at: new Date().toISOString()\n    }\n  }\n}}];"
+        "jsCode": "const appointmentId = $json.data ?? $json.body ?? $json;\nconst state = $node.FN_appointment_state_machine.json;\nconst contextPayload = $node.RPC_load_context.json;\nconst context = Array.isArray(contextPayload) ? (contextPayload[0] ?? {}) : (contextPayload ?? {});\nconst isResource = state.booking_mode === 'resource';\nconst pixKey = typeof context.pix_key === 'string' ? context.pix_key.trim() : '';\nconst pixBeneficiaryName = typeof context.pix_beneficiary_name === 'string' ? context.pix_beneficiary_name.trim() : '';\nconst tenantName = typeof context.tenant_name === 'string' && context.tenant_name.trim() ? context.tenant_name.trim() : 'nossa equipe';\nconst paymentGuidance = pixKey\n  ? '\\n\\n💳 Chave Pix: *' + pixKey + '*' + (pixBeneficiaryName ? '\\nBeneficiário: ' + pixBeneficiaryName : '') + '\\n\\nApós o pagamento, toque em *Atendimento humano* e envie o comprovante diretamente para a equipe de *' + tenantName + '*.'\n  : '\\n\\nToque em *Atendimento humano* para solicitar as instruções de pagamento diretamente à equipe de *' + tenantName + '*.';\nconst reply = isResource\n  ? 'Reserva registrada! 😊\\n\\nEla aguarda a confirmação do pagamento pela equipe de *' + tenantName + '*.' + paymentGuidance\n  : 'Agendamento confirmado! Se precisar ajustar este horário ou marcar outro, use o botão Agendamentos abaixo.';\nreturn [{ json: {\n  reply,\n  conversation_id: state.conversation_id,\n  next_step: 'appointment_created',\n  p_close: true,\n  data_patch: {\n    appointment: {\n      appointment_id: Array.isArray(appointmentId) ? appointmentId[0] : appointmentId,\n      last_action: 'create'\n    },\n    metadata: {\n      completed_at: new Date().toISOString()\n    }\n  }\n}}];"
       },
       "id": "068040f7-d14a-4f2e-8110-97c44d3178a8",
       "name": "FN_render_success",

@@ -31,6 +31,8 @@ token e link de ativação não devem ser enviados nesse canal.
 O SMTP padrão do Supabase não é adequado para entrega a clientes em produção.
 A flag deve permanecer desligada até a configuração de um remetente próprio.
 
+O nome de usuário é o e-mail usado no cadastro. Nenhuma senha temporária em texto simples é enviada; o link pessoal seguro permite que o administrador crie a primeira senha.
+
 ## Template sugerido
 
 Assunto: Seu acesso ao Assistente Jack está pronto 😊

@@ -372,7 +372,8 @@ function isAppointmentCompletionReply(body: string) {
   return normalized.includes('agendamento confirmado') ||
     normalized.includes('horario confirmado') ||
     normalized.includes('horario remarcado') ||
-    normalized.includes('agendamento cancelado')
+    normalized.includes('agendamento cancelado') ||
+    normalized.includes('reserva registrada')
 }
 
 function appointmentInteractiveReply(body: string): AppointmentInteractiveReply | null {
@@ -552,11 +553,12 @@ function appointmentInteractiveReply(body: string): AppointmentInteractiveReply 
 type RecentAppointmentCompletion = {
   found: boolean
   action: 'create' | 'reschedule' | 'cancel' | null
+  bookingMode: 'service' | 'resource' | null
 }
 
 async function loadRecentAppointmentCompletion(tenantId: unknown, customerPhone: string): Promise<RecentAppointmentCompletion> {
   if (typeof tenantId !== 'string' || !tenantId.trim() || !customerPhone.trim()) {
-    return { found: false, action: null }
+    return { found: false, action: null, bookingMode: null }
   }
 
   try {
@@ -572,17 +574,17 @@ async function loadRecentAppointmentCompletion(tenantId: unknown, customerPhone:
       .limit(1)
       .maybeSingle()
 
-    if (error || !data) return { found: false, action: null }
+    if (error || !data) return { found: false, action: null, bookingMode: null }
 
     const payload = data.payload_draft as {
       module?: unknown
-      appointment?: { last_action?: unknown }
+      appointment?: { last_action?: unknown; booking_mode?: unknown }
     } | null
     const isAppointmentConversation = payload?.module === 'appointments' ||
       String(data.step ?? '').startsWith('appointment_')
 
     if (!isAppointmentConversation) {
-      return { found: false, action: null }
+      return { found: false, action: null, bookingMode: null }
     }
 
     const storedAction = payload?.appointment?.last_action
@@ -595,15 +597,27 @@ async function loadRecentAppointmentCompletion(tenantId: unknown, customerPhone:
           : data.step === 'appointment_created'
             ? 'create'
             : null
+    const storedBookingMode = payload?.appointment?.booking_mode
+    const bookingMode = storedBookingMode === 'service' || storedBookingMode === 'resource'
+      ? storedBookingMode
+      : null
 
-    return { found: true, action }
+    return { found: true, action, bookingMode }
   } catch (error) {
     console.error('Could not load recent WhatsApp appointment completion.', error)
-    return { found: false, action: null }
+    return { found: false, action: null, bookingMode: null }
   }
 }
 
-function completedAppointmentBody(tenantName: string, action: RecentAppointmentCompletion['action']) {
+function completedAppointmentBody(
+  tenantName: string,
+  action: RecentAppointmentCompletion['action'],
+  bookingMode: RecentAppointmentCompletion['bookingMode']
+) {
+  if (action === 'create' && bookingMode === 'resource') {
+    return `Reserva registrada! 😊\n\nEla aguarda a confirmação do pagamento pela equipe de *${tenantName}*. Toque em *Atendimento humano* para solicitar as instruções de pagamento e envie o comprovante diretamente para a equipe após pagar.`
+  }
+
   if (action === 'create') {
     return `Seu agendamento em *${tenantName}* está confirmado. 😊\n\nSe precisar ajustar esse horário ou marcar outro, toque em *Agendamentos*. Para procurar outro estabelecimento, use o *Menu do Jack*.`
   }
@@ -1024,10 +1038,10 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                 routerResponse.tenant_plan === 'plan3'
               const completion = planSupportsAppointments
                 ? await loadRecentAppointmentCompletion(routerResponse.tenant_id, message.from)
-                : { found: false, action: null }
+                : { found: false, action: null, bookingMode: null }
 
               if (completion.found) {
-                const contextualReply = completedAppointmentBody(tenantName, completion.action)
+                const contextualReply = completedAppointmentBody(tenantName, completion.action, completion.bookingMode)
                 recordedReply = contextualReply
                 sendResult = await client.sendButtons({
                   to: message.from,
@@ -1054,10 +1068,10 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
               const completion = routerResponse.reason === 'tenant_menu_invalid_choice' &&
                 planSupportsAppointments
                 ? await loadRecentAppointmentCompletion(routerResponse.tenant_id, message.from)
-                : { found: false, action: null }
+                : { found: false, action: null, bookingMode: null }
 
               if (completion.found) {
-                const contextualReply = completedAppointmentBody(tenantName, completion.action)
+                const contextualReply = completedAppointmentBody(tenantName, completion.action, completion.bookingMode)
                 recordedReply = contextualReply
                 sendResult = await client.sendButtons({
                   to: message.from,

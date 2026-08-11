@@ -878,3 +878,12 @@ Proxima prioridade:
 - O Dashboard passou a exibir o histórico recente de incidentes ativos e resolvidos.
 - O workflow n8n de produção `PLATFORM_OPERATIONAL_MONITOR` (ID `Q2IANqxG6TYIvroW`) está ativo, a cada 10 minutos, no fuso `America/Fortaleza`.
 - A execução controlada `5911` terminou com sucesso, e a tabela de incidentes de produção tinha zero incidentes ativos.
+
+## Convite de acesso e confirmação de reserva por Pix (2026-08-11)
+
+- A cópia do cadastro público explica que o e-mail recebe o nome de usuário e o link seguro para criação da senha.
+- O nome de usuário é o e-mail, e nenhuma senha em texto simples é enviada por e-mail.
+- A migration `075_resource_booking_pix_confirmation.sql` foi aplicada em produção, com a RPC restrita a `service_role`.
+- O WhatsApp de reserva de recurso mostra o Pix configurado e orienta o cliente a usar **Atendimento humano** para enviar o comprovante diretamente ao tenant.
+- Quando não há Pix configurado, o fallback pede que o cliente solicite as instruções de pagamento e não exibe valores nulos.
+- Validações realizadas: lint, TypeScript, build, JSON/conexões do workflow, simulação de três mensagens e conferência do `git diff`.

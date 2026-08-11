@@ -325,6 +325,9 @@ export default function SignupPage() {
                     placeholder="Se vazio, usamos o e-mail do negócio"
                     type="email"
                   />
+                  <span className="mt-1 block text-xs font-normal text-gray-500">
+                    Após a aprovação, este e-mail receberá o nome de usuário e um link seguro para criar a senha.
+                  </span>
                 </label>
               </div>
 

@@ -38,7 +38,7 @@ export async function GET(
           (publicPayment.payload as Record<string, unknown> | null)?.email ??
           null,
         source: 'public_signup_request',
-        note: 'Ao aprovar, crie o tenant com estes dados e gere a senha temporaria pelo painel.',
+        note: 'Ao aprovar, crie o tenant com estes dados e envie ao e-mail de acesso o nome de usuário e um convite seguro para criar a senha.',
       },
     })
   }
