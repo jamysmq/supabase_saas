@@ -887,3 +887,4 @@ Proxima prioridade:
 - O WhatsApp de reserva de recurso mostra o Pix configurado e orienta o cliente a usar **Atendimento humano** para enviar o comprovante diretamente ao tenant.
 - Quando não há Pix configurado, o fallback pede que o cliente solicite as instruções de pagamento e não exibe valores nulos.
 - Validações realizadas: lint, TypeScript, build, JSON/conexões do workflow, simulação de três mensagens e conferência do `git diff`.
+- O HTML oficial do convite foi versionado em `supabase/templates/invite.html` e protegido pela verificação automatizada `npm run check:account-invite`.
