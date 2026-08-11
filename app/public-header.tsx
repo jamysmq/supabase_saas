@@ -76,7 +76,7 @@ export function PublicHeader({ theme = "dark" }: PublicHeaderProps) {
         }`}
         href="/"
       >
-        Assistente Jack
+        Assistente João
       </Link>
 
       <nav className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:w-auto sm:justify-end sm:gap-x-5">

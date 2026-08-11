@@ -35,13 +35,13 @@ O nome de usuário é o e-mail usado no cadastro. Nenhuma senha temporária em t
 
 ## Template sugerido
 
-Assunto: Seu acesso ao Assistente Jack está pronto 😊
+Assunto: Seu acesso ao Assistente João está pronto 😊
 
 Corpo sugerido:
 
     <h2>Olá! Seu cadastro foi aprovado 😊</h2>
     <p>
-      O acesso de <strong>{{ .Data.tenant_name }}</strong> ao Assistente Jack já
+      O acesso de <strong>{{ .Data.tenant_name }}</strong> ao Assistente João já
       está disponível.
     </p>
     <p>
@@ -54,7 +54,7 @@ Corpo sugerido:
       Por segurança, este link é pessoal e possui prazo de validade. Se você não
       solicitou este cadastro, ignore esta mensagem.
     </p>
-    <p>Seja bem-vindo!<br>Equipe Assistente Jack</p>
+    <p>Seja bem-vindo!<br>Equipe Assistente João</p>
 
 O rastreamento de links do provedor SMTP deve ficar desligado para não reescrever
 o link de autenticação.

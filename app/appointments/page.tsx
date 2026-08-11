@@ -956,8 +956,8 @@ export default function AppointmentsPage() {
             </div>
           </div>
           <Image
-            src="/jack-agenda.png"
-            alt="Jack segurando um calendário e um lápis"
+            src="/joao-agenda.png"
+            alt="João segurando um calendário e um lápis"
             width={581}
             height={640}
             sizes="(min-width: 1024px) 220px, 1px"
@@ -1161,7 +1161,7 @@ export default function AppointmentsPage() {
                   })}
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
-                  O Jack só oferecerá horários nos dias selecionados.
+                  O João só oferecerá horários nos dias selecionados.
                 </p>
               </fieldset>
 

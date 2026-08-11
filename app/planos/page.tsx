@@ -108,7 +108,7 @@ export default function PlansPage() {
 
           <div className="mx-auto max-w-3xl py-16 text-center sm:py-20">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#68e5ff]">
-              Planos do Assistente Jack
+              Planos do Assistente João
             </p>
             <h1 className="mt-4 text-4xl font-black leading-tight sm:text-5xl">
               Escolha o plano que acompanha o momento do seu negócio.

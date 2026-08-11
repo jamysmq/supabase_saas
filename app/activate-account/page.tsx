@@ -92,7 +92,7 @@ export default function ActivateAccountPage() {
     <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#dff4ff_0%,#f7fbff_52%,#eef8ff_100%)] px-4 text-slate-950">
       <section className="w-full max-w-md rounded-xl border border-sky-100 bg-white p-6 shadow">
         <p className="text-sm font-bold uppercase tracking-[0.14em] text-sky-700">
-          Assistente Jack
+          Assistente João
         </p>
         <h1 className="mt-3 text-2xl font-bold">Ative seu acesso</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">

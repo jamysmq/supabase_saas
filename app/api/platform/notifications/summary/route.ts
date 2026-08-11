@@ -124,7 +124,7 @@ export async function GET(request: Request) {
     },
     {
       id: 'whatsapp',
-      title: 'WhatsApp do Jack',
+      title: 'WhatsApp do João',
       description: 'Conversas com mensagens não lidas aguardando resposta.',
       count: whatsappCount,
       href: '/platform/whatsapp-inbox',

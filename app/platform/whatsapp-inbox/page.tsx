@@ -203,7 +203,7 @@ export default function PlatformWhatsAppInboxPage() {
     }
 
     setReply('')
-    setSuccess('Mensagem enviada pelo Jack. O atendimento automático ficará pausado por duas horas.')
+    setSuccess('Mensagem enviada pelo João. O atendimento automático ficará pausado por duas horas.')
     if (payload?.message) {
       shouldScrollToLatestRef.current = true
       setMessages((current) => [...current, payload.message])
@@ -222,7 +222,7 @@ export default function PlatformWhatsAppInboxPage() {
           <PlatformDashboardButton className="mb-3" />
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold">WhatsApp do Jack</h1>
+              <h1 className="text-2xl font-bold">WhatsApp do João</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Conversas institucionais ainda não vinculadas a um cliente da plataforma.
               </p>
@@ -317,7 +317,7 @@ export default function PlatformWhatsAppInboxPage() {
 
                 <form onSubmit={sendReply} className="border-t p-4">
                   <label htmlFor="platform-reply" className="mb-2 block text-sm font-medium">
-                    Responder como equipe do Jack
+                    Responder como equipe do João
                   </label>
                   <div className="flex gap-3">
                     <textarea

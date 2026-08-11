@@ -393,7 +393,7 @@ export default function WhatsAppInboxPage() {
               <div>
                 <h2 className="font-bold">Link exclusivo de atendimento</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Compartilhe este link nas redes sociais, no seu site ou diretamente com seus clientes. Ao abri-lo, a pessoa verá uma mensagem pronta e será direcionada automaticamente para o atendimento do seu negócio pelo Jack.
+                  Compartilhe este link nas redes sociais, no seu site ou diretamente com seus clientes. Ao abri-lo, a pessoa verá uma mensagem pronta e será direcionada automaticamente para o atendimento do seu negócio pelo João.
                 </p>
                 <p className="mt-3 break-all rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
                   {entryLink.whatsapp_url ?? entryLink.prefilled_text}

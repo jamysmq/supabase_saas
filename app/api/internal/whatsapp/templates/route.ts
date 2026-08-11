@@ -11,13 +11,109 @@ type MetaErrorBody = {
 
 const templateDefinitions = [
   {
+    name: 'mav_appointment_reminder_h1_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [{
+      type: 'BODY',
+      text: 'Olá, {{1}}! Este é um lembrete automático do Assistente João: seu atendimento em {{2}} está marcado para hoje, às {{3}}. O serviço agendado é {{4}}. Se precisar de ajuda, entre em contato com a equipe do estabelecimento. Até breve!',
+      example: {
+        body_text: [['Sidney Magal', 'Salão Teste', '21:30', 'Corte + barba']],
+      },
+    }],
+  },
+  {
+    name: 'mav_appointment_confirmation_d1_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, {{1}}! Esta é a confirmação automática do Assistente João para seu atendimento em {{2}}. A data agendada é {{3}}, com início às {{4}}, para o serviço {{5}}. Escolha abaixo se deseja confirmar, remarcar ou cancelar. Se precisar de ajuda, fale com a equipe do estabelecimento.',
+        example: {
+          body_text: [['Sidney Magal', 'Salão Teste', '17/07/2026', '21:30', 'Corte + barba']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [
+          { type: 'QUICK_REPLY', text: 'Confirmar' },
+          { type: 'QUICK_REPLY', text: 'Remarcar' },
+          { type: 'QUICK_REPLY', text: 'Cancelar' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'mav_billing_due_reminder_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, {{1}}!\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, vence hoje ({{4}}).\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. 😊',
+        example: {
+          body_text: [['Maria Silva', 'Professor Exemplo', 'R$ 240,00', '19/07/2026', 'email@pix.com']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [{
+          type: 'URL',
+          text: 'Falar com a equipe',
+          url: 'https://app.meuassistentevirtual.com.br/falar-com-equipe/{{1}}',
+          example: ['https://app.meuassistentevirtual.com.br/falar-com-equipe/11111111-1111-4111-8111-111111111111'],
+        }],
+      },
+    ],
+  },
+  {
+    name: 'mav_billing_overdue_reminder_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, {{1}}!\n\nPassando para lembrar que sua mensalidade com {{2}}, no valor de {{3}}, venceu em {{4}} e está pendente.\n\nChave Pix: {{5}}\n\nSe você já realizou o pagamento, pode desconsiderar esta mensagem.\n\nEm caso de dúvida, fale com a equipe de {{2}}. 😊',
+        example: {
+          body_text: [['Maria da Silva', 'Professor Teste', 'R$ 49,90', '10/07/2026', '11999999999']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [{
+          type: 'URL',
+          text: 'Falar com a equipe',
+          url: 'https://app.meuassistentevirtual.com.br/falar-com-equipe/{{1}}',
+          example: ['https://app.meuassistentevirtual.com.br/falar-com-equipe/11111111-1111-4111-8111-111111111111'],
+        }],
+      },
+    ],
+  },
+  {
+    name: 'mav_daily_agenda_summary_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [{
+      type: 'BODY',
+      text: 'Olá! 😊\n\nEste é o seu resumo da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}\n\nPara consultar ou alterar os detalhes, acesse o painel do Assistente João.\n\nQue você tenha um ótimo dia de trabalho! 📅',
+      example: {
+        body_text: [['Salão Exemplo', '21/07/2026', '1) 09:00 - Maria - Corte\n2) 10:30 - João - Barba', '2']],
+      },
+    }],
+  },  {
     name: 'jack_appointment_reminder_h1',
     language: 'pt_BR',
     category: 'UTILITY',
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá, {{1}}! Este é um lembrete automático do Assistente Jack: seu atendimento em {{2}} está marcado para hoje, às {{3}}. O serviço agendado é {{4}}. Se precisar de ajuda, entre em contato com a equipe do estabelecimento. Até breve!',
+      text: 'Olá, {{1}}! Este é um lembrete automático do Assistente João: seu atendimento em {{2}} está marcado para hoje, às {{3}}. O serviço agendado é {{4}}. Se precisar de ajuda, entre em contato com a equipe do estabelecimento. Até breve!',
       example: {
         body_text: [['Sidney Magal', 'Salão Teste', '21:30', 'Corte + barba']],
       },
@@ -31,7 +127,7 @@ const templateDefinitions = [
     components: [
       {
         type: 'BODY',
-        text: 'Olá, {{1}}! Esta é a confirmação automática do Assistente Jack para seu atendimento em {{2}}. A data agendada é {{3}}, com início às {{4}}, para o serviço {{5}}. Escolha abaixo se deseja confirmar, remarcar ou cancelar. Se precisar de ajuda, fale com a equipe do estabelecimento.',
+        text: 'Olá, {{1}}! Esta é a confirmação automática do Assistente João para seu atendimento em {{2}}. A data agendada é {{3}}, com início às {{4}}, para o serviço {{5}}. Escolha abaixo se deseja confirmar, remarcar ou cancelar. Se precisar de ajuda, fale com a equipe do estabelecimento.',
         example: {
           body_text: [['Sidney Magal', 'Salão Teste', '17/07/2026', '21:30', 'Corte + barba']],
         },
@@ -153,7 +249,7 @@ const templateDefinitions = [
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá! Este é o resumo automático da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}. Para consultar ou alterar os detalhes, acesse o painel do Assistente Jack.',
+      text: 'Olá! Este é o resumo automático da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}. Para consultar ou alterar os detalhes, acesse o painel do Assistente João.',
       example: {
         body_text: [['Salão Exemplo', '17/07/2026', '1) 09:00 - Maria - Corte\n2) 10:30 - João - Barba', '2']],
       },
@@ -166,7 +262,7 @@ const templateDefinitions = [
     allow_category_change: true,
     components: [{
       type: 'BODY',
-      text: 'Olá! 😊\n\nEste é o seu resumo da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}\n\nPara consultar ou alterar os detalhes, acesse o painel do Assistente Jack.\n\nQue você tenha um ótimo dia de trabalho! 📅',
+      text: 'Olá! 😊\n\nEste é o seu resumo da agenda de {{1}} para hoje, {{2}}. Confira abaixo os horários e clientes previstos:\n\n{{3}}\n\nTotal de atendimentos: {{4}}\n\nPara consultar ou alterar os detalhes, acesse o painel do Assistente João.\n\nQue você tenha um ótimo dia de trabalho! 📅',
       example: {
         body_text: [['Salão Exemplo', '21/07/2026', '1) 09:00 - Maria - Corte\n2) 10:30 - João - Barba', '2']],
       },

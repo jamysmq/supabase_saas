@@ -270,7 +270,7 @@ export async function POST(request: Request) {
     }
 
     const localId = randomUUID()
-    const externalReference = `jack:${result.tenantUser.tenant_id}:${localId}`
+    const externalReference = `mav:${result.tenantUser.tenant_id}:${localId}`
     const now = new Date().toISOString()
     const { error: intentError } = await result.supabase
       .from('platform_payment_provider_subscriptions')

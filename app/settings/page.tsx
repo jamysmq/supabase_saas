@@ -302,9 +302,9 @@ export default function SettingsPage() {
 
     if (platformSubscriptionReturn) {
       if (!platformSubscriptionResponse.ok || !platformSubscriptionPayload) {
-        setError('Não foi possível confirmar o retorno da assinatura do Assistente Jack.')
+        setError('Não foi possível confirmar o retorno da assinatura do Assistente João.')
       } else if (platformSubscriptionPayload.subscription?.status === 'authorized') {
-        setSuccess('Assinatura do Assistente Jack autorizada com sucesso.')
+        setSuccess('Assinatura do Assistente João autorizada com sucesso.')
       } else {
         setSuccess(
           `Retorno recebido. Status da assinatura: ${humanizePlatformSubscriptionStatus(
@@ -447,7 +447,7 @@ export default function SettingsPage() {
       setStartingPlatformSubscription(false)
       setError(
         payload?.message ??
-          'Não foi possível iniciar a assinatura do Assistente Jack.'
+          'Não foi possível iniciar a assinatura do Assistente João.'
       )
       return
     }
@@ -456,7 +456,7 @@ export default function SettingsPage() {
 
     if (payload.subscription.status === 'authorized') {
       setStartingPlatformSubscription(false)
-      setSuccess('A assinatura do Assistente Jack já está ativa.')
+      setSuccess('A assinatura do Assistente João já está ativa.')
       return
     }
 
@@ -732,7 +732,7 @@ export default function SettingsPage() {
               <div>
                 <h2 className="font-bold">Identidade e contato do negócio</h2>
                 <p className="text-sm text-gray-500">
-                  O nome fantasia aparece nas mensagens do Jack. O WhatsApp será usado no botão de atendimento humano.
+                  O nome fantasia aparece nas mensagens do João. O WhatsApp será usado no botão de atendimento humano.
                 </p>
               </div>
 
@@ -920,9 +920,9 @@ export default function SettingsPage() {
             <section className="space-y-4 rounded-2xl bg-white p-5 shadow">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-bold">Assinatura do Assistente Jack</h2>
+                  <h2 className="font-bold">Assinatura do Assistente João</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    A mensalidade do Assistente Jack é cobrada separadamente dos
+                    A mensalidade do Assistente João é cobrada separadamente dos
                     recebimentos dos seus clientes.
                   </p>
                 </div>
@@ -987,7 +987,7 @@ export default function SettingsPage() {
 
               <p className="rounded-xl bg-sky-50 p-3 text-xs text-sky-800">
                 O checkout é hospedado pelo Mercado Pago. Nenhum dado de cartão
-                passa pelo Assistente Jack ou por este aplicativo.
+                passa pelo Assistente João ou por este aplicativo.
               </p>
 
               {!platformSubscriptionConfigured && (
@@ -1045,7 +1045,7 @@ export default function SettingsPage() {
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
                     Esta conexão recebe e concilia cobranças dos seus clientes;
-                    ela é separada da assinatura do Assistente Jack. Conecte a
+                    ela é separada da assinatura do Assistente João. Conecte a
                     conta Mercado Pago do próprio estabelecimento sem
                     compartilhar senha ou token com o navegador.
                   </p>

@@ -1,8 +1,24 @@
 # Roadmap de conclusão do Billing App
 
-Atualizado em: 2026-07-21
+Atualizado em: 2026-08-11
 
 Este checklist é a referência operacional até o lançamento. Itens concluídos permanecem registrados para evitar reabertura acidental de escopo.
+
+## Transição de identidade — Assistente João
+
+- [x] Inventariar textos, imagens, APIs, templates e integrações que usam a identidade anterior.
+- [x] Separar a marca da plataforma (Meu Assistente Virtual) da persona/produto (Assistente João).
+- [x] Preparar os novos recursos visuais e manter os arquivos anteriores apenas para rollback.
+- [x] Preparar localmente a compatibilidade de códigos e referências legadas na migration 076.
+- [x] Validar lint, tipos, build e regressões locais do aplicativo.
+- [ ] Validar a migration 076 em transação com rollback antes da produção.
+- [ ] Publicar a comunicação transitória no site e no aplicativo.
+- [ ] Solicitar à Meta a alteração do nome de exibição para Assistente João.
+- [x] Preparar localmente os novos templates com nomes técnicos neutros.
+- [ ] Submeter os novos templates à Meta.
+- [ ] Aguardar a aprovação dos templates antes de alterar o workflow remoto.
+- [ ] Aplicar a migration 076 e publicar app/workflows na janela de mudança.
+- [ ] Executar regressão oficial de WhatsApp, agenda, cobrança e pagamentos.
 
 ## Critério de conclusão
 

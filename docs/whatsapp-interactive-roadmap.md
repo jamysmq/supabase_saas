@@ -1,4 +1,4 @@
-# Roadmap de experiência interativa do Assistente Jack
+# Roadmap de experiência interativa do Assistente João
 
 ## Princípios
 
@@ -13,7 +13,7 @@
 ## Fase 1 — Institucional e descoberta de tenants
 
 1. Menu principal com três botões visíveis:
-   - Conhecer o Jack;
+   - Conhecer o João;
    - Encontrar negócio;
    - Falar com pessoa.
 2. Busca por tenant usando:
@@ -36,7 +36,7 @@
    - expiração por duas horas de inatividade;
    - histórico preservado por tenant.
 
-## Fase 2 — Entrada e cadastro no Jack
+## Fase 2 — Entrada e cadastro no João
 
 1. Apresentar capacidades e planos sem preço enquanto a precificação não estiver consolidada.
 2. Botões para:

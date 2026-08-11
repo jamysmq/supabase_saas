@@ -159,8 +159,8 @@ function validateSubscriptionIdentity(
   return row
 }
 
-function isJackExternalReference(externalReference: string) {
-  return externalReference.startsWith('jack:')
+function isPlatformExternalReference(externalReference: string) {
+  return externalReference.startsWith('mav:') || externalReference.startsWith('jack:')
 }
 
 function shouldIgnoreUnknownSubscription(
@@ -168,8 +168,8 @@ function shouldIgnoreUnknownSubscription(
   externalReference: string
 ) {
   return (
-    !isJackExternalReference(externalReference) &&
-    (!row || !isJackExternalReference(row.external_reference))
+    !isPlatformExternalReference(externalReference) &&
+    (!row || !isPlatformExternalReference(row.external_reference))
   )
 }
 

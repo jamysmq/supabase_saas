@@ -3,19 +3,19 @@
 :root {
   --background: #f7fbff;
   --foreground: #07111f;
-  --jack-page: #e3f4ff;
-  --jack-surface: #ffffff;
-  --jack-surface-soft: #eff8ff;
-  --jack-border: #b8dbf3;
-  --jack-border-soft: #d8edfb;
-  --jack-primary: #0369a1;
-  --jack-primary-hover: #075985;
-  --jack-accent: #68e5ff;
-  --jack-text: #07111f;
-  --jack-muted: #44546a;
-  --jack-subtle: #64748b;
-  --jack-shadow: 0 12px 30px rgb(7 58 134 / 8%);
-  --jack-shadow-sm: 0 6px 18px rgb(7 58 134 / 7%);
+  --mav-page: #e3f4ff;
+  --mav-surface: #ffffff;
+  --mav-surface-soft: #eff8ff;
+  --mav-border: #b8dbf3;
+  --mav-border-soft: #d8edfb;
+  --mav-primary: #0369a1;
+  --mav-primary-hover: #075985;
+  --mav-accent: #68e5ff;
+  --mav-text: #07111f;
+  --mav-muted: #44546a;
+  --mav-subtle: #64748b;
+  --mav-shadow: 0 12px 30px rgb(7 58 134 / 8%);
+  --mav-shadow-sm: 0 6px 18px rgb(7 58 134 / 7%);
 }
 
 @theme inline {
@@ -26,17 +26,17 @@
 }
 
 body {
-  background: var(--jack-page);
-  color: var(--jack-text);
+  background: var(--mav-page);
+  color: var(--mav-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Jack light theme overrides for the existing Tailwind utility-heavy UI. */
+/* Meu Assistente Virtual light theme overrides for the existing Tailwind utility-heavy UI. */
 .bg-gray-100 {
-  background-color: var(--jack-page) !important;
+  background-color: var(--mav-page) !important;
 }
 
 .bg-sky-50 {
@@ -44,7 +44,7 @@ body {
 }
 
 .bg-gray-50 {
-  background-color: var(--jack-surface-soft) !important;
+  background-color: var(--mav-surface-soft) !important;
 }
 
 .hover\:bg-gray-50:hover {
@@ -52,38 +52,38 @@ body {
 }
 
 .bg-white {
-  background-color: var(--jack-surface) !important;
+  background-color: var(--mav-surface) !important;
 }
 
 .bg-gray-950 {
-  background-color: var(--jack-primary) !important;
+  background-color: var(--mav-primary) !important;
 }
 
 .hover\:bg-gray-950:hover {
-  background-color: var(--jack-primary-hover) !important;
+  background-color: var(--mav-primary-hover) !important;
 }
 
 .text-gray-950 {
-  color: var(--jack-text) !important;
+  color: var(--mav-text) !important;
 }
 
 .text-gray-700,
 .text-gray-600 {
-  color: var(--jack-muted) !important;
+  color: var(--mav-muted) !important;
 }
 
 .text-gray-500,
 .text-gray-400 {
-  color: var(--jack-subtle) !important;
+  color: var(--mav-subtle) !important;
 }
 
 .border-gray-300,
 .border-gray-200 {
-  border-color: var(--jack-border) !important;
+  border-color: var(--mav-border) !important;
 }
 
 .border-gray-100 {
-  border-color: var(--jack-border-soft) !important;
+  border-color: var(--mav-border-soft) !important;
 }
 
 .focus\:ring-gray-300:focus,
@@ -94,11 +94,11 @@ body {
 .shadow,
 .shadow-md,
 .shadow-xl {
-  box-shadow: var(--jack-shadow) !important;
+  box-shadow: var(--mav-shadow) !important;
 }
 
 .shadow-sm {
-  box-shadow: var(--jack-shadow-sm) !important;
+  box-shadow: var(--mav-shadow-sm) !important;
 }
 
 .bg-red-50 {
@@ -132,14 +132,14 @@ select,
 textarea {
   min-height: 40px;
   background-color: #ffffff;
-  color: var(--jack-text);
-  border-color: var(--jack-border);
+  color: var(--mav-text);
+  border-color: var(--mav-border);
   line-height: 1.25rem;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--jack-subtle);
+  color: var(--mav-subtle);
   opacity: 1;
 }
 

@@ -214,7 +214,7 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
           {!embedded && <button onClick={() => router.push('/students')} className="mb-3 text-sm text-sky-700">← Voltar ao gerenciamento dos alunos</button>}
           <h1 className={embedded ? 'text-lg font-bold' : 'text-2xl font-bold'}>Planos e cadastro pelo WhatsApp</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Defina o valor que o Jack apresentará. O aluno escolhe apenas entre opções prontas; valores e vencimentos são controlados por você.
+            Defina o valor que o João apresentará. O aluno escolhe apenas entre opções prontas; valores e vencimentos são controlados por você.
           </p>
         </section>
 
@@ -225,7 +225,7 @@ export function SignupSettingsPanel({ embedded = false }: { embedded?: boolean }
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-bold">Cadastro automático pelo WhatsApp</h2>
-              <p className="text-sm text-slate-600">Quando estiver desativado, o Jack não coletará os dados do aluno e oferecerá o botão de atendimento humano.</p>
+              <p className="text-sm text-slate-600">Quando estiver desativado, o João não coletará os dados do aluno e oferecerá o botão de atendimento humano.</p>
             </div>
             <button
               type="button"

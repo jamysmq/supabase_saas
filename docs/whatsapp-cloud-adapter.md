@@ -7,7 +7,7 @@ O projeto usa um adaptador interno para envio pela WhatsApp Cloud API oficial da
 - `WHATSAPP_CLOUD_ACCESS_TOKEN`: token da Meta com permissao de envio.
 - `WHATSAPP_CLOUD_PHONE_NUMBER_ID`: ID do numero remetente no WhatsApp Business Account.
 - `WHATSAPP_CLOUD_GRAPH_VERSION`: versao da Graph API, opcional. Padrao atual do app: `v23.0`.
-- `WHATSAPP_PUBLIC_PHONE_E164`: numero publico do Assistente Jack em formato E.164/digitos, usado para gerar os links `wa.me` dos tenants.
+- `WHATSAPP_PUBLIC_PHONE_E164`: numero publico do Assistente João em formato E.164/digitos, usado para gerar os links `wa.me` dos tenants.
 - `WHATSAPP_INTERNAL_SEND_TOKEN`: segredo interno para autorizar chamadas ao endpoint de envio.
 - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`: segredo informado tambem no painel da Meta para verificar a URL de callback.
 - `WHATSAPP_APP_SECRET`: App Secret da Meta, usado para validar `x-hub-signature-256` nos webhooks recebidos.
@@ -137,7 +137,7 @@ Os workflows de modulo continuam separados:
 
 - `WA_TENANT_APPOINTMENTS_INBOUND_v1`: agenda de servicos.
 - `WA_TENANT_BILLING_SIGNUP_INBOUND_v1`: cadastro de clientes/alunos para tenants com cobranca mensal.
-- `WA_TENANT_INBOUND_Assistant_v1`: entrada/base historica do Assistente Jack.
+- `WA_TENANT_INBOUND_Assistant_v1`: entrada/base historica do Assistente João.
 
 URL para cadastrar na Meta, depois do deploy:
 

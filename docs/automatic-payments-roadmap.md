@@ -10,7 +10,7 @@ O billing-app deve gerar cobranças, acompanhar estados e conciliar o financeiro
 automaticamente quando houver um provedor conectado.
 
 Este roadmap trata primeiro dos **recebíveis dos tenants**. A cobrança da
-assinatura do Jack paga pelo tenant à Soft Ink reutilizará a mesma arquitetura
+assinatura do João paga pelo tenant à Soft Ink reutilizará a mesma arquitetura
 em um épico posterior, mantendo dados e saldos separados.
 
 A conta oficial de recebimento da plataforma tem escopo próprio e não reutiliza
@@ -20,7 +20,7 @@ metadados não sensíveis na tabela server-only
 `platform_payment_provider_accounts`. As migrations 073 e 074, o adaptador
 Mercado Pago, a rota autenticada, a UI com checkout hospedado, o webhook e a
 reconciliação formam a fundação completa da cobrança recorrente da assinatura
-do Jack. A recorrência ainda não está concluída e permanece protegida por
+do João. A recorrência ainda não está concluída e permanece protegida por
 `PLATFORM_SUBSCRIPTIONS_ENABLED=false`; falta somente a homologação oficial e
 controlada, ponta a ponta, de checkout, pagamento e estorno antes do rollout.
 
@@ -211,7 +211,7 @@ válido. O roteiro está em `docs/mercado-pago-pix-homologation.md`.
 - [ ] Pix Automático regulado, se habilitado pelo provedor.
 - [x] Separar a conta oficial da plataforma das conexões OAuth dos tenants e
   persistir somente seus metadados não sensíveis.
-- [ ] Implementar a cobrança recorrente da assinatura do Jack usando a conta
+- [ ] Implementar a cobrança recorrente da assinatura do João usando a conta
   oficial, em escopo separado dos recebíveis dos tenants.
 - [ ] Novos provedores somente quando houver demanda comercial comprovada.
 - [ ] Split/comissão apenas após decisão jurídica, contábil e regulatória.

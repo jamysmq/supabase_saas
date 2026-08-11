@@ -450,7 +450,7 @@ export default function PlatformTenantDetailPage() {
                 required
               />
               <span className="mt-1 block text-xs font-normal text-gray-500">
-                Este é o nome mostrado na busca e nas mensagens do Assistente Jack.
+                Este é o nome mostrado na busca e nas mensagens do Assistente João.
               </span>
             </label>
 

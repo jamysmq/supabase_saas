@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import {
+  ASSISTANT_PRODUCT_NAME,
+  OFFICIAL_SITE_URL,
+} from "@/src/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,15 +16,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = "https://www.meuassistentevirtual.com.br";
+const siteUrl = OFFICIAL_SITE_URL;
 const siteDescription =
   "Assistente virtual para pequenos negócios: organize atendimento, cobranças, agenda e pedidos pelo WhatsApp, tudo acompanhado num painel só seu.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Assistente Jack — seu negócio organizado pelo WhatsApp",
-    template: "%s | Assistente Jack",
+    default: `${ASSISTANT_PRODUCT_NAME} — seu negócio organizado pelo WhatsApp`,
+    template: `%s | ${ASSISTANT_PRODUCT_NAME}`,
   },
   description: siteDescription,
   keywords: [
@@ -29,9 +33,9 @@ export const metadata: Metadata = {
     "cobrança automática",
     "agendamento WhatsApp",
     "gestão de pequenos negócios",
-    "Assistente Jack",
+    ASSISTANT_PRODUCT_NAME,
   ],
-  applicationName: "Assistente Jack",
+  applicationName: ASSISTANT_PRODUCT_NAME,
   alternates: {
     canonical: "/",
   },
@@ -39,21 +43,21 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     url: siteUrl,
-    siteName: "Assistente Jack",
-    title: "Assistente Jack — seu negócio organizado pelo WhatsApp",
+    siteName: ASSISTANT_PRODUCT_NAME,
+    title: `${ASSISTANT_PRODUCT_NAME} — seu negócio organizado pelo WhatsApp`,
     description: siteDescription,
     images: [
       {
-        url: "/jack-hero.svg",
-        alt: "Assistente Jack",
+        url: "/joao-hero.svg",
+        alt: ASSISTANT_PRODUCT_NAME,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Assistente Jack — seu negócio organizado pelo WhatsApp",
+    title: `${ASSISTANT_PRODUCT_NAME} — seu negócio organizado pelo WhatsApp`,
     description: siteDescription,
-    images: ["/jack-hero.svg"],
+    images: ["/joao-hero.svg"],
   },
   other: {
     "facebook-domain-verification": "lz33kutsdum6rvful80368do81pyk4",

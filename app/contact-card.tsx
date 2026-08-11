@@ -62,7 +62,7 @@ export function ContactCard() {
             Ficou com alguma dúvida? Fale com a gente.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-[#44546a]">
-            Tire dúvidas, peça ajuda com o cadastro ou conheça melhor o Assistente Jack. A gente retorna pelo contato que você informar.
+            Tire dúvidas, peça ajuda com o cadastro ou conheça melhor o Assistente João. A gente retorna pelo contato que você informar.
           </p>
         </div>
 

@@ -163,7 +163,7 @@ export default function SignupPage() {
       <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-6 sm:px-8 lg:px-10">
         <header className="flex items-center justify-between gap-4">
           <Link className="text-sm font-bold uppercase tracking-[0.14em] text-sky-900" href="/">
-            Assistente Jack
+            Assistente João
           </Link>
           <Link
             className="rounded-md border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 shadow-sm hover:bg-sky-50"
@@ -179,7 +179,7 @@ export default function SignupPage() {
               Comece pelo WhatsApp
             </p>
             <h1 className="mt-4 max-w-2xl text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
-              Se cadastre para usar o Assistente Jack no seu negócio.
+              Se cadastre para usar o Assistente João no seu negócio.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
               Envie os dados do seu negócio em poucos minutos. Confirmamos seu

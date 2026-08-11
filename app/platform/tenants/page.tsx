@@ -443,7 +443,7 @@ export default function PlatformTenantsPage() {
                 onClick={() => router.push('/platform/whatsapp-inbox')}
                 className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium"
               >
-                WhatsApp do Jack
+                WhatsApp do João
               </button>
 
               <button

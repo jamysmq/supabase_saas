@@ -1,8 +1,20 @@
 # Billing App Tracking
 
-Atualizado em: 2026-08-01
+Atualizado em: 2026-08-11
 
 Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
+
+## Transição de identidade — Assistente João
+
+- Em 2026-08-11, foi iniciada a troca pública de `Assistente Jack` para `Assistente João`.
+- `Meu Assistente Virtual` permanece como plataforma e domínio; `Soft Ink` permanece como empresa responsável.
+- A home, SEO, páginas atuais, e-mails e mensagens de runtime passam a apresentar João.
+- Identificadores históricos `jack-*`, referências de pagamento `jack:` e comandos antigos permanecem aceitos para compatibilidade.
+- Novos links e referências técnicas passam a usar os prefixos neutros `mav-*` e `mav:`.
+- A migration `076_assistente_joao_brand_foundation.sql` foi preparada localmente e ainda não deve ser aplicada antes da validação e do corte coordenado.
+- O display name e os novos templates da Meta serão alterados somente após a evidência pública da nova identidade e aprovação da Meta.
+- Foram preparados localmente os templates neutros `mav_appointment_reminder_h1_v1`, `mav_appointment_confirmation_d1_v1`, `mav_billing_due_reminder_v1`, `mav_billing_overdue_reminder_v1` e `mav_daily_agenda_summary_v1`; nenhum foi submetido ainda.
+- Lint, TypeScript, build, verificador do workflow de agenda, datas brasileiras e `git diff --check` passaram. A validação transacional da migration 076 permanece pendente porque o CLI local do Supabase travou antes de produzir o dry-run.
 
 ## Visao Geral
 

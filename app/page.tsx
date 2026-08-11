@@ -2,6 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { ContactCard } from "./contact-card";
 import { PublicHeader } from "./public-header";
+import {
+  ASSISTANT_NAME,
+  ASSISTANT_PRODUCT_NAME,
+  ASSISTANT_TRANSITION_NOTICE,
+  COMPANY_NAME,
+} from "@/src/lib/brand";
 
 const benefits = [
   [
@@ -20,7 +26,7 @@ const benefits = [
 
 const steps = [
   "O cliente chama no seu WhatsApp.",
-  "O Jack organiza a conversa e adianta o atendimento.",
+  `O ${ASSISTANT_NAME} organiza a conversa e adianta o atendimento.`,
   "Você acompanha e fecha tudo pelo painel.",
 ];
 
@@ -46,16 +52,16 @@ const segments = [
 // Mockup ilustrativo da conversa — demonstra o produto sem depender de dado real.
 const chat = [
   { from: "client", text: "Oi! Queria marcar um horário pra quinta 😊" },
-  { from: "jack", text: "Claro! Tenho quinta às 14h ou 16h30. Qual fica melhor?" },
+  { from: "assistant", text: "Claro! Tenho quinta às 14h ou 16h30. Qual fica melhor?" },
   { from: "client", text: "16h30 👍" },
-  { from: "jack", text: "Agendado! Te mando um lembrete um dia antes. Até quinta 🙌" },
+  { from: "assistant", text: "Agendado! Te mando um lembrete um dia antes. Até quinta 🙌" },
 ];
 
 export default function Home() {
   const contactPhone = (process.env.WHATSAPP_PUBLIC_PHONE_E164 ?? "").replace(/\D/g, "");
   const whatsappHref = contactPhone
     ? `https://wa.me/${contactPhone}?text=${encodeURIComponent(
-        "Olá! Quero saber mais sobre o Assistente Jack."
+        `Olá! Quero saber mais sobre o ${ASSISTANT_PRODUCT_NAME}.`
       )}`
     : "#falar-conosco";
 
@@ -63,8 +69,8 @@ export default function Home() {
     <main className="min-h-screen bg-[#f7fbff] text-[#07111f]">
       <section className="relative isolate min-h-[86vh] overflow-hidden bg-[#03142f] text-white">
         <Image
-          src="/jack-hero.svg"
-          alt="Assistente Jack sorrindo"
+          src="/joao-hero.svg"
+          alt={`${ASSISTANT_PRODUCT_NAME} sorrindo`}
           fill
           priority
           sizes="100vw"
@@ -84,9 +90,12 @@ export default function Home() {
                 Atenda, cobre e agende pelo WhatsApp sem perder cliente.
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-white/84 sm:text-xl">
-                O Jack é o assistente virtual que organiza o WhatsApp do seu
+                O {ASSISTANT_NAME} é o assistente virtual que organiza o WhatsApp do seu
                 negócio: responde clientes, lembra mensalidades e cuida da agenda
                 e dos pedidos — tudo acompanhado de um painel só seu.
+              </p>
+              <p className="mt-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/88">
+                {ASSISTANT_TRANSITION_NOTICE}
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -151,7 +160,7 @@ export default function Home() {
               O cliente conversa pelo WhatsApp. Você só acompanha o resultado.
             </h2>
             <p className="mt-5 max-w-lg text-base leading-7 text-white/80">
-              O Jack adianta o atendimento, marca horário, registra pedido ou
+              O {ASSISTANT_NAME} adianta o atendimento, marca horário, registra pedido ou
               lembra a mensalidade — e cada conversa fica salva e organizada no
               seu painel para você assumir quando quiser.
             </p>
@@ -169,7 +178,7 @@ export default function Home() {
                 J
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Assistente Jack</p>
+                <p className="text-sm font-bold text-white">{ASSISTANT_PRODUCT_NAME}</p>
                 <p className="text-xs text-[#68e5ff]">online agora</p>
               </div>
             </div>
@@ -205,7 +214,7 @@ export default function Home() {
             Feito para o seu negócio
           </p>
           <h2 className="mt-3 max-w-2xl text-3xl font-black text-[#07111f]">
-            Seja qual for o seu negócio, o Jack se adapta à sua rotina.
+            Seja qual for o seu negócio, o {ASSISTANT_NAME} se adapta à sua rotina.
           </h2>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {segments.map(([title, description]) => (
@@ -248,7 +257,7 @@ export default function Home() {
       <footer className="bg-[#03142f] text-white">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-6 text-xs leading-6 text-white/70 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <p>
-            © 2026 Soft Ink. Assistente Jack é um produto da Soft Ink.
+            © 2026 {COMPANY_NAME}. {ASSISTANT_PRODUCT_NAME} é um produto da {COMPANY_NAME}.{" "}
             meuassistentevirtual.com.br é o domínio oficial.
           </p>
           <div className="flex flex-wrap gap-4 font-semibold text-white/82">

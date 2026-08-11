@@ -428,7 +428,7 @@ export async function createPlatformMercadoPagoSubscription(input: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      reason: `Assistente Jack - ${input.tenantName}`.slice(0, 255),
+      reason: `Assistente João - ${input.tenantName}`.slice(0, 255),
       external_reference: input.externalReference,
       payer_email: input.payerEmail,
       auto_recurring: {
