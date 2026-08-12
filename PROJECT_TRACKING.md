@@ -18,7 +18,7 @@ Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
 - O histórico remoto de migrations não está reconciliado: `db push` tentaria reaplicar `001–076`. A aplicação futura deve executar somente o arquivo 076 isolado; não usar `db push`.
 - A identidade pública foi publicada em produção nos commits `6f43b87` e `4d957f0`; o domínio oficial já entrega Assistente João.
 - A Meta aceitou a solicitação de display name `Assistente João`. Enquanto a revisão ocorre, o número oficial permanece com `Assistente Jack`, status `APPROVED` e qualidade `GREEN`.
-- Os cinco templates `mav_*` foram submetidos em produção. `mav_daily_agenda_summary_v1` (ID `1265084242297514`) já foi aprovado; os outros quatro permanecem `PENDING`.
+- Em 2026-08-12, os cinco templates `mav_*` estavam `APPROVED` como `UTILITY`: `mav_appointment_reminder_h1_v1` (`4379169212350201`), `mav_appointment_confirmation_d1_v1` (`4439549356363531`), `mav_billing_due_reminder_v1` (`2819017855158440`), `mav_billing_overdue_reminder_v1` (`1719031432688086`) e `mav_daily_agenda_summary_v1` (`1265084242297514`). O corte permanece retido apenas até o display name oficial mudar para Assistente João.
 
 ## Visao Geral
 

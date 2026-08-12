@@ -16,7 +16,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Solicitar à Meta a alteração do nome de exibição para Assistente João.
 - [x] Preparar localmente os novos templates com nomes técnicos neutros.
 - [x] Submeter os novos templates à Meta.
-- [ ] Aguardar a aprovação dos templates antes de alterar o workflow remoto.
+- [x] Aguardar a aprovação dos templates antes de alterar o workflow remoto.
 - [ ] Aplicar a migration 076 e publicar app/workflows na janela de mudança.
 - [ ] Executar regressão oficial de WhatsApp, agenda, cobrança e pagamentos.
 
