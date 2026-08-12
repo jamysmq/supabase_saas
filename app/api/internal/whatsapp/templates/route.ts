@@ -587,10 +587,27 @@ export async function POST(request: Request) {
         phoneUrl + '?fields=id,display_phone_number,verified_name,name_status,quality_rating',
         accessToken
       )
+      const wabaId = /^\d+$/.test(configuredWabaId ?? '')
+        ? configuredWabaId as string
+        : await resolveWabaId(graphVersion, phoneNumberId, accessToken)
+      let pendingName: Record<string, unknown> | null = null
+      if (wabaId) {
+        const phoneNumbers = await metaRequest(
+          'https://graph.facebook.com/' + encodeURIComponent(graphVersion) + '/' +
+            encodeURIComponent(wabaId) +
+            '/phone_numbers?fields=id,display_phone_number,verified_name,name_status,new_name_status',
+          accessToken
+        )
+        const rows = Array.isArray(phoneNumbers.data)
+          ? phoneNumbers.data as Array<Record<string, unknown>>
+          : []
+        pendingName = rows.find((row) => row.id === phoneNumberId) ?? null
+      }
       return Response.json({
         ok: true,
         ...(update ? { update } : {}),
         phone,
+        pending_name: pendingName,
       })
     }
     const providedWabaId = typeof input.waba_id === 'string' && /^\d+$/.test(input.waba_id.trim())
