@@ -12,10 +12,10 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Preparar localmente a compatibilidade de códigos e referências legadas na migration 076.
 - [x] Validar lint, tipos, build e regressões locais do aplicativo.
 - [ ] Validar a migration 076 em transação com rollback antes da produção.
-- [ ] Publicar a comunicação transitória no site e no aplicativo.
-- [ ] Solicitar à Meta a alteração do nome de exibição para Assistente João.
+- [x] Publicar a comunicação transitória no site e no aplicativo.
+- [x] Solicitar à Meta a alteração do nome de exibição para Assistente João.
 - [x] Preparar localmente os novos templates com nomes técnicos neutros.
-- [ ] Submeter os novos templates à Meta.
+- [x] Submeter os novos templates à Meta.
 - [ ] Aguardar a aprovação dos templates antes de alterar o workflow remoto.
 - [ ] Aplicar a migration 076 e publicar app/workflows na janela de mudança.
 - [ ] Executar regressão oficial de WhatsApp, agenda, cobrança e pagamentos.
