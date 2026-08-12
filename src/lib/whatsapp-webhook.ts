@@ -117,6 +117,7 @@ export function normalizeWhatsAppWebhookPayload(payload: unknown) {
           main_menu: 'menu principal',
           tenant_appointments: 'Agendamento',
           tenant_billing: 'Cadastro ou mensalidades',
+          tenant_offerings: 'Planos e preços',
           tenant_handoff: 'Atendimento humano',
           appointment_schedule: '1',
           appointment_reschedule: '2',

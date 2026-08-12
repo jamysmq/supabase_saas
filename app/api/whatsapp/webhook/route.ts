@@ -174,6 +174,15 @@ type TenantHumanContact = {
   whatsappUrl: string | null
 }
 
+type TenantCommercialOffering = {
+  offer_type: 'membership' | 'rental'
+  name: string
+  description: string | null
+  price_cents: number
+  price_unit: string
+  custom_unit_label: string | null
+}
+
 async function loadTenantHumanContact(tenantId: unknown): Promise<TenantHumanContact | null> {
   if (typeof tenantId !== 'string' || !tenantId.trim()) return null
 
@@ -207,6 +216,125 @@ async function loadTenantHumanContact(tenantId: unknown): Promise<TenantHumanCon
   }
 }
 
+async function loadTenantCommercialOfferings(tenantId: unknown): Promise<TenantCommercialOffering[]> {
+  if (typeof tenantId !== 'string' || !tenantId.trim()) return []
+
+  try {
+    const supabase = createTenantAdminClient()
+    const { data, error } = await supabase
+      .from('tenant_commercial_offerings')
+      .select('offer_type, name, description, price_cents, price_unit, custom_unit_label')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .order('offer_type')
+      .order('sort_order')
+      .order('name')
+      .limit(30)
+
+    if (error) {
+      console.error('Could not load tenant commercial offerings.', error)
+      return []
+    }
+
+    return (data ?? []) as TenantCommercialOffering[]
+  } catch (error) {
+    console.error('Could not load tenant commercial offerings.', error)
+    return []
+  }
+}
+
+async function loadTenantContextFromRoute(route: InboxRoute | undefined) {
+  if (!route || route.scope !== 'tenant') return null
+
+  try {
+    const supabase = createTenantAdminClient()
+    const { data, error } = await supabase
+      .from('tenant_whatsapp_threads')
+      .select('tenant_id, tenants!inner(public_name, legal_name, plan)')
+      .eq('id', route.threadId)
+      .maybeSingle()
+
+    if (error || !data) return null
+    const tenantRelation = data.tenants as unknown as {
+      public_name?: string | null
+      legal_name?: string | null
+      plan?: string | null
+    }
+
+    return {
+      tenantId: data.tenant_id,
+      tenantName: normalizeShortLabel(
+        tenantRelation.public_name || tenantRelation.legal_name,
+        'este estabelecimento'
+      ),
+      tenantPlan: tenantRelation.plan ?? null,
+    }
+  } catch (error) {
+    console.error('Could not load tenant context from inbox route.', error)
+    return null
+  }
+}
+
+const commercialUnitLabels: Record<string, string> = {
+  monthly: 'por mês',
+  hourly: 'por hora',
+  daily: 'por dia',
+  per_class: 'por aula',
+  per_session: 'por sessão',
+  package: 'por pacote',
+  one_time: 'pagamento único',
+}
+
+function formatTenantCommercialOfferings(
+  tenantName: string,
+  offerings: TenantCommercialOffering[]
+) {
+  const sections = [
+    { type: 'membership', title: '*Planos e modalidades*' },
+    { type: 'rental', title: '*Preços de aluguel*' },
+  ].map((section) => {
+    const rows = offerings.filter((offering) => offering.offer_type === section.type)
+    if (!rows.length) return ''
+
+    const lines = rows.map((offering) => {
+      const price = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(Number(offering.price_cents) / 100)
+      const unit = offering.price_unit === 'custom'
+        ? offering.custom_unit_label
+        : commercialUnitLabels[offering.price_unit]
+      const description = offering.description ? `\n${offering.description}` : ''
+      return `• *${offering.name}* — ${price}${unit ? ` ${unit}` : ''}${description}`
+    })
+
+    return `${section.title}\n\n${lines.join('\n\n')}`
+  }).filter(Boolean)
+
+  return `Confira os planos e preços de *${tenantName}*: 😊\n\n${sections.join('\n\n')}\n\nEscolha abaixo como deseja continuar.`
+}
+
+function tenantOfferingActionButtons(plan: unknown, offerings: TenantCommercialOffering[]) {
+  const buttons: Array<{ id: string; title: string }> = []
+
+  if (
+    offerings.some((offering) => offering.offer_type === 'membership') &&
+    (plan === 'plan1' || plan === 'plan3')
+  ) {
+    buttons.push({ id: 'tenant_billing', title: 'Quero me cadastrar' })
+  }
+
+  if (
+    offerings.some((offering) => offering.offer_type === 'rental') &&
+    (plan === 'plan2' || plan === 'plan3')
+  ) {
+    buttons.push({ id: 'tenant_appointments', title: 'Agendar' })
+  }
+
+  buttons.push({ id: 'tenant_handoff', title: humanHandoffButtonTitle })
+  return buttons.slice(0, 3)
+}
+
 function isPlatformMenuResponse(response: N8nRouterResponse | null) {
   return response?.route === 'platform_menu'
 }
@@ -216,10 +344,12 @@ function normalizeTenantCandidates(value: unknown) {
   return value.map((item) => String(item ?? '').trim()).filter(Boolean).slice(0, 10)
 }
 
-function tenantMenuButtons(plan: unknown) {
+function tenantMenuButtons(plan: unknown, hasOfferings = false) {
   if (plan === 'plan1') {
     return [
-      { id: 'tenant_billing', title: 'Fazer cadastro' },
+      hasOfferings
+        ? { id: 'tenant_offerings', title: 'Planos e preços' }
+        : { id: 'tenant_billing', title: 'Fazer cadastro' },
       { id: 'tenant_handoff', title: humanHandoffButtonTitle },
       { id: 'main_menu', title: 'Menu do Jack' },
     ]
@@ -228,15 +358,19 @@ function tenantMenuButtons(plan: unknown) {
   if (plan === 'plan2') {
     return [
       { id: 'tenant_appointments', title: 'Agendamentos' },
+      ...(hasOfferings
+        ? [{ id: 'tenant_offerings', title: 'Planos e preços' }]
+        : [{ id: 'main_menu', title: 'Menu do Jack' }]),
       { id: 'tenant_handoff', title: humanHandoffButtonTitle },
-      { id: 'main_menu', title: 'Menu do Jack' },
     ]
   }
 
   if (plan === 'plan3') {
     return [
       { id: 'tenant_appointments', title: 'Agendamentos' },
-      { id: 'tenant_billing', title: 'Fazer cadastro' },
+      hasOfferings
+        ? { id: 'tenant_offerings', title: 'Planos e preços' }
+        : { id: 'tenant_billing', title: 'Fazer cadastro' },
       { id: 'tenant_handoff', title: humanHandoffButtonTitle },
     ]
   }
@@ -246,7 +380,6 @@ function tenantMenuButtons(plan: unknown) {
     { id: 'main_menu', title: 'Menu do Jack' },
   ]
 }
-
 function buildTenantMenuBody(
   tenantName: string,
   buttons: ReturnType<typeof tenantMenuButtons>
@@ -258,6 +391,10 @@ function buildTenantMenuBody(
 
     if (button.id === 'tenant_billing') {
       return `*${button.title}*: para enviar seus dados e solicitar seu cadastro.`
+    }
+
+    if (button.id === 'tenant_offerings') {
+      return `*${button.title}*: para conhecer modalidades, planos e valores de aluguel.`
     }
 
     if (button.id === 'tenant_handoff') {
@@ -888,6 +1025,26 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
           }
         }
 
+        let tenantOfferings: TenantCommercialOffering[] = []
+        if (message.interactiveReplyId === 'tenant_offerings') {
+          const tenantContext = await loadTenantContextFromRoute(route)
+          if (tenantContext) {
+            tenantOfferings = await loadTenantCommercialOfferings(tenantContext.tenantId)
+            routerResponse = {
+              ...routerResponse,
+              route: 'tenant_offerings',
+              reply_text: tenantOfferings.length
+                ? formatTenantCommercialOfferings(tenantContext.tenantName, tenantOfferings)
+                : 'Os planos e preços deste estabelecimento estão sendo atualizados. Fale com a equipe para receber as informações mais recentes.',
+              tenant_id: tenantContext.tenantId,
+              tenant_name: tenantContext.tenantName,
+              tenant_plan: tenantContext.tenantPlan,
+              inbox_thread_id: route?.threadId,
+              inbox_routed: true,
+              dispatch_to_module: false,
+            }
+          }
+        }
         const plansReply = routerResponse?.route === 'platform_plans'
           ? await loadPlatformPlansReply()
           : ''
@@ -1003,6 +1160,26 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                 body: 'Claro! 😊 É só me dizer o nome do estabelecimento que você procura. Pode escrever do seu jeito — eu tentarei encontrar as opções mais parecidas.\n\nSe quiser voltar às opções gerais do Assistente Jack, toque no botão *Menu do Jack* abaixo.',
                 buttons: [{ id: 'main_menu', title: 'Menu do Jack' }],
               })
+            } else if (routerResponse?.route === 'tenant_offerings') {
+              const tenantName = normalizeShortLabel(routerResponse.tenant_name, 'este estabelecimento')
+              const offerings = tenantOfferings.length
+                ? tenantOfferings
+                : await loadTenantCommercialOfferings(routerResponse.tenant_id)
+              const actionButtons = tenantOfferingActionButtons(routerResponse.tenant_plan, offerings)
+
+              await client.sendText({
+                to: message.from,
+                body: replyText,
+                previewUrl: false,
+              })
+              recordedReply = replyText
+              sendResult = await client.sendButtons({
+                to: message.from,
+                body: offerings.length
+                  ? `Gostou de alguma opção de *${tenantName}*? Escolha como deseja continuar.`
+                  : `Fale com a equipe de *${tenantName}* para conhecer as opções disponíveis.`,
+                buttons: actionButtons,
+              })
             } else if (routerResponse?.route === 'tenant_human_handoff') {
               const contact = await loadTenantHumanContact(routerResponse.tenant_id)
 
@@ -1054,11 +1231,13 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                 })
               } else {
                 const tenantMenuBody = 'Tudo certo! 😊 Você está no atendimento de *' + tenantName + '*. Escolha abaixo como deseja continuar.'
+                const offerings = await loadTenantCommercialOfferings(routerResponse.tenant_id)
+                const tenantButtons = tenantMenuButtons(routerResponse.tenant_plan, offerings.length > 0)
                 recordedReply = tenantMenuBody
                 sendResult = await client.sendButtons({
                   to: message.from,
                   body: tenantMenuBody,
-                  buttons: tenantMenuButtons(routerResponse.tenant_plan),
+                  buttons: tenantButtons,
                 })
               }
             } else if (routerResponse?.route === 'tenant_menu') {
@@ -1083,7 +1262,8 @@ async function forwardMessagesToN8n(messages: WhatsAppWebhookMessageEvent[], rou
                   ],
                 })
               } else {
-                const tenantButtons = tenantMenuButtons(routerResponse.tenant_plan)
+                const offerings = await loadTenantCommercialOfferings(routerResponse.tenant_id)
+                const tenantButtons = tenantMenuButtons(routerResponse.tenant_plan, offerings.length > 0)
                 const tenantMenuBody = buildTenantMenuBody(tenantName, tenantButtons)
                 recordedReply = tenantMenuBody
                 sendResult = await client.sendButtons({

@@ -103,6 +103,11 @@ export default function DashboardPage() {
         }]
       : []),
     {
+      href: '/tenant-commercial-offerings',
+      title: 'Planos e preços',
+      description: 'Divulgue planos, modalidades e valores de aluguel no atendimento pelo WhatsApp.',
+    },
+    {
       href: '/whatsapp-inbox',
       title: 'Atendimento WhatsApp',
       description: 'Responda clientes que pediram ajuda humana pelo WhatsApp.',
