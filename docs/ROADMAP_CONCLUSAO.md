@@ -11,7 +11,7 @@ Este checklist é a referência operacional até o lançamento. Itens concluído
 - [x] Preparar os novos recursos visuais e manter os arquivos anteriores apenas para rollback.
 - [x] Preparar localmente a compatibilidade de códigos e referências legadas na migration 076.
 - [x] Validar lint, tipos, build e regressões locais do aplicativo.
-- [ ] Validar a migration 076 em transação com rollback antes da produção.
+- [x] Validar a migration 076 em transação com rollback antes da produção.
 - [x] Publicar a comunicação transitória no site e no aplicativo.
 - [x] Solicitar à Meta a alteração do nome de exibição para Assistente João.
 - [x] Preparar localmente os novos templates com nomes técnicos neutros.

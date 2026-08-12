@@ -14,7 +14,8 @@ Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
 - A migration `076_assistente_joao_brand_foundation.sql` foi preparada localmente e ainda não deve ser aplicada antes da validação e do corte coordenado.
 - O display name e os novos templates da Meta serão alterados somente após a evidência pública da nova identidade e aprovação da Meta.
 - Foram preparados localmente os templates neutros `mav_appointment_reminder_h1_v1`, `mav_appointment_confirmation_d1_v1`, `mav_billing_due_reminder_v1`, `mav_billing_overdue_reminder_v1` e `mav_daily_agenda_summary_v1`; nenhum foi submetido ainda.
-- Lint, TypeScript, build, verificador do workflow de agenda, datas brasileiras e `git diff --check` passaram. A validação transacional da migration 076 permanece pendente porque o CLI local do Supabase travou antes de produzir o dry-run.
+- Lint, TypeScript, build, verificador do workflow de agenda, datas brasileiras e `git diff --check` passaram. A migration 076 também foi executada integralmente em produção dentro de `BEGIN`/`ROLLBACK` pela Management API, sem persistir mudanças.
+- O histórico remoto de migrations não está reconciliado: `db push` tentaria reaplicar `001–076`. A aplicação futura deve executar somente o arquivo 076 isolado; não usar `db push`.
 - A identidade pública foi publicada em produção nos commits `6f43b87` e `4d957f0`; o domínio oficial já entrega Assistente João.
 - A Meta aceitou a solicitação de display name `Assistente João`. Enquanto a revisão ocorre, o número oficial permanece com `Assistente Jack`, status `APPROVED` e qualidade `GREEN`.
 - Os cinco templates `mav_*` foram submetidos em produção. `mav_daily_agenda_summary_v1` (ID `1265084242297514`) já foi aprovado; os outros quatro permanecem `PENDING`.
