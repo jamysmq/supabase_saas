@@ -542,6 +542,8 @@ export async function POST(request: Request) {
       waba_id?: unknown
       include_webhook_subscription?: unknown
       inspect_template_ids?: unknown
+      inspect_phone_number?: unknown
+      request_display_name?: unknown
     }
     const templateIdsToInspect = Array.isArray(input.inspect_template_ids)
       ? input.inspect_template_ids
@@ -562,6 +564,35 @@ export async function POST(request: Request) {
       return Response.json({ ok: true, templates })
     }
 
+    const requestedDisplayName = typeof input.request_display_name === 'string'
+      ? input.request_display_name.trim()
+      : ''
+    if (requestedDisplayName && requestedDisplayName !== 'Assistente João') {
+      return Response.json({ error: 'Unsupported display name.' }, { status: 400 })
+    }
+
+    if (input.inspect_phone_number === true || requestedDisplayName) {
+      const phoneUrl = 'https://graph.facebook.com/' + encodeURIComponent(graphVersion) + '/' +
+        encodeURIComponent(phoneNumberId)
+      const update = requestedDisplayName
+        ? await metaRequest(phoneUrl, accessToken, {
+            method: 'POST',
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              new_display_name: requestedDisplayName,
+            }),
+          })
+        : undefined
+      const phone = await metaRequest(
+        phoneUrl + '?fields=id,display_phone_number,verified_name,name_status,quality_rating',
+        accessToken
+      )
+      return Response.json({
+        ok: true,
+        ...(update ? { update } : {}),
+        phone,
+      })
+    }
     const providedWabaId = typeof input.waba_id === 'string' && /^\d+$/.test(input.waba_id.trim())
       ? input.waba_id.trim()
       : null
