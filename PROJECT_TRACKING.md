@@ -20,6 +20,15 @@ Roadmap operacional até a conclusão: docs/ROADMAP_CONCLUSAO.md.
 - A Meta aceitou a solicitação de display name `Assistente João`. Enquanto a revisão ocorre, o número oficial permanece com `Assistente Jack`, status `APPROVED` e qualidade `GREEN`.
 - Em 2026-08-12, os cinco templates `mav_*` estavam `APPROVED` como `UTILITY`: `mav_appointment_reminder_h1_v1` (`4379169212350201`), `mav_appointment_confirmation_d1_v1` (`4439549356363531`), `mav_billing_due_reminder_v1` (`2819017855158440`), `mav_billing_overdue_reminder_v1` (`1719031432688086`) e `mav_daily_agenda_summary_v1` (`1265084242297514`). O corte permanece retido apenas até o display name oficial mudar para Assistente João.
 
+## Catálogo comercial do tenant no WhatsApp
+
+- Em 2026-08-12, a migration `077_tenant_commercial_offerings.sql` foi aplicada isoladamente no Supabase de produção; a tabela possui RLS e constraints de tipo, preço e unidade.
+- Cada tenant pode criar, editar, publicar, ocultar e excluir planos/modalidades e preços de aluguel em `/tenant-commercial-offerings`.
+- O dashboard do tenant ganhou o card `Planos e preços`.
+- O botão `Planos e preços` só aparece no WhatsApp quando o tenant possui ao menos uma oferta ativa.
+- O fluxo é exclusivamente por botões: texto digitado não aciona o catálogo.
+- Quando há catálogo, o cadastro fica dentro de `Planos e preços`; as ações exibidas são `Quero me cadastrar`, `Agendar` e/ou `Atendimento humano`, conforme plano e tipos de oferta.
+- A feature foi publicada em produção no commit `21cfbe2`; página respondeu HTTP 200, API sem autenticação respondeu 401 e a tabela confirmou RLS ativo.
 ## Visao Geral
 
 Este projeto e um SaaS multi-tenant para gestao de cobrancas, clientes/alunos e agenda. O produto tem dois contextos claros:
