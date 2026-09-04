@@ -229,7 +229,7 @@ export default function PlansPage() {
             </div>
 
             <div className="space-y-8">
-              {visiblePlans.map((plan, index) => {
+              {visiblePlans.map((plan) => {
                 const presentation = planPresentation[plan.code];
 
                 return (
@@ -242,7 +242,7 @@ export default function PlansPage() {
                     className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-white/70 blur-3xl"
                   />
                   <div className="relative grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
-                    <div className={index % 2 === 1 ? "lg:order-2" : ""}>
+                    <div>
                       <span
                         className={`inline-flex rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] ${presentation.badgeClass}`}
                       >
@@ -264,11 +264,7 @@ export default function PlansPage() {
                       </div>
                     </div>
 
-                    <div
-                      className={`rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur sm:p-7 ${
-                        index % 2 === 1 ? "lg:order-1" : ""
-                      }`}
-                    >
+                    <div className="rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur sm:p-7">
                       <p className="text-sm font-bold text-slate-500">Tudo isso por</p>
                       <p className={`mt-1 text-4xl font-black ${presentation.priceClass}`}>
                         {formatCurrency(plan.monthly_amount_cents)}
