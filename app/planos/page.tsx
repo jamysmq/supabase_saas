@@ -97,16 +97,17 @@ const planPresentation: Record<
   },
   plan4: {
     title: "Plano 4",
-    eyebrow: "Catálogo + pedidos + estoque",
-    badge: "Venda com organização",
-    headline: "Do primeiro pedido à baixa no estoque, tudo conversa.",
+    eyebrow: "Cardápio + pedidos + estoque",
+    badge: "Feito para vender mais",
+    headline: "Seu restaurante mais ágil, do primeiro pedido ao estoque.",
     pitch:
-      "Apresente seus produtos, receba pedidos e acompanhe a operação sem depender de controles espalhados por todo lado.",
-    idealFor: "Lojas, delivery, distribuidores e operações com produtos",
+      "O João apresenta o cardápio, recebe pedidos pelo WhatsApp e ajuda sua equipe a manter produtos, vendas e operação em perfeita sintonia.",
+    idealFor:
+      "Restaurantes, lanchonetes, bares, cafeterias e alimentação em espaços esportivos",
     features: [
-      "Catálogo ou cardápio no WhatsApp",
-      "Pedidos e controle de estoque",
-      "Financeiro operacional organizado",
+      "Cardápio completo direto no WhatsApp",
+      "Pedidos organizados e estoque sob controle",
+      "Visão financeira da operação em um só lugar",
     ],
     shellClass:
       "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50",
@@ -118,16 +119,17 @@ const planPresentation: Record<
   },
   plan5: {
     title: "Plano 5",
-    eyebrow: "Operação completa",
-    badge: "Potência máxima",
-    headline: "Uma central de comando para sua operação inteira.",
+    eyebrow: "Pedidos + reservas + operação",
+    badge: "Experiência completa",
+    headline: "Prepare sua operação para receber mais pedidos e mais reservas.",
     pitch:
-      "Agenda, reservas, pedidos, estoque e financeiro conectados para você enxergar o negócio com clareza e agir mais rápido.",
-    idealFor: "Negócios híbridos com serviços, reservas e produtos",
+      "Conecte cardápio, pedidos, estoque e reservas para atender com agilidade em restaurantes e ambientes esportivos que unem consumo e experiências.",
+    idealFor:
+      "Restaurantes com reservas, clubes, arenas e complexos esportivos",
     features: [
-      "Tudo do Plano 4",
-      "Agenda de reservas e atendimentos",
-      "Pedidos, estoque e financeiro integrados",
+      "Tudo do Plano 4, totalmente integrado",
+      "Reservas organizadas junto à operação",
+      "Pedidos, estoque e financeiro trabalhando juntos",
     ],
     shellClass:
       "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-blue-50",
