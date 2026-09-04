@@ -13,54 +13,129 @@ type Plan = {
 
 const planPresentation: Record<
   string,
-  { title: string; eyebrow: string; features: string[]; note?: string }
+  {
+    title: string;
+    eyebrow: string;
+    badge: string;
+    headline: string;
+    pitch: string;
+    idealFor: string;
+    features: string[];
+    note?: string;
+    shellClass: string;
+    badgeClass: string;
+    eyebrowClass: string;
+    priceClass: string;
+    buttonClass: string;
+    checkClass: string;
+  }
 > = {
   plan1: {
     title: "Plano 1",
-    eyebrow: "Cobranças",
+    eyebrow: "Cobranças inteligentes",
+    badge: "Essencial para começar",
+    headline: "Receba em dia sem transformar cobrança em constrangimento.",
+    pitch:
+      "O João organiza clientes, mensalidades e lembretes para você ganhar previsibilidade e preservar um atendimento cordial.",
+    idealFor: "Professores, autônomos e pequenos negócios recorrentes",
     features: [
       "Cadastro e controle de clientes ou alunos",
       "Mensalidades e histórico financeiro",
       "Lembretes de cobrança pelo WhatsApp",
     ],
+    shellClass:
+      "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50",
+    badgeClass: "bg-emerald-600 text-white",
+    eyebrowClass: "text-emerald-700",
+    priceClass: "text-emerald-700",
+    buttonClass: "bg-emerald-700 hover:bg-emerald-800",
+    checkClass: "text-emerald-600",
   },
   plan2: {
     title: "Plano 2",
-    eyebrow: "Agenda",
+    eyebrow: "Agenda que trabalha por você",
+    badge: "Mais tempo para atender",
+    headline: "Sua agenda continua funcionando até quando você está ocupado.",
+    pitch:
+      "Transforme o WhatsApp em uma recepção disponível para organizar serviços, profissionais, confirmações e lembretes.",
+    idealFor: "Salões, clínicas, consultórios e prestadores de serviço",
     features: [
       "Agenda de serviços e profissionais",
       "Agendamento pelo WhatsApp",
       "Confirmações e lembretes automáticos",
     ],
     note: "Inclui 1 profissional. Cada profissional adicional custa R$ 25,00/mês, após aprovação.",
+    shellClass:
+      "border-violet-200 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50",
+    badgeClass: "bg-violet-600 text-white",
+    eyebrowClass: "text-violet-700",
+    priceClass: "text-violet-700",
+    buttonClass: "bg-violet-700 hover:bg-violet-800",
+    checkClass: "text-violet-600",
   },
   plan3: {
     title: "Plano 3",
     eyebrow: "Cobranças + agenda",
+    badge: "O mais versátil",
+    headline: "Alunos, mensalidades e agenda finalmente no mesmo ritmo.",
+    pitch:
+      "Una a jornada do aluno ao controle financeiro e aos agendamentos em uma operação que cresce sem perder a proximidade.",
+    idealFor: "Academias, estúdios, escolas esportivas e arenas",
     features: [
       "Tudo para controlar alunos e mensalidades",
       "Agenda de serviços e profissionais",
       "Atendimento e lembretes pelo WhatsApp",
     ],
     note: "Cada profissional adicional custa R$ 50,00/mês, após aprovação.",
+    shellClass:
+      "border-sky-300 bg-gradient-to-br from-sky-50 via-white to-cyan-50 shadow-[0_22px_65px_rgba(14,116,144,0.14)]",
+    badgeClass: "bg-sky-600 text-white",
+    eyebrowClass: "text-sky-700",
+    priceClass: "text-sky-700",
+    buttonClass: "bg-sky-700 hover:bg-sky-800",
+    checkClass: "text-sky-600",
   },
   plan4: {
     title: "Plano 4",
     eyebrow: "Catálogo + pedidos + estoque",
+    badge: "Venda com organização",
+    headline: "Do primeiro pedido à baixa no estoque, tudo conversa.",
+    pitch:
+      "Apresente seus produtos, receba pedidos e acompanhe a operação sem depender de controles espalhados por todo lado.",
+    idealFor: "Lojas, delivery, distribuidores e operações com produtos",
     features: [
       "Catálogo ou cardápio no WhatsApp",
       "Pedidos e controle de estoque",
       "Financeiro operacional organizado",
     ],
+    shellClass:
+      "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50",
+    badgeClass: "bg-amber-600 text-white",
+    eyebrowClass: "text-amber-700",
+    priceClass: "text-amber-700",
+    buttonClass: "bg-amber-700 hover:bg-amber-800",
+    checkClass: "text-amber-600",
   },
   plan5: {
     title: "Plano 5",
     eyebrow: "Operação completa",
+    badge: "Potência máxima",
+    headline: "Uma central de comando para sua operação inteira.",
+    pitch:
+      "Agenda, reservas, pedidos, estoque e financeiro conectados para você enxergar o negócio com clareza e agir mais rápido.",
+    idealFor: "Negócios híbridos com serviços, reservas e produtos",
     features: [
       "Tudo do Plano 4",
       "Agenda de reservas e atendimentos",
       "Pedidos, estoque e financeiro integrados",
     ],
+    shellClass:
+      "border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-blue-50",
+    badgeClass: "bg-indigo-700 text-white",
+    eyebrowClass: "text-indigo-700",
+    priceClass: "text-indigo-700",
+    buttonClass: "bg-indigo-800 hover:bg-indigo-900",
+    checkClass: "text-indigo-600",
   },
 };
 
@@ -137,80 +212,120 @@ export default function PlansPage() {
         )}
 
         {!loading && visiblePlans.length > 0 && (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {visiblePlans.map((plan) => {
-              const presentation = planPresentation[plan.code];
-              const highlighted = plan.code === "plan3";
+          <div>
+            <div className="mx-auto mb-10 max-w-3xl text-center">
+              <p className="text-sm font-black uppercase tracking-[0.14em] text-[#0d65bd]">
+                Encontre o seu ponto de partida
+              </p>
+              <h2 className="mt-3 text-3xl font-black sm:text-4xl">
+                Um plano forte para cada desafio do seu negócio.
+              </h2>
+              <p className="mt-4 leading-7 text-slate-600">
+                Compare pelo resultado que você quer alcançar. Quando sua operação
+                evoluir, o Assistente João evolui com ela.
+              </p>
+            </div>
 
-              return (
-                <article
-                  className={`relative flex flex-col rounded-xl border bg-white p-6 shadow-sm ${
-                    highlighted
-                      ? "border-[#38bde8] shadow-[0_16px_45px_rgba(14,116,144,0.14)]"
-                      : "border-[#d7e6f5]"
-                  }`}
-                  key={plan.code}
-                >
-                  {highlighted && (
-                    <span className="absolute right-5 top-5 rounded-full bg-[#e1f8ff] px-3 py-1 text-xs font-black uppercase tracking-wide text-[#075d91]">
-                      Mais versátil
-                    </span>
-                  )}
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#0d65bd]">
-                    {presentation.eyebrow}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-black text-[#07111f]">
-                    {presentation.title}
-                  </h2>
-                  <p className="mt-5 text-3xl font-black text-[#073a86]">
-                    {formatCurrency(plan.monthly_amount_cents)}
-                    <span className="text-sm font-semibold text-slate-500"> /mês</span>
-                  </p>
-                  <ul className="mt-6 flex-1 space-y-3 text-sm leading-6 text-slate-600">
-                    {presentation.features.map((feature) => (
-                      <li className="flex gap-3" key={feature}>
-                        <span className="font-black text-emerald-500">✓</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {presentation.note && (
-                    <p className="mt-5 rounded-md bg-sky-50 p-3 text-xs leading-5 text-sky-900">
-                      {presentation.note}
-                    </p>
-                  )}
-                  <Link
-                    className="mt-7 rounded-md bg-[#073a86] px-5 py-3 text-center text-sm font-bold text-white hover:bg-[#052a61]"
-                    href="/cadastro"
+            <div className="space-y-8">
+              {visiblePlans.map((plan, index) => {
+                const presentation = planPresentation[plan.code];
+
+                return (
+                  <article
+                    className={`relative overflow-hidden rounded-3xl border p-6 shadow-sm sm:p-8 lg:p-10 ${presentation.shellClass}`}
+                    key={plan.code}
                   >
-                    Escolher este plano
-                  </Link>
-                </article>
-              );
-            })}
+                  <div
+                    aria-hidden="true"
+                    className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-white/70 blur-3xl"
+                  />
+                  <div className="relative grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-center">
+                    <div className={index % 2 === 1 ? "lg:order-2" : ""}>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] ${presentation.badgeClass}`}
+                      >
+                        {presentation.badge}
+                      </span>
+                      <p
+                        className={`mt-6 text-xs font-black uppercase tracking-[0.16em] ${presentation.eyebrowClass}`}
+                      >
+                        {presentation.title} · {presentation.eyebrow}
+                      </p>
+                      <h3 className="mt-3 max-w-2xl text-3xl font-black leading-tight text-[#07111f] sm:text-4xl">
+                        {presentation.headline}
+                      </h3>
+                      <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                        {presentation.pitch}
+                      </p>
+                      <div className="mt-6 inline-flex rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur">
+                        Ideal para: {presentation.idealFor}
+                      </div>
+                    </div>
+
+                    <div
+                      className={`rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur sm:p-7 ${
+                        index % 2 === 1 ? "lg:order-1" : ""
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-slate-500">Tudo isso por</p>
+                      <p className={`mt-1 text-4xl font-black ${presentation.priceClass}`}>
+                        {formatCurrency(plan.monthly_amount_cents)}
+                        <span className="text-sm font-semibold text-slate-500"> /mês</span>
+                      </p>
+                      <ul className="mt-6 space-y-3 text-sm leading-6 text-slate-600">
+                        {presentation.features.map((feature) => (
+                          <li className="flex gap-3" key={feature}>
+                            <span className={`font-black ${presentation.checkClass}`}>✓</span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {presentation.note && (
+                        <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                          {presentation.note}
+                        </p>
+                      )}
+                      <Link
+                        className={`mt-7 block rounded-xl px-5 py-3.5 text-center text-sm font-black text-white shadow-sm transition-colors ${presentation.buttonClass}`}
+                        href="/cadastro"
+                      >
+                        Quero o {presentation.title}
+                      </Link>
+                    </div>
+                  </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>
 
       {plan3 && (
-        <section className="bg-[#eafaff]">
-          <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:px-10">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.14em] text-[#0d65bd]">
+        <section className="px-6 pb-14 sm:px-8 lg:px-10">
+          <div className="relative mx-auto grid w-full max-w-6xl gap-8 overflow-hidden rounded-3xl border border-[#69d4ef] bg-gradient-to-br from-[#03142f] via-[#073a86] to-[#0d65bd] px-6 py-10 text-white shadow-[0_24px_70px_rgba(3,20,47,0.24)] sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-10">
+            <div aria-hidden="true" className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
+            <div className="relative">
+              <span className="inline-flex rounded-full bg-[#68e5ff] px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#03142f]">
+                O Plano 3 em outro nível
+              </span>
+              <p className="mt-6 text-sm font-black uppercase tracking-[0.14em] text-[#68e5ff]">
                 Extensão para o Plano 3
               </p>
-              <h2 className="mt-3 text-3xl font-black text-[#07111f]">
-                Plano 3 Plus: quadras e ambientes
+              <h2 className="mt-3 text-3xl font-black sm:text-4xl">
+                Transforme cada ambiente em uma oportunidade de reserva.
               </h2>
-              <p className="mt-4 text-base leading-7 text-slate-600">
-                Ideal para academias, arenas e negócios de locação. Cadastre
-                quadras, salões de festa, piscinas e outros espaços, defina
-                horários e duração, evite conflitos e acompanhe os agendamentos
-                no painel.
+              <p className="mt-4 text-base leading-7 text-white/80 sm:text-lg">
+                O Plano 3 Plus coloca quadras, salões de festa, piscinas e outros
+                espaços no fluxo do João: horários organizados, duração flexível,
+                proteção contra conflitos e acompanhamento direto no painel.
+              </p>
+              <p className="mt-6 font-bold text-[#b9f4ff]">
+                Feito para academias, arenas e negócios que faturam com seus espaços.
               </p>
             </div>
 
-            <article className="rounded-xl border border-[#8fd8ee] bg-white p-6 shadow-sm">
+            <article className="relative rounded-2xl border border-white/20 bg-white p-6 text-slate-600 shadow-[0_18px_50px_rgba(0,0,0,0.18)] sm:p-7">
               <div className="space-y-3 text-sm text-slate-600">
                 <div className="flex items-center justify-between gap-4">
                   <span>Plano 3</span>
@@ -233,7 +348,7 @@ export default function PlansPage() {
                 </div>
               </div>
               <Link
-                className="mt-6 block rounded-md bg-[#0d65bd] px-5 py-3 text-center text-sm font-bold text-white hover:bg-[#084e92]"
+                className="mt-6 block rounded-xl bg-[#0d65bd] px-5 py-3.5 text-center text-sm font-black text-white shadow-sm transition-colors hover:bg-[#084e92]"
                 href="/cadastro"
               >
                 Quero o Plano 3 Plus
