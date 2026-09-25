@@ -544,6 +544,8 @@ export async function POST(request: Request) {
       inspect_template_ids?: unknown
       inspect_phone_number?: unknown
       request_display_name?: unknown
+      register_phone?: unknown
+      registration_pin?: unknown
     }
     const templateIdsToInspect = Array.isArray(input.inspect_template_ids)
       ? input.inspect_template_ids
@@ -571,7 +573,15 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Unsupported display name.' }, { status: 400 })
     }
 
-    if (input.inspect_phone_number === true || requestedDisplayName) {
+    const shouldRegisterPhone = input.register_phone === true
+    const registrationPin = typeof input.registration_pin === 'string'
+      ? input.registration_pin.trim()
+      : ''
+    if (shouldRegisterPhone && !/^\d{6}$/.test(registrationPin)) {
+      return Response.json({ error: 'Registration PIN must contain exactly 6 digits.' }, { status: 400 })
+    }
+
+    if (input.inspect_phone_number === true || requestedDisplayName || shouldRegisterPhone) {
       const phoneUrl = 'https://graph.facebook.com/' + encodeURIComponent(graphVersion) + '/' +
         encodeURIComponent(phoneNumberId)
       const update = requestedDisplayName
@@ -580,6 +590,15 @@ export async function POST(request: Request) {
             body: JSON.stringify({
               messaging_product: 'whatsapp',
               new_display_name: requestedDisplayName,
+            }),
+          })
+        : undefined
+      const registration = shouldRegisterPhone
+        ? await metaRequest(phoneUrl + '/register', accessToken, {
+            method: 'POST',
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              pin: registrationPin,
             }),
           })
         : undefined
@@ -606,6 +625,7 @@ export async function POST(request: Request) {
       return Response.json({
         ok: true,
         ...(update ? { update } : {}),
+        ...(registration ? { registration } : {}),
         phone,
         pending_name: pendingName,
       })
