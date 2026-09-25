@@ -106,7 +106,31 @@ const templateDefinitions = [
         body_text: [['Salão Exemplo', '21/07/2026', '1) 09:00 - Maria - Corte\n2) 10:30 - João - Barba', '2']],
       },
     }],
-  },  {
+  },
+  {
+    name: 'mav_platform_operational_update_v1',
+    language: 'pt_BR',
+    category: 'UTILITY',
+    allow_category_change: true,
+    components: [
+      {
+        type: 'BODY',
+        text: 'Olá, Jamys! 🔔\n\nAtualização operacional do Assistente João:\n{{1}}\n\nAcesse o Dashboard administrativo para consultar os detalhes.',
+        example: {
+          body_text: [['O monitor identificou uma falha que precisa de atenção.']],
+        },
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [{
+          type: 'URL',
+          text: 'Abrir Dashboard',
+          url: 'https://app.meuassistentevirtual.com.br/platform',
+        }],
+      },
+    ],
+  },
+  {
     name: 'jack_appointment_reminder_h1',
     language: 'pt_BR',
     category: 'UTILITY',
