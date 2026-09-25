@@ -543,9 +543,35 @@ export async function POST(request: Request) {
       include_webhook_subscription?: unknown
       inspect_template_ids?: unknown
       inspect_phone_number?: unknown
+      list_templates?: unknown
       request_display_name?: unknown
       register_phone?: unknown
       registration_pin?: unknown
+    }
+
+    if (input.list_templates === true) {
+      const wabaId = /^\d+$/.test(configuredWabaId ?? '')
+        ? configuredWabaId as string
+        : await resolveWabaId(graphVersion, phoneNumberId, accessToken)
+      if (!wabaId) {
+        return Response.json({ error: 'WhatsApp Business Account was not returned by Meta.' }, { status: 502 })
+      }
+
+      const templates: Array<Record<string, unknown>> = []
+      let nextUrl: string | null =
+        'https://graph.facebook.com/' + encodeURIComponent(graphVersion) + '/' +
+        encodeURIComponent(wabaId) +
+        '/message_templates?fields=id,name,status,category,language,components&limit=100'
+      for (let pageNumber = 0; nextUrl && pageNumber < 10; pageNumber += 1) {
+        const page: Record<string, unknown> = await metaRequest(nextUrl, accessToken)
+        if (Array.isArray(page.data)) {
+          templates.push(...page.data as Array<Record<string, unknown>>)
+        }
+        const paging = page.paging as { next?: unknown } | undefined
+        nextUrl = typeof paging?.next === 'string' ? paging.next : null
+      }
+
+      return Response.json({ ok: true, waba_id: wabaId, count: templates.length, templates })
     }
     const templateIdsToInspect = Array.isArray(input.inspect_template_ids)
       ? input.inspect_template_ids
